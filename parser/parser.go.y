@@ -4,13 +4,13 @@ package parser
 
 %union{
     identifier          string
-    expression          *Expression
-    statement           *Statement
+    expression          Expression
+    statement           Statement
     block               *Block
-    elif                *Elif
-    parameter_list      []Parameter
-    argument_list       []Expression
-    statement_list      []Statement
+    elif_list           []*Elif
+    parameter_list      []*Parameter
+    argument_list       []*Expression
+    statement_list      []*Statement
     assignment_operator AssignmentOperator
     type_specifier      VM_BasicType
 }
@@ -37,9 +37,8 @@ package parser
       declaration_statement
 %type <statement_list> statement_list
 %type <block> block
-%type <elif> elif elif_list
+%type <elif_list> elif elif_list
 %type <assignment_operator> assignment_operator
-%type <identifier> identifier_opt label_opt
 %type <type_specifier> type_specifier
 
 %%
@@ -104,11 +103,11 @@ function_definition
 parameter_list
         : type_specifier IDENTIFIER
         {
-            $$ = []Parameter{{type: $1, name: $2}}
+            $$ = []Parameter{{Type: $1, Name: $2}}
         }
         | parameter_list COMMA type_specifier IDENTIFIER
         {
-            $$ = append([]Parameter{{type: $3, name: $4}}, $1)
+            $$ = append([]Parameter{{Type: $3, Name: $4}}, $1)
         }
         ;
 argument_list
@@ -260,7 +259,6 @@ postfix_expression
         }
         | postfix_expression LP RP
         {
-            $$ = dkc_create_function_call_expression($1, NULL);
             $$ = FunctionCallExpression{function: $1, argument: nil}
         }
         ;
@@ -322,6 +320,9 @@ if_statement
         ;
 elif_list
         : elif
+        {
+            $$ = []ElifList{$2}
+        }
         | elif_list elif
         {
             $$ = append($2, $1)
@@ -330,30 +331,20 @@ elif_list
 elif
         : ELIF LP expression RP block
         {
-            $$ = Elif{condition: $3, block: $5}
-        }
-        ;
-label_opt
-        : /* empty */
-        {
-            $$ = nil
-        }
-        | IDENTIFIER COLON
-        {
-            $$ = $1
+            $$ = []Elif{{condition: $3, block: $5}}
         }
         ;
 while_statement
-        : label_opt WHILE LP expression RP block
+        : WHILE LP expression RP block
         {
-            $$ = dkc_create_while_statement($1, $4, $6);
+            $$ = WhileStatement{condition: $3, block: $5}
         }
         ;
 for_statement
-        : label_opt FOR LP expression_opt SEMICOLON expression_opt SEMICOLON
+        : FOR LP expression_opt SEMICOLON expression_opt SEMICOLON
           expression_opt RP block
         {
-            $$ = dkc_create_for_statement($1, $4, $6, $8, $10);
+            $$ = ForStatement{init: $3, condition: $5, post: $7, block: $9}
         }
         ;
 expression_opt
@@ -366,51 +357,52 @@ expression_opt
 return_statement
         : RETURN_T expression_opt SEMICOLON
         {
-            $$ = dkc_create_return_statement($2);
+            $$ = ReturnStatement{return_value: $2};
         }
-        ;
-identifier_opt
-        : /* empty */
-        {
-            $$ = NULL;
-        }
-        | IDENTIFIER
         ;
 break_statement 
-        : BREAK identifier_opt SEMICOLON
+        : BREAK SEMICOLON
         {
-            $$ = dkc_create_break_statement($2);
+            $$ = BreakStatement{}
         }
         ;
 continue_statement
-        : CONTINUE identifier_opt SEMICOLON
+        : CONTINUE SEMICOLON
         {
-            $$ = dkc_create_continue_statement($2);
+            $$ = ContinueStatement{}
         }
         ;
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = dkc_create_declaration_statement($1, $2, NULL);
+            $$ = DeclarationStatement{Type: $1, Name: $2, initializer: nil}
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = dkc_create_declaration_statement($1, $2, $4);
+            $$ = DeclarationStatement{type: $1, name: $2, initializer: $4}
         }
         ;
 block
         : LC
         {
-            $<block>$ = dkc_open_block();
+            if l, ok := yylex.(*Lexer); ok {
+                $<block>$ = l.current_block = Block{outer_block: l.current_block}
+            }
         }
           statement_list RC
         {
-            $<block>$ = dkc_close_block($<block>2, $3);
+
+            current_block = $<block>2
+            current_block.statement_list = $3
+            if l, ok := yylex.(*Lexer); ok {
+                $<block>$ = l.current_block = current_block.outer_block
+            }
         }
         | LC RC
         {
-            Block *empty_block = dkc_open_block();
-            $<block>$ = dkc_close_block(empty_block, NULL);
+            if l, ok := yylex.(*Lexer); ok {
+                $<block>$ := Block{outer_block: l.current_block, statement_list: nil}
+            }
         }
         ;
 %%

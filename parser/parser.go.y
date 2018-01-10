@@ -9,20 +9,25 @@ package parser
     block               *Block
     elif_list           []*Elif
     parameter_list      []*Parameter
-    argument_list       []*Expression
-    statement_list      []*Statement
+    argument_list       []Expression
+    statement_list      []Statement
     assignment_operator AssignmentOperator
-    type_specifier      VM_BasicType
+    type_specifier      BasicType
 }
 
 %token <expression>     DOUBLE_LITERAL
 %token <expression>     STRING_LITERAL
 %token <identifier>     IDENTIFIER
-%token IF ELSE ELIF WHILE FOR RETURN_T BREAK CONTINUE
-        LP RP LC RC SEMICOLON COLON COMMA ASSIGN_T LOGICAL_AND LOGICAL_OR
-        EQ NE GT GE LT LE ADD SUB MUL DIV MOD TRUE_T FALSE_T EXCLAMATION DOT
-        ADD_ASSIGN_T SUB_ASSIGN_T MUL_ASSIGN_T DIV_ASSIGN_T MOD_ASSIGN_T
-        BOOLEAN_T INT_T DOUBLE_T STRING_T
+%token IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
+        LP RP LC RC 
+        SEMICOLON COMMA
+        ASSIGN_T 
+        LOGICAL_AND LOGICAL_OR
+        EQ NE GT GE LT LE 
+        ADD SUB MUL DIV 
+        TRUE_T FALSE_T 
+        EXCLAMATION DOT
+        BOOLEAN_T DOUBLE_T STRING_T
 
 %type <parameter_list> parameter_list
 %type <argument_list> argument_list
@@ -32,7 +37,7 @@ package parser
       additive_expression multiplicative_expression
       unary_expression postfix_expression primary_expression
 %type <statement> statement
-      if_statement while_statement for_statement
+      if_statement for_statement
       return_statement break_statement continue_statement
       declaration_statement
 %type <statement_list> statement_list
@@ -59,55 +64,51 @@ definition_or_statement
 type_specifier
         : BOOLEAN_T
         {
-            $$ = DVM_BOOLEAN_TYPE;
-        }
-        | INT_T
-        {
-            $$ = DVM_INT_TYPE;
+            $$ = BOOLEAN_TYPE;
         }
         | DOUBLE_T
         {
-            $$ = DVM_DOUBLE_TYPE;
+            $$ = DOUBLE_TYPE;
         }
         | STRING_T
         {
-            $$ = DVM_STRING_TYPE;
+            $$ = STRING_TYPE;
         }
         ;
 function_definition
         : type_specifier IDENTIFIER LP parameter_list RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.function_define($1, $2, $4, $6);
+                l.functionDefine($1, $2, $4, $6);
             }
         }
         | type_specifier IDENTIFIER LP RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.function_define($1, $2, NULL, $5);
+                l.functionDefine($1, $2, nil, $5);
             }
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.function_define($1, $2, $4, NULL);
+                l.functionDefine($1, $2, $4, nil);
             }
         }
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.function_define($1, $2, NULL, NULL);
+                l.functionDefine($1, $2, nil, nil);
             }
         }
         ;
 parameter_list
         : type_specifier IDENTIFIER
         {
-            $$ = []Parameter{{Type: $1, Name: $2}}
+            $$ = []*Parameter{&Parameter{Type: $1, Name: $2}}
         }
         | parameter_list COMMA type_specifier IDENTIFIER
         {
-            $$ = append([]Parameter{{Type: $3, Name: $4}}, $1)
+            $$ = append([]*Parameter{&Parameter{Type: $3, Name: $4}}, $1)
         }
         ;
 argument_list
@@ -141,33 +142,13 @@ assignment_expression
         : logical_or_expression
         | postfix_expression assignment_operator assignment_expression
         {
-            $$ = AssignExpression{left: $1, operator: $3, operand: $3}
+            $$ = AssignExpression{left: $1, operator: $2, operand: $3}
         }
         ;
 assignment_operator
         : ASSIGN_T
         {
             $$ = NORMAL_ASSIGN;
-        }
-        | ADD_ASSIGN_T
-        {
-            $$ = ADD_ASSIGN;
-        }
-        | SUB_ASSIGN_T
-        {
-            $$ = SUB_ASSIGN;
-        }
-        | MUL_ASSIGN_T
-        {
-            $$ = MUL_ASSIGN;
-        }
-        | DIV_ASSIGN_T
-        {
-            $$ = DIV_ASSIGN;
-        }
-        | MOD_ASSIGN_T
-        {
-            $$ = MOD_ASSIGN;
         }
         ;
 logical_or_expression
@@ -235,10 +216,6 @@ multiplicative_expression
         {
             $$ = BinaryExpression{operator: DIV_EXPRESSION, left: $1, right: $3}
         }
-        | multiplicative_expression MOD unary_expression
-        {
-            $$ = BinaryExpression{operator: MOD_EXPRESSION, left: $1, right: $3}
-        }
         ;
 unary_expression
         : postfix_expression
@@ -271,17 +248,15 @@ primary_expression
         {
             $$ = IdentifierExpression{name: $1}
         }
-        | INT_LITERAL
         | DOUBLE_LITERAL
         | STRING_LITERAL
-        | REGEXP_LITERAL
         | TRUE_T
         {
-            $$ = BooleanExpression{boolean_value: DVM_TRUE}
+            $$ = BooleanExpression{boolean_value: BOOLEAN_TRUE}
         }
         | FALSE_T
         {
-            $$ = BooleanExpression{boolean_value: DVM_FALSE}
+            $$ = BooleanExpression{boolean_value: BOOLEAN_FALSE}
         }
         ;
 statement
@@ -290,14 +265,10 @@ statement
           $$ = ExpressionStatement{expression_s: $1}
         }
         | if_statement
-        | while_statement
         | for_statement
-        | foreach_statement
         | return_statement
         | break_statement
         | continue_statement
-        | try_statement
-        | throw_statement
         | declaration_statement
         ;
 if_statement
@@ -321,7 +292,7 @@ if_statement
 elif_list
         : elif
         {
-            $$ = []ElifList{$2}
+            $$ = []Elif{$1}
         }
         | elif_list elif
         {
@@ -334,12 +305,6 @@ elif
             $$ = []Elif{{condition: $3, block: $5}}
         }
         ;
-while_statement
-        : WHILE LP expression RP block
-        {
-            $$ = WhileStatement{condition: $3, block: $5}
-        }
-        ;
 for_statement
         : FOR LP expression_opt SEMICOLON expression_opt SEMICOLON
           expression_opt RP block
@@ -350,14 +315,14 @@ for_statement
 expression_opt
         : /* empty */
         {
-            $$ = NULL;
+            $$ = nil;
         }
         | expression
         ;
 return_statement
         : RETURN_T expression_opt SEMICOLON
         {
-            $$ = ReturnStatement{return_value: $2};
+            $$ = ReturnStatement{returnValue: $2};
         }
         ;
 break_statement 
@@ -375,7 +340,7 @@ continue_statement
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = DeclarationStatement{Type: $1, Name: $2, initializer: nil}
+            $$ = DeclarationStatement{Type: $1, Name: $2}
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
@@ -386,22 +351,24 @@ block
         : LC
         {
             if l, ok := yylex.(*Lexer); ok {
-                $<block>$ = l.current_block = Block{outer_block: l.current_block}
+                l.currentBlock = Block{outerBlock: l.currentBlock}
+                $<block>$ = l.currentBlock
             }
         }
           statement_list RC
         {
 
-            current_block = $<block>2
-            current_block.statement_list = $3
+            currentBlock = $<block>2
+            currentBlock.statementList = $3
             if l, ok := yylex.(*Lexer); ok {
-                $<block>$ = l.current_block = current_block.outer_block
+                l.currentBlock = currentBlock.outerBlock
+                $<block>$ = l.currentBlock
             }
         }
         | LC RC
         {
             if l, ok := yylex.(*Lexer); ok {
-                $<block>$ := Block{outer_block: l.current_block, statement_list: nil}
+                $<block>$ = Block{outerBlock: l.currentBlock, statementList: nil}
             }
         }
         ;

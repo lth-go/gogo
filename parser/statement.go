@@ -1,39 +1,43 @@
 package parser
 
-// 基础类型
+// BasicType 基础类型
 type BasicType int
 
 const (
-	BOOLEAN_TYPE BasicType = iota
-	INT_TYPE
-	DOUBLE_TYPE
-	STRING_TYPE
+	// BooleanType 布尔类型
+	BooleanType BasicType = iota
+	// NumberType 数字类型
+	NumberType
+	// StringType 字符串类型
+	StringType
 )
 
-// 类型
+// TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
 	// 基本类型
 	basicType BasicType
-	// 派生类型
+	// TODO 派生类型
 	//derive
 }
 
-// 变量声明
+// Declaration 变量声明
 type Declaration struct {
-	name string
-	Type TypeSpecifier
+	name          string
+	typeSpecifier *TypeSpecifier
 
 	initializer   Expression
 	variableIndex int
 	isLocal       Boolean
 }
 
+// Statement 语句接口
 type Statement interface {
-	Pos
+	// Pos
 }
 
+// Block 块接口
 type Block struct {
-	BlockType        int
+	BlockType       int
 	outerBlock      *Block
 	statementList   []Statement
 	declarationList []*Declaration
@@ -41,44 +45,41 @@ type Block struct {
 	// parent
 }
 
+// Parameter 形参
 type Parameter struct {
-	Type       *TypeSpecifier
-	name       string
-	lineNumber int
+	typeSpecifier *TypeSpecifier
+	name          string
+	lineNumber    int
 }
 
+// AssignmentOperator ...
 type AssignmentOperator int
 
 const (
-	NORMAL_ASSIGN AssignmentOperator = iota
-	ADD_ASSIGN
-	SUB_ASSIGN
-	MUL_ASSIGN
-	DIV_ASSIGN
-	MOD_ASSIGN
+	// NormalAssign 赋值操作符 =
+	NormalAssign AssignmentOperator = iota
 )
 
+// ExpressionStatement 表达式语句
 type ExpressionStatement struct {
-	expression_s Expression
+	expression Expression
 }
 
+// IfStatement if表达式
 type IfStatement struct {
-	condition  Expression
-	then_block *Block
-	elsif_list []*Elif
-	else_block *Block
+	condition Expression
+	thenBlock *Block
+	elifList  []*Elif
+	elseBlock *Block
 }
 
+// Elif ...
 type Elif struct {
 	condition Expression
 	block     *Block
 }
 
-type WhildStatement struct {
-	condition Expression
-	block     *Block
-}
-
+// ForStatement for语句
 type ForStatement struct {
 	init      Expression
 	condition Expression
@@ -86,28 +87,29 @@ type ForStatement struct {
 	block     *Block
 }
 
-// return 语句
+// ReturnStatement return 语句
 type ReturnStatement struct {
 	// 返回值
 	returnValue Expression
 }
 
-// break 语句
+// BreakStatement break 语句
 type BreakStatement struct{}
 
-// continue 语句
+// ContinueStatement continue 语句
 type ContinueStatement struct{}
 
-// 声明语句
+// DeclarationStatement 声明语句
 type DeclarationStatement struct {
-	Type        *TypeSpecifier
-	name        string
-	initializer Expression
-	lineNumber  int
+	typeSpecifier *TypeSpecifier
+	name          string
+	initializer   Expression
+	lineNumber    int
 }
 
+// FunctionDefinition 函数定义
 type FunctionDefinition struct {
-	Type               *TypeSpecifier
+	typeSpecifier      *TypeSpecifier
 	name               string
 	parameter          *Parameter
 	block              *Block

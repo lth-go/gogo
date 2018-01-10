@@ -49,10 +49,10 @@ type Lexer struct {
 
 	funcList []*FunctionDefinition
 
-	currentBlock *Bolck
+	currentBlock *Block
 }
 
-func (l *Lexer) functionDefine(typeSpecifier BasicType, identifier string, parameterList []*Parameter, block *Block) {
+func (l *Lexer) functionDefine(typeSpecifier *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
 
 }
 

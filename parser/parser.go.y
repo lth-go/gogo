@@ -7,27 +7,29 @@ package parser
     expression          Expression
     statement           Statement
     block               *Block
+    elif                *Elif
     elif_list           []*Elif
     parameter_list      []*Parameter
     argument_list       []Expression
     statement_list      []Statement
     assignment_operator AssignmentOperator
-    type_specifier      BasicType
+    type_specifier      *TypeSpecifier
+    tok Token
 }
 
 %token <expression>     DOUBLE_LITERAL
 %token <expression>     STRING_LITERAL
 %token <identifier>     IDENTIFIER
-%token IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
-        LP RP LC RC 
+%token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
+        LP RP LC RC
         SEMICOLON COMMA
-        ASSIGN_T 
+        ASSIGN_T
         LOGICAL_AND LOGICAL_OR
-        EQ NE GT GE LT LE 
-        ADD SUB MUL DIV 
-        TRUE_T FALSE_T 
+        EQ NE GT GE LT LE
+        ADD SUB MUL DIV
+        TRUE_T FALSE_T
         EXCLAMATION DOT
-        BOOLEAN_T DOUBLE_T STRING_T
+        BOOLEAN_T NUMBER_T STRING_T
 
 %type <parameter_list> parameter_list
 %type <argument_list> argument_list
@@ -42,7 +44,8 @@ package parser
       declaration_statement
 %type <statement_list> statement_list
 %type <block> block
-%type <elif_list> elif elif_list
+%type <elif> elif
+%type <elif_list> elif_list
 %type <assignment_operator> assignment_operator
 %type <type_specifier> type_specifier
 
@@ -64,15 +67,15 @@ definition_or_statement
 type_specifier
         : BOOLEAN_T
         {
-            $$ = BOOLEAN_TYPE;
+            $$ = &TypeSpecifier{basicType: BooleanType}
         }
-        | DOUBLE_T
+        | NUMBER_T
         {
-            $$ = DOUBLE_TYPE;
+            $$ = &TypeSpecifier{basicType: NumberType}
         }
         | STRING_T
         {
-            $$ = STRING_TYPE;
+            $$ = &TypeSpecifier{basicType: StringType}
         }
         ;
 function_definition
@@ -104,11 +107,11 @@ function_definition
 parameter_list
         : type_specifier IDENTIFIER
         {
-            $$ = []*Parameter{&Parameter{Type: $1, Name: $2}}
+            $$ = []*Parameter{&Parameter{typeSpecifier: $1, name: $2}}
         }
         | parameter_list COMMA type_specifier IDENTIFIER
         {
-            $$ = append([]*Parameter{&Parameter{Type: $3, Name: $4}}, $1)
+            $$ = append([]*Parameter{&Parameter{typeSpecifier: $3, name: $4}}, $1...)
         }
         ;
 argument_list
@@ -118,7 +121,7 @@ argument_list
         }
         | argument_list COMMA assignment_expression
         {
-            $$ = append([]Expression{$3}, $1)
+            $$ = append([]Expression{$3}, $1...)
         }
         ;
 statement_list
@@ -128,7 +131,7 @@ statement_list
         }
         | statement_list statement
         {
-            $$ = append([]Statement{$2}, $1)
+            $$ = append([]Statement{$2}, $1...)
         }
         ;
 expression
@@ -148,7 +151,7 @@ assignment_expression
 assignment_operator
         : ASSIGN_T
         {
-            $$ = NORMAL_ASSIGN;
+            $$ = NormalAssign;
         }
         ;
 logical_or_expression
@@ -252,17 +255,17 @@ primary_expression
         | STRING_LITERAL
         | TRUE_T
         {
-            $$ = BooleanExpression{boolean_value: BOOLEAN_TRUE}
+            $$ = BooleanExpression{booleanValue: BooleanTrue}
         }
         | FALSE_T
         {
-            $$ = BooleanExpression{boolean_value: BOOLEAN_FALSE}
+            $$ = BooleanExpression{booleanValue: BooleanFalse}
         }
         ;
 statement
         : expression SEMICOLON
         {
-          $$ = ExpressionStatement{expression_s: $1}
+          $$ = ExpressionStatement{expression: $1}
         }
         | if_statement
         | for_statement
@@ -274,35 +277,35 @@ statement
 if_statement
         : IF LP expression RP block
         {
-            $$ = IfStatement{condition: $3, then_block: $5, elif_list: nil, else_block: nil}
+            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: nil}
         }
         | IF LP expression RP block ELSE block
         {
-            $$ = IfStatement{condition: $3, then_block: $5, elif_list: nil, else_block: $7}
+            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: $7}
         }
         | IF LP expression RP block elif_list
         {
-            $$ = IfStatement{condition: $3, then_block: $5, elif_list: $6, else_block: nil}
+            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: nil}
         }
         | IF LP expression RP block elif_list ELSE block
         {
-            $$ = IfStatement{condition: $3, then_block: $5, elif_list: $6, else_block: $8}
+            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: $8}
         }
         ;
 elif_list
         : elif
         {
-            $$ = []Elif{$1}
+            $$ = []*Elif{$1}
         }
         | elif_list elif
         {
-            $$ = append($2, $1)
+            $$ = append([]*Elif{$2}, $1...)
         }
         ;
 elif
         : ELIF LP expression RP block
         {
-            $$ = []Elif{{condition: $3, block: $5}}
+            $$ = &Elif{condition: $3, block: $5}
         }
         ;
 for_statement
@@ -325,7 +328,7 @@ return_statement
             $$ = ReturnStatement{returnValue: $2};
         }
         ;
-break_statement 
+break_statement
         : BREAK SEMICOLON
         {
             $$ = BreakStatement{}
@@ -340,25 +343,25 @@ continue_statement
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = DeclarationStatement{Type: $1, Name: $2}
+            $$ = DeclarationStatement{typeSpecifier: $1, name: $2}
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = DeclarationStatement{type: $1, name: $2, initializer: $4}
+            $$ = DeclarationStatement{typeSpecifier: $1, name: $2, initializer: $4}
         }
         ;
 block
         : LC
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.currentBlock = Block{outerBlock: l.currentBlock}
+                l.currentBlock = &Block{outerBlock: l.currentBlock}
                 $<block>$ = l.currentBlock
             }
         }
           statement_list RC
         {
 
-            currentBlock = $<block>2
+            currentBlock := $<block>2
             currentBlock.statementList = $3
             if l, ok := yylex.(*Lexer); ok {
                 l.currentBlock = currentBlock.outerBlock
@@ -368,7 +371,7 @@ block
         | LC RC
         {
             if l, ok := yylex.(*Lexer); ok {
-                $<block>$ = Block{outerBlock: l.currentBlock, statementList: nil}
+                $<block>$ = &Block{outerBlock: l.currentBlock}
             }
         }
         ;

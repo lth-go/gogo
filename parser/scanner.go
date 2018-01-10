@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	EOF = -1   // End of file.
-	EOL = '\n' // End of line.
+	// EOF End of file.
+	EOF = -1
+	// EOL End of line.
+	EOL = '\n'
 )
 
 // opName is correction of operation names.
@@ -16,7 +18,6 @@ var opName = map[string]int{
 	"if":       IF,
 	"else":     ELSE,
 	"elif":     ELIF,
-	"while":    WHILE,
 	"for":      FOR,
 	"return":   RETURN_T,
 	"break":    BREAK,
@@ -24,7 +25,7 @@ var opName = map[string]int{
 	"true":     TRUE_T,
 	"false":    FALSE_T,
 	"boolean":  BOOLEAN_T,
-	"double":   DOUBLE_T,
+	"number":   NUMBER_T,
 	"string":   STRING_T,
 	"(":        LP,
 	")":        RP,
@@ -152,6 +153,9 @@ retry:
 				tok = int(ch)
 				lit = string(ch)
 			}
+		case '(', ')', '{', '}', ';', ',', '+', '-', '*', '/', '!', '.':
+			tok = opName[lit]
+			lit = string(ch)
 		case '\n':
 			tok = int(ch)
 			lit = string(ch)

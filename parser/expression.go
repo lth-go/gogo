@@ -28,17 +28,29 @@ const (
 
 // Expression 表达式接口
 type Expression interface {
-	//Pos
+	// Pos接口
+	Pos
+	expr()
 }
+
+// ExpressionImpl provide commonly implementations for Expr.
+type ExpressionImpl struct {
+	PosImpl // ExprImpl provide Pos() function.
+}
+
+// expr provide restraint interface.
+func (x *ExpressionImpl) expr() {}
 
 // CommaExpression 逗号表达式
 type CommaExpression struct {
+	ExpressionImpl
 	left  Expression
 	right Expression
 }
 
 // AssignExpression 赋值表达式
 type AssignExpression struct {
+	ExpressionImpl
 	// 左值
 	left Expression
 	// 符号
@@ -49,6 +61,7 @@ type AssignExpression struct {
 
 // BinaryExpression 二元表达式
 type BinaryExpression struct {
+	ExpressionImpl
 	operator ExpressionKind
 	left     Expression
 	right    Expression
@@ -56,16 +69,19 @@ type BinaryExpression struct {
 
 // MinusExpression 负数表达式
 type MinusExpression struct {
+	ExpressionImpl
 	operand Expression
 }
 
 // LogicalNotExpression 逻辑非表达式
 type LogicalNotExpression struct {
+	ExpressionImpl
 	operand Expression
 }
 
 // FunctionCallExpression 函数调用表达式
 type FunctionCallExpression struct {
+	ExpressionImpl
 	function Expression
 	argument []Expression
 }
@@ -82,10 +98,12 @@ const (
 
 // BooleanExpression 布尔表达式
 type BooleanExpression struct {
+	ExpressionImpl
 	booleanValue Boolean
 }
 
 // IdentifierExpression 变量表达式
 type IdentifierExpression struct {
+	ExpressionImpl
 	name string
 }

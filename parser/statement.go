@@ -14,11 +14,26 @@ const (
 
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
+	PosImpl
 	// 基本类型
 	basicType BasicType
 	// TODO 派生类型
 	//derive
 }
+
+// Statement 语句接口
+type Statement interface {
+	// Pos接口
+	Pos
+}
+
+// StatementImpl provide commonly implementations for Stmt..
+type StatementImpl struct {
+	PosImpl // StmtImpl provide Pos() function.
+}
+
+// stmt provide restraint interface.
+func (x *StatementImpl) stmt() {}
 
 // Declaration 变量声明
 type Declaration struct {
@@ -28,11 +43,6 @@ type Declaration struct {
 	initializer   Expression
 	variableIndex int
 	isLocal       Boolean
-}
-
-// Statement 语句接口
-type Statement interface {
-	// Pos
 }
 
 // Block 块接口
@@ -47,6 +57,7 @@ type Block struct {
 
 // Parameter 形参
 type Parameter struct {
+	PosImpl
 	typeSpecifier *TypeSpecifier
 	name          string
 	lineNumber    int
@@ -62,11 +73,13 @@ const (
 
 // ExpressionStatement 表达式语句
 type ExpressionStatement struct {
+	StatementImpl
 	expression Expression
 }
 
 // IfStatement if表达式
 type IfStatement struct {
+	StatementImpl
 	condition Expression
 	thenBlock *Block
 	elifList  []*Elif
@@ -81,6 +94,7 @@ type Elif struct {
 
 // ForStatement for语句
 type ForStatement struct {
+	StatementImpl
 	init      Expression
 	condition Expression
 	post      Expression
@@ -89,18 +103,24 @@ type ForStatement struct {
 
 // ReturnStatement return 语句
 type ReturnStatement struct {
+	StatementImpl
 	// 返回值
 	returnValue Expression
 }
 
 // BreakStatement break 语句
-type BreakStatement struct{}
+type BreakStatement struct {
+	StatementImpl
+}
 
 // ContinueStatement continue 语句
-type ContinueStatement struct{}
+type ContinueStatement struct {
+	StatementImpl
+}
 
 // DeclarationStatement 声明语句
 type DeclarationStatement struct {
+	StatementImpl
 	typeSpecifier *TypeSpecifier
 	name          string
 	initializer   Expression

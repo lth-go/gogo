@@ -17,9 +17,8 @@ package parser
     tok Token
 }
 
-%token <expression>     DOUBLE_LITERAL
-%token <expression>     STRING_LITERAL
-%token <identifier>     IDENTIFIER
+%token <expression> DOUBLE_LITERAL STRING_LITERAL
+%token <identifier> IDENTIFIER
 %token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
         LP RP LC RC
         SEMICOLON COMMA
@@ -107,7 +106,9 @@ function_definition
 parameter_list
         : type_specifier IDENTIFIER
         {
-            $$ = []*Parameter{&Parameter{typeSpecifier: $1, name: $2}}
+            parameter := &Parameter{typeSpecifier: $1, name: $2}
+            parameter.SetPosition($1.Position())
+            $$ = []*Parameter{parameter}
         }
         | parameter_list COMMA type_specifier IDENTIFIER
         {
@@ -138,14 +139,16 @@ expression
         : assignment_expression
         | expression COMMA assignment_expression
         {
-            $$ = CommaExpression{left: $1, right: $3}
+            $$ = &CommaExpression{left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 assignment_expression
         : logical_or_expression
         | postfix_expression assignment_operator assignment_expression
         {
-            $$ = AssignExpression{left: $1, operator: $2, operand: $3}
+            $$ = &AssignExpression{left: $1, operator: $2, operand: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 assignment_operator
@@ -158,88 +161,104 @@ logical_or_expression
         : logical_and_expression
         | logical_or_expression LOGICAL_OR logical_and_expression
         {
-            $$ = BinaryExpression{operator: LOGICAL_OR_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LOGICAL_OR_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 logical_and_expression
         : equality_expression
         | logical_and_expression LOGICAL_AND equality_expression
         {
-            $$ = BinaryExpression{operator: LOGICAL_AND_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LOGICAL_AND_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 equality_expression
         : relational_expression
         | equality_expression EQ relational_expression
         {
-            $$ = BinaryExpression{operator: EQ_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: EQ_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         | equality_expression NE relational_expression
         {
-            $$ = BinaryExpression{operator: NE_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: NE_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 relational_expression
         : additive_expression
         | relational_expression GT additive_expression
         {
-            $$ = BinaryExpression{operator: GT_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: GT_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         | relational_expression GE additive_expression
         {
-            $$ = BinaryExpression{operator: GE_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: GE_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         | relational_expression LT additive_expression
         {
-            $$ = BinaryExpression{operator: LT_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LT_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         | relational_expression LE additive_expression
         {
-            $$ = BinaryExpression{operator: LE_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LE_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 additive_expression
         : multiplicative_expression
         | additive_expression ADD multiplicative_expression
         {
-            $$ = BinaryExpression{operator: ADD_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: ADD_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         | additive_expression SUB multiplicative_expression
         {
-            $$ = BinaryExpression{operator: SUB_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: SUB_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 multiplicative_expression
         : unary_expression
         | multiplicative_expression MUL unary_expression
         {
-            $$ = BinaryExpression{operator: MUL_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: MUL_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         | multiplicative_expression DIV unary_expression
         {
-            $$ = BinaryExpression{operator: DIV_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: DIV_EXPRESSION, left: $1, right: $3}
+            $$.SetPosition($1.Position())
         }
         ;
 unary_expression
         : postfix_expression
         | SUB unary_expression
         {
-            $$ = MinusExpression{operand: $2}
+            $$ = &MinusExpression{operand: $2}
+            $$.SetPosition($1.Position())
         }
         | EXCLAMATION unary_expression
         {
-            $$ = LogicalNotExpression{operand: $2}
+            $$ = &LogicalNotExpression{operand: $2}
+            $$.SetPosition($1.Position())
         }
         ;
 postfix_expression
         : primary_expression
         | postfix_expression LP argument_list RP
         {
-            $$ = FunctionCallExpression{function: $1, argument: $3}
+            $$ = &FunctionCallExpression{function: $1, argument: $3}
+            $$.SetPosition($1.Position())
         }
         | postfix_expression LP RP
         {
-            $$ = FunctionCallExpression{function: $1, argument: nil}
+            $$ = &FunctionCallExpression{function: $1, argument: nil}
+            $$.SetPosition($1.Position())
         }
         ;
 primary_expression
@@ -249,23 +268,26 @@ primary_expression
         }
         | IDENTIFIER
         {
-            $$ = IdentifierExpression{name: $1}
+            $$ = &IdentifierExpression{name: $1}
         }
         | DOUBLE_LITERAL
         | STRING_LITERAL
         | TRUE_T
         {
-            $$ = BooleanExpression{booleanValue: BooleanTrue}
+            $$ = &BooleanExpression{booleanValue: BooleanTrue}
+            $$.SetPosition($1.Position())
         }
         | FALSE_T
         {
-            $$ = BooleanExpression{booleanValue: BooleanFalse}
+            $$ = &BooleanExpression{booleanValue: BooleanFalse}
+            $$.SetPosition($1.Position())
         }
         ;
 statement
         : expression SEMICOLON
         {
-          $$ = ExpressionStatement{expression: $1}
+            $$ = &ExpressionStatement{expression: $1}
+            $$.SetPosition($1.Position())
         }
         | if_statement
         | for_statement
@@ -277,19 +299,23 @@ statement
 if_statement
         : IF LP expression RP block
         {
-            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: nil}
+            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: nil}
+            $$.SetPosition($1.Position())
         }
         | IF LP expression RP block ELSE block
         {
-            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: $7}
+            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: $7}
+            $$.SetPosition($1.Position())
         }
         | IF LP expression RP block elif_list
         {
-            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: nil}
+            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: nil}
+            $$.SetPosition($1.Position())
         }
         | IF LP expression RP block elif_list ELSE block
         {
-            $$ = IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: $8}
+            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: $8}
+            $$.SetPosition($1.Position())
         }
         ;
 elif_list
@@ -312,7 +338,8 @@ for_statement
         : FOR LP expression_opt SEMICOLON expression_opt SEMICOLON
           expression_opt RP block
         {
-            $$ = ForStatement{init: $3, condition: $5, post: $7, block: $9}
+            $$ = &ForStatement{init: $3, condition: $5, post: $7, block: $9}
+            $$.SetPosition($1.Position())
         }
         ;
 expression_opt
@@ -325,29 +352,34 @@ expression_opt
 return_statement
         : RETURN_T expression_opt SEMICOLON
         {
-            $$ = ReturnStatement{returnValue: $2};
+            $$ = &ReturnStatement{returnValue: $2};
+            $$.SetPosition($1.Position())
         }
         ;
 break_statement
         : BREAK SEMICOLON
         {
-            $$ = BreakStatement{}
+            $$ = &BreakStatement{}
+            $$.SetPosition($1.Position())
         }
         ;
 continue_statement
         : CONTINUE SEMICOLON
         {
-            $$ = ContinueStatement{}
+            $$ = &ContinueStatement{}
+            $$.SetPosition($1.Position())
         }
         ;
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = DeclarationStatement{typeSpecifier: $1, name: $2}
+            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2}
+            $$.SetPosition($1.Position())
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = DeclarationStatement{typeSpecifier: $1, name: $2, initializer: $4}
+            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2, initializer: $4}
+            $$.SetPosition($1.Position())
         }
         ;
 block

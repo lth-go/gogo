@@ -3,7 +3,6 @@ package parser
 %}
 
 %union{
-    identifier          string
     expression          Expression
     statement           Statement
     block               *Block
@@ -17,8 +16,6 @@ package parser
     tok Token
 }
 
-%token <expression> DOUBLE_LITERAL STRING_LITERAL
-%token <identifier> IDENTIFIER
 %token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
         LP RP LC RC
         SEMICOLON COMMA
@@ -26,7 +23,9 @@ package parser
         LOGICAL_AND LOGICAL_OR
         EQ NE GT GE LT LE
         ADD SUB MUL DIV
+        DOUBLE_LITERAL STRING_LITERAL
         TRUE_T FALSE_T
+        IDENTIFIER
         EXCLAMATION DOT
         BOOLEAN_T NUMBER_T STRING_T
 
@@ -37,6 +36,7 @@ package parser
       equality_expression relational_expression
       additive_expression multiplicative_expression
       unary_expression postfix_expression primary_expression
+
 %type <statement> statement
       if_statement for_statement
       return_statement break_statement continue_statement
@@ -67,52 +67,55 @@ type_specifier
         : BOOLEAN_T
         {
             $$ = &TypeSpecifier{basicType: BooleanType}
+            $$.SetPosition($1.Position())
         }
         | NUMBER_T
         {
             $$ = &TypeSpecifier{basicType: NumberType}
+            $$.SetPosition($1.Position())
         }
         | STRING_T
         {
             $$ = &TypeSpecifier{basicType: StringType}
+            $$.SetPosition($1.Position())
         }
         ;
 function_definition
         : type_specifier IDENTIFIER LP parameter_list RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2, $4, $6);
+                l.functionDefine($1, $2.Lit, $4, $6);
             }
         }
         | type_specifier IDENTIFIER LP RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2, nil, $5);
+                l.functionDefine($1, $2.Lit, nil, $5);
             }
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2, $4, nil);
+                l.functionDefine($1, $2.Lit, $4, nil);
             }
         }
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2, nil, nil);
+                l.functionDefine($1, $2.Lit, nil, nil);
             }
         }
         ;
 parameter_list
         : type_specifier IDENTIFIER
         {
-            parameter := &Parameter{typeSpecifier: $1, name: $2}
+            parameter := &Parameter{typeSpecifier: $1, name: $2.Lit}
             parameter.SetPosition($1.Position())
             $$ = []*Parameter{parameter}
         }
         | parameter_list COMMA type_specifier IDENTIFIER
         {
-            $$ = append([]*Parameter{&Parameter{typeSpecifier: $3, name: $4}}, $1...)
+            $$ = append([]*Parameter{&Parameter{typeSpecifier: $3, name: $4.Lit}}, $1...)
         }
         ;
 argument_list
@@ -268,10 +271,19 @@ primary_expression
         }
         | IDENTIFIER
         {
-            $$ = &IdentifierExpression{name: $1}
+            $$ = &IdentifierExpression{name: $1.Lit}
+            $$.SetPosition($1.Position())
         }
         | DOUBLE_LITERAL
+        {
+            $$ = &BooleanExpression{booleanValue: BooleanTrue}
+            $$.SetPosition($1.Position())
+        }
         | STRING_LITERAL
+        {
+            $$ = &BooleanExpression{booleanValue: BooleanTrue}
+            $$.SetPosition($1.Position())
+        }
         | TRUE_T
         {
             $$ = &BooleanExpression{booleanValue: BooleanTrue}
@@ -373,12 +385,12 @@ continue_statement
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2}
+            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2.Lit}
             $$.SetPosition($1.Position())
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2, initializer: $4}
+            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2.Lit, initializer: $4}
             $$.SetPosition($1.Position())
         }
         ;

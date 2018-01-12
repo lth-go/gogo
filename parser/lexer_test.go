@@ -5,9 +5,14 @@ import (
 	"testing"
 )
 
+var src = `number a = 1 + 1; b = a;
+if (a > b) {
+	c = a;
+}
+`
+
 func TestLexer(t *testing.T) {
 
-	src := "a = 1 + 1\n"
 
 	scanner := &Scanner{src: []rune(src)}
 	l := Lexer{s: scanner}
@@ -22,4 +27,13 @@ func TestLexer(t *testing.T) {
 		}
 		fmt.Printf("token: %v, lit: %v, pos: %v\n", tok, lit, pos)
 	}
+}
+
+func TestParse(t *testing.T) {
+	stmts, err := ParseSrc(src)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(len(stmts))
 }

@@ -90,6 +90,9 @@ retry:
 		switch ch {
 		case EOF:
 			tok = EOF
+		case '\n':
+			s.next()
+			goto retry
 		// 注释
 		case '#':
 			for !isEOL(s.peek()) {
@@ -137,7 +140,7 @@ retry:
 				lit = "||"
 			default:
 				s.back()
-				err = fmt.Errorf(`syntax error "%s"`, string(ch))
+				err = fmt.Errorf(`Syntax Error "%s"`, string(ch))
 				tok = int(ch)
 				lit = string(ch)
 			}
@@ -149,18 +152,15 @@ retry:
 				lit = "&&"
 			default:
 				s.back()
-				err = fmt.Errorf(`syntax error "%s"`, string(ch))
+				err = fmt.Errorf(`Syntax Error "%s"`, string(ch))
 				tok = int(ch)
 				lit = string(ch)
 			}
 		case '(', ')', '{', '}', ';', ',', '+', '-', '*', '/', '!', '.':
-			tok = opName[lit]
-			lit = string(ch)
-		case '\n':
-			tok = int(ch)
+			tok = opName[string(ch)]
 			lit = string(ch)
 		default:
-			err = fmt.Errorf(`syntax error "%s"`, string(ch))
+			err = fmt.Errorf(`Syntax Error "%s"`, string(ch))
 			tok = int(ch)
 			lit = string(ch)
 			return

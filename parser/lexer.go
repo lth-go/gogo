@@ -74,20 +74,26 @@ func (l *Lexer) Error(msg string) {
 	l.e = &Error{Message: msg, Pos: l.pos, Fatal: false}
 }
 
+// EnableErrorVerbose 输出yacc错误信息
+func EnableErrorVerbose() {
+	yyErrorVerbose = true
+}
+
 // ==============================
 // parse
 // ==============================
 
 // ParseSrc provides way to parse the code from source.
 func ParseSrc(src string) ([]Statement, error) {
+	EnableErrorVerbose()
 	scanner := &Scanner{
 		src: []rune(src),
 	}
-	return Parse(scanner)
+	return parse(scanner)
 }
 
-// Parse provides way to parse the code using Scanner.
-func Parse(s *Scanner) ([]Statement, error) {
+// parse provides way to parse the code using Scanner.
+func parse(s *Scanner) ([]Statement, error) {
 	l := Lexer{s: s}
 	if yyParse(&l) != 0 {
 		return nil, l.e

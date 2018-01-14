@@ -13,7 +13,6 @@ if (a > b) {
 
 func TestLexer(t *testing.T) {
 
-
 	scanner := &Scanner{src: []rune(src)}
 	l := Lexer{s: scanner}
 	for {
@@ -30,10 +29,10 @@ func TestLexer(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	stmts, err := ParseSrc(src)
+	compiler, err := ParseSrc(src)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(len(stmts))
+	fmt.Println(len(compiler.stmts))
 }

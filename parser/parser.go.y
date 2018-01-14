@@ -29,8 +29,6 @@ package parser
         EXCLAMATION DOT
         BOOLEAN_T NUMBER_T STRING_T
 
-%type <parameter_list> parameter_list
-%type <argument_list> argument_list
 %type <expression> expression expression_opt
       assignment_expression logical_and_expression logical_or_expression
       equality_expression relational_expression
@@ -42,6 +40,8 @@ package parser
       return_statement break_statement continue_statement
       declaration_statement
 %type <statement_list> statement_list
+%type <parameter_list> parameter_list
+%type <argument_list> argument_list
 %type <block> block
 %type <elif> elif
 %type <elif_list> elif_list
@@ -59,7 +59,7 @@ definition_or_statement
         | statement
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.stmts = append(l.stmts, $1)
+                l.compiler.stmts = append(l.compiler.stmts, $1)
             }
         }
         ;
@@ -84,25 +84,25 @@ function_definition
         : type_specifier IDENTIFIER LP parameter_list RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2.Lit, $4, $6);
+                l.compiler.functionDefine($1, $2.Lit, $4, $6);
             }
         }
         | type_specifier IDENTIFIER LP RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2.Lit, nil, $5);
+                l.compiler.functionDefine($1, $2.Lit, nil, $5);
             }
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2.Lit, $4, nil);
+                l.compiler.functionDefine($1, $2.Lit, $4, nil);
             }
         }
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.functionDefine($1, $2.Lit, nil, nil);
+                l.compiler.functionDefine($1, $2.Lit, nil, nil);
             }
         }
         ;
@@ -164,7 +164,7 @@ logical_or_expression
         : logical_and_expression
         | logical_or_expression LOGICAL_OR logical_and_expression
         {
-            $$ = &BinaryExpression{operator: LOGICAL_OR_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LogicalOrOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         ;
@@ -172,7 +172,7 @@ logical_and_expression
         : equality_expression
         | logical_and_expression LOGICAL_AND equality_expression
         {
-            $$ = &BinaryExpression{operator: LOGICAL_AND_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LogicalAndOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         ;
@@ -180,12 +180,12 @@ equality_expression
         : relational_expression
         | equality_expression EQ relational_expression
         {
-            $$ = &BinaryExpression{operator: EQ_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: EqOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         | equality_expression NE relational_expression
         {
-            $$ = &BinaryExpression{operator: NE_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: NeOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         ;
@@ -193,22 +193,22 @@ relational_expression
         : additive_expression
         | relational_expression GT additive_expression
         {
-            $$ = &BinaryExpression{operator: GT_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: GtOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         | relational_expression GE additive_expression
         {
-            $$ = &BinaryExpression{operator: GE_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: GeOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         | relational_expression LT additive_expression
         {
-            $$ = &BinaryExpression{operator: LT_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LtOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         | relational_expression LE additive_expression
         {
-            $$ = &BinaryExpression{operator: LE_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: LeOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         ;
@@ -216,12 +216,12 @@ additive_expression
         : multiplicative_expression
         | additive_expression ADD multiplicative_expression
         {
-            $$ = &BinaryExpression{operator: ADD_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: AddOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         | additive_expression SUB multiplicative_expression
         {
-            $$ = &BinaryExpression{operator: SUB_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: SubOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         ;
@@ -229,12 +229,12 @@ multiplicative_expression
         : unary_expression
         | multiplicative_expression MUL unary_expression
         {
-            $$ = &BinaryExpression{operator: MUL_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: MulOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         | multiplicative_expression DIV unary_expression
         {
-            $$ = &BinaryExpression{operator: DIV_EXPRESSION, left: $1, right: $3}
+            $$ = &BinaryExpression{operator: DivOperator, left: $1, right: $3}
             $$.SetPosition($1.Position())
         }
         ;
@@ -309,24 +309,24 @@ statement
         | declaration_statement
         ;
 if_statement
-        : IF LP expression RP block
+        : IF expression block
         {
-            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: nil}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: nil, elseBlock: nil}
             $$.SetPosition($1.Position())
         }
-        | IF LP expression RP block ELSE block
+        | IF expression block ELSE block
         {
-            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: nil, elseBlock: $7}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: nil, elseBlock: $5}
             $$.SetPosition($1.Position())
         }
-        | IF LP expression RP block elif_list
+        | IF expression block elif_list
         {
-            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: nil}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: $4, elseBlock: nil}
             $$.SetPosition($1.Position())
         }
-        | IF LP expression RP block elif_list ELSE block
+        | IF expression block elif_list ELSE block
         {
-            $$ = &IfStatement{condition: $3, thenBlock: $5, elifList: $6, elseBlock: $8}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: $4, elseBlock: $6}
             $$.SetPosition($1.Position())
         }
         ;
@@ -341,16 +341,15 @@ elif_list
         }
         ;
 elif
-        : ELIF LP expression RP block
+        : ELIF expression block
         {
-            $$ = &Elif{condition: $3, block: $5}
+            $$ = &Elif{condition: $2, block: $3}
         }
         ;
 for_statement
-        : FOR LP expression_opt SEMICOLON expression_opt SEMICOLON
-          expression_opt RP block
+        : FOR expression_opt SEMICOLON expression_opt SEMICOLON expression_opt block
         {
-            $$ = &ForStatement{init: $3, condition: $5, post: $7, block: $9}
+            $$ = &ForStatement{init: $2, condition: $4, post: $6, block: $7}
             $$.SetPosition($1.Position())
         }
         ;
@@ -398,8 +397,8 @@ block
         : LC
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.currentBlock = &Block{outerBlock: l.currentBlock}
-                $<block>$ = l.currentBlock
+                l.compiler.currentBlock = &Block{outerBlock: l.compiler.currentBlock}
+                $<block>$ = l.compiler.currentBlock
             }
         }
           statement_list RC
@@ -408,14 +407,14 @@ block
             currentBlock := $<block>2
             currentBlock.statementList = $3
             if l, ok := yylex.(*Lexer); ok {
-                l.currentBlock = currentBlock.outerBlock
-                $<block>$ = l.currentBlock
+                l.compiler.currentBlock = currentBlock.outerBlock
+                $<block>$ = l.compiler.currentBlock
             }
         }
         | LC RC
         {
             if l, ok := yylex.(*Lexer); ok {
-                $<block>$ = &Block{outerBlock: l.currentBlock}
+                $<block>$ = &Block{outerBlock: l.compiler.currentBlock}
             }
         }
         ;

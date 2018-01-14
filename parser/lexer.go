@@ -40,21 +40,14 @@ func (e *Error) Error() string {
 
 // Lexer provides inteface to parse codes.
 type Lexer struct {
-	s     *Scanner
-	lit   string
-	pos   Position
-	e     error
+	s   *Scanner
+	lit string
+	pos Position
+	e   error
 
-	stmts []Statement
-
-	funcList []*FunctionDefinition
-
-	currentBlock *Block
+	compiler *Compiler
 }
 
-func (l *Lexer) functionDefine(typeSpecifier *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
-
-}
 
 // Lex scans the token and literals.
 func (l *Lexer) Lex(lval *yySymType) int {
@@ -74,18 +67,14 @@ func (l *Lexer) Error(msg string) {
 	l.e = &Error{Message: msg, Pos: l.pos, Fatal: false}
 }
 
-// EnableErrorVerbose 输出yacc错误信息
-func EnableErrorVerbose() {
-	yyErrorVerbose = true
-}
-
 // ==============================
 // parse
 // ==============================
 
 // ParseSrc provides way to parse the code from source.
-func ParseSrc(src string) ([]Statement, error) {
-	EnableErrorVerbose()
+func ParseSrc(src string) (*Compiler, error) {
+	// 输出yacc错误信息
+	yyErrorVerbose = true
 	scanner := &Scanner{
 		src: []rune(src),
 	}
@@ -93,10 +82,13 @@ func ParseSrc(src string) ([]Statement, error) {
 }
 
 // parse provides way to parse the code using Scanner.
-func parse(s *Scanner) ([]Statement, error) {
-	l := Lexer{s: s}
+func parse(s *Scanner) (*Compiler, error) {
+	compiler := newCompiler()
+	l := Lexer{s: s, compiler: compiler}
+	compiler.lexer = &l
+
 	if yyParse(&l) != 0 {
 		return nil, l.e
 	}
-	return l.stmts, l.e
+	return l.compiler, l.e
 }

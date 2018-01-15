@@ -345,6 +345,23 @@ func evalCompareExpression(e *Expression) {}
 func searchFunction(name string) *FunctionDefinition {}
 
 func searchDeclaration(name string, currentBlock *Block) *Declaration {
+    for (b_pos = block; b_pos; b_pos = b_pos->outer_block) {
+        for (d_pos = b_pos->declaration_list; d_pos; d_pos = d_pos->next) {
+            if (!strcmp(identifier, d_pos->declaration->name)) {
+                return d_pos->declaration;
+            }
+        }
+    }
+
+    compiler = dkc_get_current_compiler();
+
+    for (d_pos = compiler->declaration_list; d_pos; d_pos = d_pos->next) {
+        if (!strcmp(identifier, d_pos->declaration->name)) {
+            return d_pos->declaration;
+        }
+    }
+
+    return nil
 
 }
 

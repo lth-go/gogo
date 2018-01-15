@@ -39,13 +39,12 @@ type Statement interface {
 
 // StatementImpl provide commonly implementations for Stmt..
 type StatementImpl struct {
-	PosImpl // StmtImpl provide Pos() function.
-	lineNumber    int
+	PosImpl    // StmtImpl provide Pos() function.
+	lineNumber int
 }
 
 // stmt provide restraint interface.
 func (s *StatementImpl) stmt() {}
-
 
 // Declaration 变量声明
 type Declaration struct {
@@ -71,7 +70,7 @@ type Block struct {
 type FunctionDefinition struct {
 	typeSpecifier      *TypeSpecifier
 	name               string
-	parameter          *Parameter
+	parameterList      []*Parameter
 	block              *Block
 	localVariableCount int
 

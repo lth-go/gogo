@@ -10,7 +10,7 @@ type Compiler struct {
 	lexer *Lexer
 
 	// 语句列表
-	stmts []Statement
+	statementList []Statement
 
 	// 函数列表
 	funcList []*FunctionDefinition
@@ -31,7 +31,7 @@ func (c *Compiler) functionDefine(typeSpecifier *TypeSpecifier, identifier strin
 
 func newCompiler() *Compiler {
 	c := &Compiler{
-		stmts:           []Statement{},
+		statementList:           []Statement{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*DeclarationStatement{},
 	}
@@ -39,7 +39,7 @@ func newCompiler() *Compiler {
 	return c
 }
 
-func compileError(lineNumber int, compilerError int, message string) {
+func compileError(pos Position, compilerError int, message string) {
 	os.Exit(1)
 }
 

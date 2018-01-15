@@ -34,5 +34,5 @@ func TestParse(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(len(compiler.stmts))
+	fmt.Println(len(compiler.statementList))
 }

@@ -223,10 +223,9 @@ func (e *FunctionCallExpression) fix(currentBlock *Block) {
 
 		e.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
 		// TODO
-		//expr->type->derive = fd->type->derive;
+		//expr.type.derive = fd.type.derive
 	}
 }
-
 
 // ==============================
 // BooleanExpression
@@ -289,8 +288,8 @@ func (e *IdentifierExpression) fix(currentBlock *Block) {
 	decl := searchDeclaration(e.name, currentBlock)
 	if decl != nil {
 		e.typeSpecifier = decl.typeSpecifier
-		//expr->u.identifier.is_function = DVM_FALSE;
-		//expr->u.identifier.u.declaration = decl;
+		//expr.u.identifier.is_function = DVM_FALSE
+		//expr.u.identifier.u.declaration = decl
 		return
 	}
 	fd := searchFunction(e.name)
@@ -299,8 +298,8 @@ func (e *IdentifierExpression) fix(currentBlock *Block) {
 	}
 	e.typeSpecifier = fd.typeS()
 
-	//expr->u.identifier.is_function = DVM_TRUE;
-	//expr->u.identifier.u.function = fd;
+	//expr.u.identifier.is_function = DVM_TRUE
+	//expr.u.identifier.u.function = fd
 
 }
 
@@ -318,44 +317,163 @@ func isString(t *TypeSpecifier) bool {
 	return t.basicType == StringType
 }
 
-func createAssignCast(e Expression, t *TypeSpecifier) Expression {
-	return nil
+func createAssignCast(src Expression, dest *TypeSpecifier) Expression {
+	if src.typeS().derive != nil || dest.derive != nil {
+		compileError(src.Position(), 0, "")
+	}
+
+	if src.typeS().basicType == dest.basicType {
+		return src
+	}
+
+	compileError(src.Position(), 0, "")
+}
+
+
+func castBinaryExpression(expr Expression) {
+
+	e, ok := expr.(BinaryExpression)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
+
+	if isString(e.left.typeS()) && isBoolean(e.right.typeS()) {
+		allocCastExpression(BOOLEAN_TO_STRING_CAST, e.right)
+
+	} else if isString(e.left.typeS()) && isInt(e.right.typeS()) {
+		allocCastExpression(INT_TO_STRING_CAST, e.right)
+
+	} else if isString(e.left.typeS()) && isDouble(e.right.typeS()) {
+		allocCastExpression(DOUBLE_TO_STRING_CAST, e.right)
+	}
 }
 
 func evalMathExpression(currentBlock *Block, e Expression) {
-
-}
-
-func castBinaryExpression(e Expression) {
-
-}
-
-func evalCompareExpression(e Expression) {}
-
-func searchFunction(name string) *FunctionDefinition {
-	return nil
-}
-
-func searchDeclaration(name string, currentBlock *Block) *Declaration {
-
-	for b := currentBlock; b != nil; b = b.outerBlock {
-		for _, d := range b.declarationList {
-			if d.name == name {
-				return d
-			}
-		}
+	// TODO !!!类型有问题
+	expr, ok := e.(*BinaryExpression)
+	if !ok {
+		compileError(expr.Position(), 0, "")
 	}
 
-	compiler := getCurrentCompiler()
-
-	for _, d := range compiler.declarationList {
-		if d.name == name {
-			return d
-		}
+	if expr.operator == AddOperator {
+		expr.u.numberValue = left + right
+	} else if expr.operator == SubOperator {
+		expr.u.numberValue = left - right
+	} else if expr.operator == MulOperator {
+		expr.u.numberValue = left * right
+	} else if expr.operator == DivOperator {
+		expr.u.numberValue = left / right
+	} else {
+		compileError(expr.Position(), 0, "")
 	}
 
-	return nil
-
+	expr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
 }
 
-func checkArgument(currentBlock *Block, fd *FunctionDefinition, e Expression) {}
+func evalCompareExpression(e Expression) {
+	expr, ok := e.(BinaryExpression)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
+
+	if expr.left.kind == BOOLEAN_EXPRESSION && e.right.kind == BOOLEAN_EXPRESSION {
+		eval_compare_expression_boolean( expr, expr.left.u.boolean_value, expr.right.u.boolean_value)
+
+	} else if expr.left.kind == DOUBLE_EXPRESSION && expr.right.kind == DOUBLE_EXPRESSION {
+		eval_compare_expression_double( expr, expr.left.u.double_value, expr.right.u.double_value)
+
+	} else if expr.left.kind == STRING_EXPRESSION && expr.right.kind == STRING_EXPRESSION {
+		eval_compare_expression_string( expr, expr.left.u.string_value, expr.right.u.string_value)
+	}
+	return expr
+
+}
+func eval_compare_expression_boolean(expr Expression, left, right bool) {
+	if (expr->kind == EQ_EXPRESSION) {
+		expr->u.boolean_value = (left == right);
+	} else if (expr->kind == NE_EXPRESSION) {
+		expr->u.boolean_value = (left != right);
+	} else {
+		DBG_assert(0, ("expr->kind..%d\n", expr->kind));
+	}
+
+	expr->kind = BOOLEAN_EXPRESSION;
+	expr->type = dkc_alloc_type_specifier(DVM_BOOLEAN_TYPE);
+
+	return expr;
+}
+func eval_compare_expression_double(expr Expression , left,  right float64) {
+	if (expr->kind == EQ_EXPRESSION) {
+		expr->u.boolean_value = (left == right);
+	} else if (expr->kind == NE_EXPRESSION) {
+		expr->u.boolean_value = (left != right);
+	} else if (expr->kind == GT_EXPRESSION) {
+		expr->u.boolean_value = (left > right);
+	} else if (expr->kind == GE_EXPRESSION) {
+		expr->u.boolean_value = (left >= right);
+	} else if (expr->kind == LT_EXPRESSION) {
+		expr->u.boolean_value = (left < right);
+	} else if (expr->kind == LE_EXPRESSION) {
+		expr->u.boolean_value = (left <= right);
+	} else {
+		DBG_assert(0, ("expr->kind..%d\n", expr->kind));
+	}
+
+	expr->kind = BOOLEAN_EXPRESSION;
+	expr->type = dkc_alloc_type_specifier(DVM_BOOLEAN_TYPE);
+
+	return expr;
+}
+
+func eval_compare_expression_string(expr Expression, left,right string ) {
+	int cmp;
+
+	cmp = dvm_wcscmp(left, right);
+
+	if (expr->kind == EQ_EXPRESSION) {
+		expr->u.boolean_value = (cmp == 0);
+	} else if (expr->kind == NE_EXPRESSION) {
+		expr->u.boolean_value = (cmp != 0);
+	} else if (expr->kind == GT_EXPRESSION) {
+		expr->u.boolean_value = (cmp > 0);
+	} else if (expr->kind == GE_EXPRESSION) {
+		expr->u.boolean_value = (cmp >= 0);
+	} else if (expr->kind == LT_EXPRESSION) {
+		expr->u.boolean_value = (cmp < 0);
+	} else if (expr->kind == LE_EXPRESSION) {
+		expr->u.boolean_value = (cmp <= 0);
+	} else {
+		DBG_assert(0, ("expr->kind..%d\n", expr->kind));
+	}
+
+	MEM_free(left);
+	MEM_free(right);
+
+	expr->kind = BOOLEAN_EXPRESSION;
+	expr->type = dkc_alloc_type_specifier(DVM_BOOLEAN_TYPE);
+
+	return expr;
+}
+
+
+func checkArgument(currentBlock *Block, fd *FunctionDefinition, e Expression) {
+	ParameterList *param
+	ArgumentList *arg;
+
+	for param = fd.parameter, arg = expr.u.function_call_expression.argument; param && arg; param = param.next, arg = arg.next {
+		arg.expression = fix_expression(current_block, arg.expression);
+		createAssignCast(arg.expression, param.typeSpecifier)
+	}
+
+	if (param || arg) {
+		compileError(expr.line_number, ARGUMENT_COUNT_MISMATCH_ERR, MESSAGE_ARGUMENT_END);
+	}
+}
+
+
+type CastType int
+const (
+	BOOLEAN_TO_STRING_CAST  CastType = iota
+	NUMBER_TO_STRING_CAST
+)
+func allocCastExpression(t int, e Expression) {}

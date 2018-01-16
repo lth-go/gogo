@@ -82,5 +82,38 @@ func addReturnFunction(fd *FunctionDefinition) {
 }
 
 func addLocalVariable(fd *FunctionDefinition, decl *Declaration) {
+	fd.localVariable = []*Declaration{decl}
+}
 
+func searchDeclaration(name string, currentBlock *Block) *Declaration {
+
+	for b := currentBlock; b != nil; b = b.outerBlock {
+		for _, d := range b.declarationList {
+			if d.name == name {
+				return d
+			}
+		}
+	}
+
+	compiler := getCurrentCompiler()
+
+	for _, d := range compiler.declarationList {
+		if d.name == name {
+			return d
+		}
+	}
+
+	return nil
+
+}
+
+func searchFunction(name string) *FunctionDefinition {
+	compiler := getCurrentCompiler()
+
+	for _, pos := range compiler.funcList {
+		if pos.name == name {
+			return pos
+		}
+	}
+	return nil
 }

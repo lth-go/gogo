@@ -16,13 +16,24 @@ const (
 	StringType
 )
 
+// ==============================
+// 衍生类型
+// ==============================
+
+type TypeDerive interface {
+}
+
+type FunctionDerive struct {
+	parameterList *[]Parameter
+}
+
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
 	PosImpl
 	// 基本类型
 	basicType BasicType
-	// TODO 派生类型
-	//derive
+	// 派生类型
+	derive TypeDerive
 }
 
 // ==============================
@@ -58,15 +69,14 @@ type Block struct {
 
 // FunctionDefinition 函数定义
 type FunctionDefinition struct {
-	typeSpecifier      *TypeSpecifier
-	name               string
-	parameterList      []*Parameter
-	block              *Block
-	localVariableCount int
+	typeSpecifier *TypeSpecifier
+	name          string
+	parameterList []*Parameter
+	block         *Block
 
 	index int
 
-	declarationList []*Declaration
+	localVariable []*Declaration
 }
 
 func (fd *FunctionDefinition) typeS() *TypeSpecifier {

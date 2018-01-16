@@ -37,7 +37,6 @@ type ExpressionImpl struct {
 	PosImpl // ExprImpl provide Pos() function.
 
 	typeSpecifier *TypeSpecifier
-	lineNumber    int
 }
 
 // expr provide restraint interface.
@@ -84,9 +83,9 @@ type AssignExpression struct {
 }
 
 func (e *AssignExpression) fix(currentBlock *Block) {
-	t, ok := e.left.(*IdentifierExpression)
+	_, ok := e.left.(*IdentifierExpression)
 	if !ok {
-		compileError(e.left.lineNumber, 0, "")
+		compileError(e.left.Position(), 0, "")
 	}
 
 	e.left.fix(currentBlock)
@@ -122,7 +121,7 @@ func (e *BinaryExpression) fix(currentBlock *Block) {
 		} else if isString(e.left.typeS()) && isString(e.right.typeS()) {
 			e.typeSpecifier = &TypeSpecifier{basicType: StringType}
 		} else {
-			compileError(e.lineNumber, 0, "")
+			compileError(e.Position(), 0, "")
 		}
 
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
@@ -134,7 +133,7 @@ func (e *BinaryExpression) fix(currentBlock *Block) {
 		castBinaryExpression(e)
 
 		if e.left.typeS() != e.right.typeS() {
-			compileError(e.lineNumber, 0, "")
+			compileError(e.Position(), 0, "")
 		}
 		e.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 
@@ -147,7 +146,7 @@ func (e *BinaryExpression) fix(currentBlock *Block) {
 
 		} else {
 
-			compileError(e.lineNumber, 0, "")
+			compileError(e.Position(), 0, "")
 		}
 	}
 }
@@ -168,7 +167,7 @@ func (e *MinusExpression) fix(currentBlock *Block) {
 
 	n, ok := e.operand.(*NumberExpression)
 	if !ok {
-		compileError(e.lineNumber, 0, "")
+		compileError(e.Position(), 0, "")
 	}
 
 	e.typeSpecifier = e.operand.typeS()
@@ -191,7 +190,7 @@ func (e *LogicalNotExpression) fix(currentBlock *Block) {
 
 	b, ok := e.operand.(*BooleanExpression)
 	if !ok {
-		compileError(e.lineNumber, 0, "")
+		compileError(e.Position(), 0, "")
 	}
 
 	b.booleanValue = !b.booleanValue
@@ -218,25 +217,16 @@ func (e *FunctionCallExpression) fix(currentBlock *Block) {
 
 	fd := searchFunction(e.name)
 	if fd == nil {
-		compileError(e.lineNumber, 0, "")
+		compileError(e.Position(), 0, "")
 
 		checkArgument(currentBlock, fd, e)
 
-		e.typeSpecifier = &TypeSpecifier{basicType: fd.typeS()}
+		e.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
 		// TODO
 		//expr->type->derive = fd->type->derive;
 	}
 }
 
-// Boolean 布尔类型
-type Boolean int
-
-const (
-	// BooleanTrue true
-	BooleanTrue Boolean = iota
-	// BooleanFalse false
-	BooleanFalse
-)
 
 // ==============================
 // BooleanExpression
@@ -246,7 +236,7 @@ const (
 type BooleanExpression struct {
 	ExpressionImpl
 	typeSpecifier *TypeSpecifier
-	booleanValue  Boolean
+	booleanValue  bool
 }
 
 func (e *BooleanExpression) fix(currentBlock *Block) {
@@ -305,7 +295,7 @@ func (e *IdentifierExpression) fix(currentBlock *Block) {
 	}
 	fd := searchFunction(e.name)
 	if fd == nil {
-		compileError(e.lineNumber, 0, "")
+		compileError(e.Position(), 0, "")
 	}
 	e.typeSpecifier = fd.typeS()
 
@@ -328,40 +318,43 @@ func isString(t *TypeSpecifier) bool {
 	return t.basicType == StringType
 }
 
-func createAssignCast(e Expression, t *TypeSpecifier) {
-
+func createAssignCast(e Expression, t *TypeSpecifier) Expression {
+	return nil
 }
 
 func evalMathExpression(currentBlock *Block, e Expression) {
 
 }
 
-func castBinaryExpression(e *Expression) {
+func castBinaryExpression(e Expression) {
 
 }
 
-func evalCompareExpression(e *Expression) {}
+func evalCompareExpression(e Expression) {}
 
-func searchFunction(name string) *FunctionDefinition {}
+func searchFunction(name string) *FunctionDefinition {
+	return nil
+}
 
 func searchDeclaration(name string, currentBlock *Block) *Declaration {
-    for (b_pos = block; b_pos; b_pos = b_pos->outer_block) {
-        for (d_pos = b_pos->declaration_list; d_pos; d_pos = d_pos->next) {
-            if (!strcmp(identifier, d_pos->declaration->name)) {
-                return d_pos->declaration;
-            }
-        }
-    }
 
-    compiler = dkc_get_current_compiler();
+	for b := currentBlock; b != nil; b = b.outerBlock {
+		for _, d := range b.declarationList {
+			if d.name == name {
+				return d
+			}
+		}
+	}
 
-    for (d_pos = compiler->declaration_list; d_pos; d_pos = d_pos->next) {
-        if (!strcmp(identifier, d_pos->declaration->name)) {
-            return d_pos->declaration;
-        }
-    }
+	compiler := getCurrentCompiler()
 
-    return nil
+	for _, d := range compiler.declarationList {
+		if d.name == name {
+			return d
+		}
+	}
+
+	return nil
 
 }
 

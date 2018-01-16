@@ -45,18 +45,18 @@ func addParameterAsDeclaration(fd *FunctionDefinition) {
 }
 
 func addDeclaration(currentBlock *Block, decl *Declaration, fd *FunctionDefinition, pos Position) {
-	if searchDeclaration(decl.name, currentBlock) {
+	if searchDeclaration(decl.name, currentBlock) != nil {
 		compileError(pos, 0, "")
 	}
 
 	if currentBlock != nil {
 		currentBlock.declarationList = append(currentBlock.declarationList, decl)
 		addLocalVariable(fd, decl)
-		decl.isLocal = BooleanTrue
+		decl.isLocal = true
 	} else {
 		compiler := getCurrentCompiler()
 		compiler.declarationList = append(compiler.declarationList, decl)
-		decl.isLocal = BooleanFalse
+		decl.isLocal = false
 	}
 
 }
@@ -70,8 +70,8 @@ func addReturnFunction(fd *FunctionDefinition) {
 		return
 	}
 
-	last := fd.block.statementList[-1]
-	_, ok := last.(ReturnStatement)
+	last := fd.block.statementList[len(fd.block.statementList)-1]
+	_, ok := last.(*ReturnStatement)
 	if ok {
 		return
 	}
@@ -79,4 +79,8 @@ func addReturnFunction(fd *FunctionDefinition) {
 	ret.fix(fd.block, fd)
 	fd.block.statementList = append(fd.block.statementList, ret)
 	return
+}
+
+func addLocalVariable(fd *FunctionDefinition, decl *Declaration) {
+
 }

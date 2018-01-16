@@ -59,7 +59,7 @@ definition_or_statement
         | statement
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.compiler.stmts = append(l.compiler.stmts, $1)
+                l.compiler.statementList = append(l.compiler.statementList, $1)
             }
         }
         ;
@@ -276,22 +276,22 @@ primary_expression
         }
         | DOUBLE_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: BooleanTrue}
+            $$ = &BooleanExpression{booleanValue: true}
             $$.SetPosition($1.Position())
         }
         | STRING_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: BooleanTrue}
+            $$ = &BooleanExpression{booleanValue: true}
             $$.SetPosition($1.Position())
         }
         | TRUE_T
         {
-            $$ = &BooleanExpression{booleanValue: BooleanTrue}
+            $$ = &BooleanExpression{booleanValue: true}
             $$.SetPosition($1.Position())
         }
         | FALSE_T
         {
-            $$ = &BooleanExpression{booleanValue: BooleanFalse}
+            $$ = &BooleanExpression{booleanValue: false}
             $$.SetPosition($1.Position())
         }
         ;
@@ -384,12 +384,12 @@ continue_statement
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2.Lit}
+            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit}
             $$.SetPosition($1.Position())
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = &DeclarationStatement{typeSpecifier: $1, name: $2.Lit, initializer: $4}
+            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit, initializer: $4}
             $$.SetPosition($1.Position())
         }
         ;

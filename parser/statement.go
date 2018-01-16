@@ -46,16 +46,6 @@ type StatementImpl struct {
 // stmt provide restraint interface.
 func (s *StatementImpl) stmt() {}
 
-// Declaration 变量声明
-type Declaration struct {
-	name          string
-	typeSpecifier *TypeSpecifier
-
-	initializer   Expression
-	variableIndex int
-	isLocal       Boolean
-}
-
 // Block 块接口
 type Block struct {
 	BlockType       int
@@ -184,13 +174,13 @@ type ReturnStatement struct {
 }
 
 func (s *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	s.returnValue.fix(current_block)
+	s.returnValue.fix(currentBlock)
 
 	if s.returnValue == nil {
 		switch fd.typeSpecifier.basicType {
 		case BooleanType:
 			s.returnValue = &BooleanExpression{
-				booleanValue:  BooleanFalse,
+				booleanValue:  false,
 				typeSpecifier: &TypeSpecifier{basicType: BooleanType},
 			}
 			return
@@ -240,11 +230,11 @@ func (s *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 }
 
 // ==============================
-// DeclarationStatement
+// Declaration
 // ==============================
 
-// DeclarationStatement 声明语句
-type DeclarationStatement struct {
+// Declaration 声明语句
+type Declaration struct {
 	StatementImpl
 	typeSpecifier *TypeSpecifier
 	name          string
@@ -253,25 +243,25 @@ type DeclarationStatement struct {
 	isLocal bool
 }
 
-func (s *DeclarationStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	if searchDeclaration(s.name, currentBlock) {
-		compileError(s.lineNumber, 0, "")
+func (s *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
+	if searchDeclaration(s.name, currentBlock) != nil {
+		compileError(s.Position(), 0, "")
 	}
 
-	if currentBlock {
+	if currentBlock != nil {
 		currentBlock.declarationList = append(currentBlock.declarationList, s)
 		addLocalVariable(fd, s)
-		s.isLocal = BooleanTrue
+		s.isLocal = true
 	} else {
 		compiler := getCurrentCompiler()
 		compiler.declarationList = append(compiler.declarationList, s)
-		s.isLocal = BooleanFalse
+		s.isLocal = false
 	}
 
 	s.initializer.fix(currentBlock)
 
 	// 类型转换
-	if s.initializer {
-		s.initializer = create_assign_cast(s.initializer, s.typeSpecifier)
+	if s.initializer != nil {
+		s.initializer = createAssignCast(s.initializer, s.typeSpecifier)
 	}
 }

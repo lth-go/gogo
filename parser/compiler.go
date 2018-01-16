@@ -16,7 +16,7 @@ type Compiler struct {
 	funcList []*FunctionDefinition
 
 	// 声明列表
-	declarationList []*DeclarationStatement
+	declarationList []*Declaration
 
 	// 当前行数
 	currentLineNumber int
@@ -33,7 +33,7 @@ func newCompiler() *Compiler {
 	c := &Compiler{
 		statementList:           []Statement{},
 		funcList:        []*FunctionDefinition{},
-		declarationList: []*DeclarationStatement{},
+		declarationList: []*Declaration{},
 	}
 	setCurrentCompiler(c)
 	return c

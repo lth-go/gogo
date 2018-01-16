@@ -27,24 +27,29 @@ type Expression interface {
 	Pos
 	expr()
 
-	fix(*Block)
+	fix(*Block) Expression
 
 	typeS() *TypeSpecifier
+	setType(*TypeSpecifier)
 }
 
 // ExpressionImpl provide commonly implementations for Expr.
 type ExpressionImpl struct {
 	PosImpl // ExprImpl provide Pos() function.
 
+	// 类型
 	typeSpecifier *TypeSpecifier
 }
 
 // expr provide restraint interface.
-func (e *ExpressionImpl) expr() {}
+func (expr *ExpressionImpl) expr() {}
 
-func (e *ExpressionImpl) typeS() *TypeSpecifier {
-	return e.typeSpecifier
+func (expr *ExpressionImpl) typeS() *TypeSpecifier {
+	return expr.typeSpecifier
+}
 
+func (expr *ExpressionImpl) setType(t *TypeSpecifier) {
+	expr.typeSpecifier = t
 }
 
 // ==============================
@@ -59,12 +64,12 @@ type CommaExpression struct {
 	right Expression
 }
 
-func (e *CommaExpression) fix(currentBlock *Block) {
+func (expr *CommaExpression) fix(currentBlock *Block) Expression {
 
-	e.left.fix(currentBlock)
-	e.right.fix(currentBlock)
-	e.typeSpecifier = e.right.typeS()
-
+	expr.left = expr.left.fix(currentBlock)
+	expr.right = expr.right.fix(currentBlock)
+	expr.typeSpecifier = expr.right.typeS()
+	return expr
 }
 
 // ==============================
@@ -82,16 +87,17 @@ type AssignExpression struct {
 	operand Expression
 }
 
-func (e *AssignExpression) fix(currentBlock *Block) {
-	_, ok := e.left.(*IdentifierExpression)
+func (expr *AssignExpression) fix(currentBlock *Block) Expression {
+	_, ok := expr.left.(*IdentifierExpression)
 	if !ok {
-		compileError(e.left.Position(), 0, "")
+		compileError(expr.left.Position(), 0, "")
 	}
 
-	e.left.fix(currentBlock)
-	e.operand.fix(currentBlock)
-	createAssignCast(e.operand, e.left.typeS())
-	e.typeSpecifier = e.left.typeS()
+	expr.left = expr.left.fix(currentBlock)
+	operand := expr.operand.fix(currentBlock)
+	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
+	expr.typeSpecifier = expr.left.typeS()
+	return expr
 
 }
 
@@ -102,52 +108,70 @@ func (e *AssignExpression) fix(currentBlock *Block) {
 // BinaryExpression 二元表达式
 type BinaryExpression struct {
 	ExpressionImpl
+
+	// 操作符
 	operator BinaryOperatorKind
 	left     Expression
 	right    Expression
 }
 
-func (e *BinaryExpression) fix(currentBlock *Block) {
-	switch e.operator {
+func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
+	switch expr.operator {
+		// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
-		e.left.fix(currentBlock)
-		e.right.fix(currentBlock)
+		expr.left = expr.left.fix(currentBlock)
+		expr.right = expr.right.fix(currentBlock)
 
-		evalMathExpression(currentBlock, e)
-		castBinaryExpression(e)
+		expr = evalMathExpression(currentBlock, expr)
 
-		if isNumber(e.left.typeS()) && isNumber(e.right.typeS()) {
-			e.typeSpecifier = &TypeSpecifier{basicType: NumberType}
-		} else if isString(e.left.typeS()) && isString(e.right.typeS()) {
-			e.typeSpecifier = &TypeSpecifier{basicType: StringType}
+		switch expr.(type) {
+		case NumberExpression, StringExpression:
+			return expr
+		}
+
+		expr = castBinaryExpression(expr)
+
+		if isNumber(expr.left.typeS()) && isNumber(expr.right.typeS()) {
+			expr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
+		} else if isString(expr.left.typeS()) && isString(expr.right.typeS()) {
+			expr.typeSpecifier = &TypeSpecifier{basicType: StringType}
 		} else {
-			compileError(e.Position(), 0, "")
+			compileError(expr.Position(), 0, "")
 		}
 
+		return expr
+
+		// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
-		e.left.fix(currentBlock)
-		e.right.fix(currentBlock)
+		expr.left = expr.left.fix(currentBlock)
+		expr.right = expr.right.fix(currentBlock)
 
-		evalCompareExpression(e)
+		expr = evalCompareExpression(expr)
 
-		castBinaryExpression(e)
-
-		if e.left.typeS() != e.right.typeS() {
-			compileError(e.Position(), 0, "")
+		switch expr.(type) {
+		case BooleanExpression:
+			return expr
 		}
-		e.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+
+		expr = castBinaryExpression(expr)
+
+		if (expr.left.typeS().basicType != expr.right.typeS().basicType) || expr.left.typeS().derive != nil || expr.right.typeS.derive != nil {
+			compileError(expr.Position(), 0, "")
+		}
+		expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+
+		return expr
 
 	case LogicalAndOperator, LogicalOrOperator:
-		e.left.fix(currentBlock)
-		e.right.fix(currentBlock)
+		expr = expr.left.fix(currentBlock)
+		expr = expr.right.fix(currentBlock)
 
-		if isBoolean(e.left.typeS()) && isBoolean(e.right.typeS()) {
-			e.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
-
+		if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
+			expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 		} else {
-
-			compileError(e.Position(), 0, "")
+			compileError(expr.Position(), 0, "")
 		}
+		return expr
 	}
 }
 
@@ -158,21 +182,24 @@ func (e *BinaryExpression) fix(currentBlock *Block) {
 // MinusExpression 负数表达式
 type MinusExpression struct {
 	ExpressionImpl
+
 	operand Expression
 }
 
-func (e *MinusExpression) fix(currentBlock *Block) {
-	// TODO 是否能去掉
-	e.operand.fix(currentBlock)
+func (expr *MinusExpression) fix(currentBlock *Block) Expression {
+	newExpr := expr.operand.fix(currentBlock)
 
-	n, ok := e.operand.(*NumberExpression)
-	if !ok {
-		compileError(e.Position(), 0, "")
+	if !isNumber(newExpr.typeS()) {
+		compileError(expr.Position(), 0, "")
 	}
+	newExpr.setType(expr.operand.typeS())
 
-	e.typeSpecifier = e.operand.typeS()
+	kind, ok := newExpr.(NumberType)
+	if ok {
+		kind.numberValue = -kind.numberValue
+	}
+	return newExpr
 
-	n.numberValue = -n.numberValue
 }
 
 // ==============================
@@ -185,17 +212,18 @@ type LogicalNotExpression struct {
 	operand Expression
 }
 
-func (e *LogicalNotExpression) fix(currentBlock *Block) {
-	e.operand.fix(currentBlock)
+func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
+	expr.operand.fix(currentBlock)
 
-	b, ok := e.operand.(*BooleanExpression)
+	b, ok := expr.operand.(*BooleanExpression)
 	if !ok {
-		compileError(e.Position(), 0, "")
+		return
 	}
 
-	b.booleanValue = !b.booleanValue
+	// TODO 增加返回值，返回*BooleanExpression
+	//b.booleanValue = !b.booleanValue
 
-	e.typeSpecifier = e.operand.typeS()
+	//expr.typeSpecifier = expr.operand.typeS()
 
 }
 
@@ -206,22 +234,26 @@ func (e *LogicalNotExpression) fix(currentBlock *Block) {
 // FunctionCallExpression 函数调用表达式
 type FunctionCallExpression struct {
 	ExpressionImpl
-	function Expression
-	argument []Expression
 
+	// TODO 除去函数名
+	// 函数名
 	name string
+	// 实参列表
+	argument []Expression
+	// TODO
+	function Expression
 }
 
-func (e *FunctionCallExpression) fix(currentBlock *Block) {
-	e.function.fix(currentBlock)
+func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
+	expr.function.fix(currentBlock)
 
-	fd := searchFunction(e.name)
+	fd := searchFunction(expr.name)
 	if fd == nil {
-		compileError(e.Position(), 0, "")
+		compileError(expr.Position(), 0, "")
 
-		checkArgument(currentBlock, fd, e)
+		checkArgument(currentBlock, fd, expr)
 
-		e.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
+		expr.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
 		// TODO
 		//expr.type.derive = fd.type.derive
 	}
@@ -234,12 +266,12 @@ func (e *FunctionCallExpression) fix(currentBlock *Block) {
 // BooleanExpression 布尔表达式
 type BooleanExpression struct {
 	ExpressionImpl
-	typeSpecifier *TypeSpecifier
+
 	booleanValue  bool
 }
 
-func (e *BooleanExpression) fix(currentBlock *Block) {
-	e.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
+	expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 }
 
 // ==============================
@@ -249,12 +281,12 @@ func (e *BooleanExpression) fix(currentBlock *Block) {
 // NumberExpression 数字表达式
 type NumberExpression struct {
 	ExpressionImpl
-	typeSpecifier *TypeSpecifier
+
 	numberValue   float64
 }
 
-func (e *NumberExpression) fix(currentBlock *Block) {
-	e.typeSpecifier = &TypeSpecifier{basicType: NumberType}
+func (expr *NumberExpression) fix(currentBlock *Block) Expression {
+	expr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
 
 }
 
@@ -265,12 +297,11 @@ func (e *NumberExpression) fix(currentBlock *Block) {
 // StringExpression 字符串表达式
 type StringExpression struct {
 	ExpressionImpl
-	typeSpecifier *TypeSpecifier
 	stringValue   string
 }
 
-func (e *StringExpression) fix(currentBlock *Block) {
-	e.typeSpecifier = &TypeSpecifier{basicType: StringType}
+func (expr *StringExpression) fix(currentBlock *Block) Expression {
+	expr.typeSpecifier = &TypeSpecifier{basicType: StringType}
 }
 
 // ==============================
@@ -283,20 +314,20 @@ type IdentifierExpression struct {
 	name string
 }
 
-func (e *IdentifierExpression) fix(currentBlock *Block) {
+func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 
-	decl := searchDeclaration(e.name, currentBlock)
+	decl := searchDeclaration(expr.name, currentBlock)
 	if decl != nil {
-		e.typeSpecifier = decl.typeSpecifier
+		expr.typeSpecifier = decl.typeSpecifier
 		//expr.u.identifier.is_function = DVM_FALSE
 		//expr.u.identifier.u.declaration = decl
 		return
 	}
-	fd := searchFunction(e.name)
+	fd := searchFunction(expr.name)
 	if fd == nil {
-		compileError(e.Position(), 0, "")
+		compileError(expr.Position(), 0, "")
 	}
-	e.typeSpecifier = fd.typeS()
+	expr.typeSpecifier = fd.typeS()
 
 	//expr.u.identifier.is_function = DVM_TRUE
 	//expr.u.identifier.u.function = fd

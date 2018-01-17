@@ -255,12 +255,12 @@ postfix_expression
         : primary_expression
         | postfix_expression LP argument_list RP
         {
-            $$ = &FunctionCallExpression{function: $1, argument: $3}
+            $$ = &FunctionCallExpression{function: $1, argumentList: $3}
             $$.SetPosition($1.Position())
         }
         | postfix_expression LP RP
         {
-            $$ = &FunctionCallExpression{function: $1, argument: nil}
+            $$ = &FunctionCallExpression{function: $1, argumentList: nil}
             $$.SetPosition($1.Position())
         }
         ;

@@ -46,6 +46,7 @@ type Statement interface {
 	Pos
 
 	fix(*Block, *FunctionDefinition)
+	generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf)
 }
 
 // StatementImpl provide commonly implementations for Stmt..
@@ -57,14 +58,31 @@ type StatementImpl struct {
 // stmt provide restraint interface.
 func (s *StatementImpl) stmt() {}
 
+//
 // Block 块接口
+//
+
+type BlockInfo interface{}
+
+type StatementBlockInfo struct {
+	statement      Statement
+	continue_label int
+	break_label    int
+}
+
+type FunctionBlockInfo struct {
+	function  *FunctionDefinition
+	end_label int
+}
+
 type Block struct {
 	BlockType       int
 	outerBlock      *Block
 	statementList   []Statement
 	declarationList []*Declaration
-	// TODO
-	// parent
+
+	// 块信息，函数块，还是条件语句
+	parent BlockInfo
 }
 
 // FunctionDefinition 函数定义
@@ -112,6 +130,17 @@ func (s *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	s.expression.fix(currentBlock)
 }
 
+func (stmt *ExpressionStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr := stmt.expression
+	switch expr.(type) {
+	case *AssignExpression:
+		expr.generate(exe, currentBlock, ob, true)
+	default:
+		expr.generate(exe, currentBlock, ob)
+		generateCode(ob, expr.Position(), POP)
+	}
+}
+
 // ==============================
 // IfStatement
 // ==============================
@@ -145,6 +174,36 @@ func (s *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 }
 
+func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	stmt.condition.generate(exe, currentBlock, ob)
+
+	if_false_label = get_label(ob)
+
+	generate_code(ob, stmt.Position(), JUMP_IF_FALSE, if_false_label)
+
+	generate_statement_list(exe, stmt.thenBlock, stmt.thenBlock.statementList, ob)
+	end_label = get_label(ob)
+	generate_code(ob, statement.Position(), DVM_JUMP, end_label)
+
+	set_label(ob, if_false_label)
+
+	for _, elif := range stmt.elifList {
+		elif.condition.generate(exe, currentBlock, ob)
+		if_false_label = get_label(ob)
+		generate_code(ob, statement.Position(), DVM_JUMP_IF_FALSE, if_false_label)
+
+		generate_statement_list(exe, elif.block, elif.block.statementList, ob)
+		generate_code(ob, statement.Position(), DVM_JUMP, end_label)
+		set_label(ob, if_false_label)
+	}
+	if stmt.elseBlock != nil {
+		generate_statement_list(exe, if_s.else_block, if_s.else_block.statement_list, ob)
+	}
+	set_label(ob, end_label)
+
+}
+
 // Elif ...
 type Elif struct {
 	condition Expression
@@ -158,6 +217,8 @@ type Elif struct {
 // ForStatement for语句
 type ForStatement struct {
 	StatementImpl
+
+	label     string
 	init      Expression
 	condition Expression
 	post      Expression
@@ -169,6 +230,41 @@ func (s *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	s.condition.fix(currentBlock)
 	s.post.fix(currentBlock)
 	fixStatementList(s.block, s.block.statementList, fd)
+
+}
+func (stmt *ForStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	if stmt.init != nil {
+		stmt.generate(exe, currentBlock, ob)
+	}
+	loop_label = get_label(ob)
+	set_label(ob, loop_label)
+
+	if stmt.condition != nil {
+		stmt.condition.generate(exe, currentBlock, ob)
+	}
+
+	parent, ok := stmt.block.parent.(*StatementBlockInfo)
+	if !ok {
+		compileError(stmt.Position(), 0, "")
+	}
+
+	parent.break_label = get_label(ob)
+	parent.continue_label = get_label(ob)
+
+	if stmt.condition != nil {
+		generate_code(ob, stmt.Position(), DVM_JUMP_IF_FALSE, parent.break_label)
+	}
+
+	generate_statement_list(exe, stmt.block, stmt.block.statementList, ob)
+	set_label(ob, parent.continue_label)
+
+	if stmt.post != nil {
+		stmt.post.generate(exe, currentBlock, ob)
+	}
+
+	generate_code(ob, statement.Position(), DVM_JUMP, loop_label)
+	set_label(ob, parent.break_label)
 
 }
 
@@ -213,6 +309,16 @@ func (s *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	createAssignCast(s.returnValue, fd.typeSpecifier)
 }
 
+func (stmt *ReturnStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	if stmt.returnValue == nil {
+		compileError(stmt.Position(), 0, "")
+	}
+
+	stmt.returnValue.generate(exe, currentBlock, ob)
+	generate_code(ob, stmt.Position(), DVM_RETURN)
+
+}
+
 // ==============================
 // BreakStatement
 // ==============================
@@ -220,9 +326,44 @@ func (s *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 // BreakStatement break 语句
 type BreakStatement struct {
 	StatementImpl
+
+	label string
 }
 
-func (s *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
+func (s *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
+
+func (stmt *BreakStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var parent *StatementBlockInfo
+
+	for block_p := currentBlock; block_p != nil; block_p = block_p.outerBlock {
+		parent, ok := block_p.parent.(*StatementBlockInfo)
+		if !ok {
+			continue
+		}
+
+		if stmt.label == "" {
+			break
+		}
+
+		parentFor, ok := parent.statement.(*ForStatement)
+		if !ok {
+			compileError(stmt.Position(), 0, "")
+		}
+		if parentFor.label == "" {
+			continue
+		}
+
+		if stmt.label != parentFor.label {
+			break
+		}
+
+	}
+
+	if block_p == nil {
+		compileError(stmt.Position(), 0, "")
+	}
+
+	generate_code(ob, statement.Position(), DVM_JUMP, parent.break_label)
 
 }
 
@@ -233,9 +374,43 @@ func (s *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 // ContinueStatement continue 语句
 type ContinueStatement struct {
 	StatementImpl
+
+	label string
 }
 
 func (s *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
+
+}
+func (stmt *ContinueStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var parent *StatementBlockInfo
+
+	for block_p := currentBlock; block_p != nil; block_p = block_p.outerBlock {
+		parent, ok := block_p.parent.(*StatementBlockInfo)
+		if !ok {
+			continue
+		}
+
+		if stmt.label == "" {
+			break
+		}
+
+		parentFor, ok := parent.statement.(*ForStatement)
+		if !ok {
+			compileError(stmt.Position(), 0, "")
+		}
+		if parentFor.label == "" {
+			continue
+		}
+
+		if stmt.label != parentFor.label {
+			break
+		}
+	}
+
+	if block_p == nil {
+		dkc_compile_error(statement.Position(), 0, "")
+	}
+	generate_code(ob, statement.Position(), DVM_JUMP, block_p.parent.statement.continue_label)
 
 }
 
@@ -247,8 +422,9 @@ func (s *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 type Declaration struct {
 	StatementImpl
 	typeSpecifier *TypeSpecifier
-	name          string
-	initializer   Expression
+
+	name        string
+	initializer Expression
 
 	isLocal bool
 }
@@ -274,4 +450,12 @@ func (s *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if s.initializer != nil {
 		s.initializer = createAssignCast(s.initializer, s.typeSpecifier)
 	}
+}
+func (stmt *Declaration) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	if stmt.initializer == nil {
+		return
+	}
+
+	stmt.initializer.generate(exe, currentBlock, ob)
+	generate_pop_to_identifier(decl, statement.Position(), ob)
 }

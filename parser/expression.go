@@ -32,6 +32,7 @@ type Expression interface {
 	expr()
 
 	fix(*Block) Expression
+	generate(*Executable, *Block, *OpcodeBuf, ...int)
 
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
@@ -120,55 +121,59 @@ type BinaryExpression struct {
 }
 
 func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
+	var newExpr Expression
+
 	switch expr.operator {
 	// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
 
-		newExpr := evalMathExpression(currentBlock, expr)
+		// 能否合并计算
+		newExpr = evalMathExpression(currentBlock, expr)
 
 		switch newExpr.(type) {
 		case *NumberExpression, *StringExpression:
 			return newExpr
 		}
 
+		// 类型转换
 		newExpr = castBinaryExpression(expr)
 
-		if isNumber(expr.left.typeS()) && isNumber(expr.right.typeS()) {
-			expr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
-		} else if isString(expr.left.typeS()) && isString(expr.right.typeS()) {
-			expr.typeSpecifier = &TypeSpecifier{basicType: StringType}
+		if isNumber(newExpr.left.typeS()) && isNumber(newExpr.right.typeS()) {
+			newExpr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
+		} else if isString(newExpr.left.typeS()) && isString(newExpr.right.typeS()) {
+			newExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
 		} else {
 			compileError(expr.Position(), 0, "")
 		}
 
-		return expr
+		return newExpr
 
 	// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
 
-		expr = evalCompareExpression(expr)
+		newExpr = evalCompareExpression(expr)
 
-		switch expr.(type) {
+		switch newExpr.(type) {
 		case BooleanExpression:
-			return expr
+			return newExpr
 		}
 
-		expr = castBinaryExpression(expr)
+		newExpr = castBinaryExpression(expr)
 
-		if (expr.left.typeS().basicType != expr.right.typeS().basicType) || expr.left.typeS().derive != nil || expr.right.typeS.derive != nil {
+		if (newExpr.left.typeS().basicType != newExpr.right.typeS().basicType) || newExpr.left.typeS().derive != nil || newExpr.right.typeS.derive != nil {
 			compileError(expr.Position(), 0, "")
 		}
-		expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+		newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 
-		return expr
+		return newExpr
 
 	case LogicalAndOperator, LogicalOrOperator:
-		expr = expr.left.fix(currentBlock)
-		expr = expr.right.fix(currentBlock)
+		expr.left = expr.left.fix(currentBlock)
+		expr.right = expr.right.fix(currentBlock)
 
 		if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
 			expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
@@ -191,19 +196,22 @@ type MinusExpression struct {
 }
 
 func (expr *MinusExpression) fix(currentBlock *Block) Expression {
-	newExpr := expr.operand.fix(currentBlock)
+	var newExpr Expression
+	newExpr = expr.operand.fix(currentBlock)
 
 	if !isNumber(newExpr.typeS()) {
 		compileError(expr.Position(), 0, "")
 	}
-	newExpr.setType(expr.operand.typeS())
 
 	kind, ok := newExpr.(NumberType)
 	if ok {
 		kind.numberValue = -kind.numberValue
+		return newExpr
 	}
-	return newExpr
 
+	expr.setType(newExpr.typeS())
+
+	return expr
 }
 
 // ==============================
@@ -229,9 +237,9 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), 0, "")
 	}
 
-	//newExpr.setType(expr.operand.typeS())
+	expr.setType(newExpr.typeS())
 
-	return newExpr
+	return Expr
 }
 
 // ==============================
@@ -245,12 +253,11 @@ type FunctionCallExpression struct {
 	// 函数名
 	function Expression
 	// 实参列表
-	// TODO 改成argumentList
 	argumentList []Expression
 }
 
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
-	funcExpr = expr.function.fix(currentBlock)
+	funcExpr := expr.function.fix(currentBlock)
 	identifierExpr, ok := funcExpr.(*IdentifierExpression)
 	if !ok {
 		compileError(expr.Position(), 0, "")
@@ -264,6 +271,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	checkArgument(currentBlock, fd, expr)
 
 	expr.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
+
 	// TODO
 	expr.typeSpecifier.derive = fd.typeS().derive
 	return expr
@@ -328,8 +336,10 @@ type IdentifierExpression struct {
 
 	name string
 
+	// 是否可以去除
 	isFunction bool
 
+	// 声明要么是变量，要么是函数
 	function    *FunctionDefinition
 	declaration *Declaration
 }
@@ -414,9 +424,9 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	}
 
 	// number 运算
-	leftNumberExpr, ok := binaryExpr.left.(NumberType)
+	leftNumberExpr, ok := binaryExpr.left.(NumberExpression)
 	if ok {
-		rightNumberExpr, ok := binaryExpr.right.(NumberType)
+		rightNumberExpr, ok := binaryExpr.right.(NumberExpression)
 		if ok {
 			newExpr := evalMathExpressionNumber(binaryExpr, leftNumberExpr.numberValue, rightNumberExpr.numberValue)
 			return newExpr
@@ -424,7 +434,7 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	}
 
 	// 字符串链接
-	leftNumberExpr, ok := binaryExpr.left.(StringType)
+	leftStringExpr, ok := binaryExpr.left.(StringExpression)
 	if ok {
 		newExpr := chainString(expr)
 	}

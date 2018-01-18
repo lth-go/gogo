@@ -1,59 +1,93 @@
 package parser
 
+type OpcodeBuf struct {
+	size       int
+	alloc_size int
+	code       string
+	LabelTable *label_table
+	lineNumber []*LineNumber
+}
+
 func generate(compiler *Compiler) *Executable {
 	exe := newExecutable()
 
 	addGlobalVariable(compiler, exe)
-	add_functions(compiler, exe)
-	add_top_level(compiler, exe)
+	addFunctions(compiler, exe)
+	addTopLevel(compiler, exe)
 
 	return exe
 }
 
 func addGlobalVariable(compiler *Compiler, exe *Executable) {
+	var v *Variable
 
 	exe.globalVariableList = []*Variable{}
 
-	for i, dl := range compiler.declarationList {
-		exe.globalVariableList[i].name = dl.name
-		exe.globalVariableList[i].typeSpecifier = copy_type_specifier(dl.typeSpecifier)
+	for _, dl := range compiler.declarationList {
+		v = &Variable{
+			name:          dl.name,
+			typeSpecifier: copy_type_specifier(dl.typeSpecifier),
+		}
+
+		exe.globalVariableList = append(exe.globalVariableList, v)
 	}
 }
 
-func add_functions(compiler *Compiler, exe *Executable) {
+// 为每个函数生成所需的信息
+func addFunctions(compiler *Compiler, exe *Executable) {
 
 	var ob OpcodeBuf
 
-	for i, fd := range compiler.funcList {
-		copy_function(fd, &exe.functionList[i])
+	var f *Function
+
+	for _, fd := range compiler.funcList {
+		f = &Function{}
+		exe.functionList = append(exe.functionList, f)
+
+		copyFunction(fd, f)
 		if fd.block == nil {
 			// 原生函数
-			exe.functionList[i].is_implemented = DVM_FALSE
+			f.isImplemented = false
 			continue
 		}
 
 		init_opcode_buf(&ob)
-		generate_statement_list(exe, fd.block, fd.block.statementList, &ob)
+		generateStatementList(exe, fd.block, fd.block.statementList, &ob)
 
-		exe.functionList[i].is_implemented = true
-		exe.functionList[i].code_size = ob.size
-		exe.functionList[i].code = fix_opcode_buf(&ob)
-		exe.functionList[i].line_number_size = ob.line_number_size
-		exe.functionList[i].line_number = ob.line_number
-		exe.functionList[i].need_stack_size = calc_need_stack_size(exe.functionList[i].code, exe.functionList[i].code_size)
+		f.isImplemented = true
+		f.code_size = ob.size
+		f.code = fix_opcode_buf(&ob)
+		f.lineNumber_size = ob.lineNumber_size
+		f.lineNumber = ob.lineNumber
+		f.need_stack_size = calc_need_stack_size(f.code, f.code_size)
 	}
-
 }
 
-func add_top_level(compiler *Compiler, exe *Executable) {
+// 生成解释器所需的信息
+func addTopLevel(compiler *Compiler, exe *Executable) {
 	var ob OpcodeBuf
 
 	init_opcode_buf(&ob)
-	generate_statement_list(exe, nil, compiler.statementList, &ob)
+	generateStatementList(exe, nil, compiler.statementList, &ob)
 
 	exe.code_size = ob.size
 	exe.code = fix_opcode_buf(&ob)
-	exe.line_number_size = ob.line_number_size
-	exe.line_number = ob.line_number
+	exe.lineNumber_size = ob.lineNumber_size
+	exe.lineNumber = ob.lineNumber
 	exe.need_stack_size = calc_need_stack_size(exe.code, exe.code_size)
+}
+
+func generateCode(ob []*Opcode, LineNumber int, code Opcode, rest ...int) {
+
+}
+
+//
+// generateStatementList
+//
+
+func generateStatementList(exe *Executable, currentBlock *Block, statementList []*Statement, ob *OpcodeBuf) {
+
+	for _, pos := range statementList {
+		statement.generate(exe, currentBlock, ob)
+	}
 }

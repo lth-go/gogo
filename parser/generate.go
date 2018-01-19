@@ -8,6 +8,18 @@ type OpcodeBuf struct {
 	lineNumber []*LineNumber
 }
 
+func init_opcode_buf(ob *OpcodeBuf) {
+	// TODO
+	ob.size = 0
+	ob.alloc_size = 0
+	ob.code = NULL
+	ob.label_table_size = 0
+	ob.label_table_alloc_size = 0
+	ob.label_table = nil
+	ob.line_number_size = 0
+	ob.line_number = nil
+}
+
 func generate(compiler *Compiler) *Executable {
 	exe := newExecutable()
 
@@ -77,8 +89,38 @@ func addTopLevel(compiler *Compiler, exe *Executable) {
 	exe.need_stack_size = calc_need_stack_size(exe.code, exe.code_size)
 }
 
-func generateCode(ob []*Opcode, LineNumber int, code Opcode, rest ...int) {
+//
+// generateCode
+//
+func generateCode(ob []*Opcode, pos Position, code Opcode, rest ...int) {
+	line_number := pos.Line
 
+	// 获取参数类型
+	param := dvm_opcode_info[code].parameter
+
+	start_pc = ob.size
+	ob.code[ob.size] = code
+	ob.size++
+	for i := 0; param[i] != '0'; i++ {
+		for _, value := range rest {
+			switch param[i] {
+			case 'b': /* byte */
+				ob.code[ob.size] = value
+				ob.size++
+			case 's': /* short(2byte int) */
+				ob.code[ob.size] = (value >> 8)
+				ob.code[ob.size+1] = (value & 0xff)
+				ob.size += 2
+			case 'p': /* constant pool index */
+				ob.code[ob.size] = (value >> 8)
+				ob.code[ob.size+1] = (value & 0xff)
+				ob.size += 2
+			default:
+				panic("TODO")
+			}
+		}
+	}
+	add_line_number(ob, line_number, start_pc)
 }
 
 //

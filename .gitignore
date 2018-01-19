@@ -16,3 +16,4 @@
 parser/parser.go
 parser/y.output
 tags
+.idea

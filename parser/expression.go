@@ -25,6 +25,10 @@ const (
 	DivOperator
 )
 
+//
+// Expression interface
+//
+
 // Expression 表达式接口
 type Expression interface {
 	// Pos接口
@@ -37,6 +41,10 @@ type Expression interface {
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
 }
+
+//
+// Expression impl
+//
 
 // ExpressionImpl provide commonly implementations for Expr.
 type ExpressionImpl struct {
@@ -77,6 +85,12 @@ func (expr *CommaExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
+func (expr *CommaExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	expr.left.generate(exe, currentBlock, ob)
+	expr.right.generate(exe, currentBlock, ob)
+}
+
 // ==============================
 // AssignExpression
 // ==============================
@@ -103,6 +117,26 @@ func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
 	expr.typeSpecifier = expr.left.typeS()
 	return expr
+
+}
+func (expr *AssignExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr.operand.generate(exe, currentBlock, ob)
+
+	// TODO
+	//if !is_toplevel {
+	//    generate_code(ob, expr.Position(), DVM_DUPLICATE);
+	//}
+	identifierExpr, ok := expr.left.(*IdentifierExpression)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
+	decl := identifierExpr.declaration
+
+	if decl.isLocal {
+		generate_code(ob, expr.Position(), DVM_POP_STACK_INT+get_opcode_type_offset(decl.typeS().basic_type), decl.variable_index)
+	} else {
+		generate_code(ob, expr.Position(), DVM_POP_STATIC_INT+get_opcode_type_offset(decl.typeS().basic_type), decl.variable_index)
+	}
 
 }
 
@@ -150,7 +184,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-	// 比较
+		// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -183,6 +217,47 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		return expr
 	}
 }
+func (expr *BinaryExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	switch expr.operator {
+	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator, AddOperator, SubOperator, MulOperator, DivOperator:
+
+		if expr.left.typeS().basicType != expr.right.typeS().basicType {
+			compileError(expr.Position(), 0, "")
+		}
+
+		// TODO
+		code := expr.operator
+
+		expr.left.generate(exe, currentBlock, ob)
+		expr.right.generate(exe, currentBlock, ob)
+		generate_code(ob, expr.Position(), code+get_opcode_type_offset(expr.left.typeS().basic_type))
+
+	case LogicalAndOperator:
+
+		false_label := get_label(ob)
+
+		expr.left.generate(exe, currentBlock, ob)
+		generate_code(ob, expr.Position(), DVM_DUPLICATE)
+		generate_code(ob, expr.Position(), DVM_JUMP_IF_FALSE, false_label)
+
+		expr.right.generate(exe, currentBlock, ob)
+		generate_code(ob, expr.Position(), DVM_LOGICAL_AND)
+		set_label(ob, false_label)
+
+	case LogicalOrOperator:
+
+		true_label := get_label(ob)
+
+		expr.left.generate(exe, currentBlock, ob)
+		generate_code(ob, expr.Position(), DVM_DUPLICATE)
+		generate_code(ob, expr.Position(), DVM_JUMP_IF_TRUE, true_label)
+
+		expr.right.generate(exe, currentBlock, ob)
+		generate_code(ob, expr.Position(), DVM_LOGICAL_OR)
+		set_label(ob, true_label)
+	}
+}
 
 // ==============================
 // MinusExpression
@@ -213,6 +288,10 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 
 	return expr
 }
+func (expr *MinusExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr.operand.generate(exe, currentBlock, ob)
+	generate_code(ob, expr.Position(), DVM_MINUS_INT+get_opcode_type_offset(expr.typeS().basic_type))
+}
 
 // ==============================
 // LogicalNotExpression
@@ -240,6 +319,11 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	expr.setType(newExpr.typeS())
 
 	return Expr
+}
+func (expr *LogicalNotExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr.operand.generate(exe, currentBlock, ob)
+	generate_code(ob, expr.Position(), DVM_LOGICAL_NOT)
+
 }
 
 // ==============================
@@ -276,6 +360,17 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier.derive = fd.typeS().derive
 	return expr
 }
+func (expr *FunctionCallExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	for _, arg := range expr.argumentList {
+		arg.generate(exe, currentBlock, ob)
+	}
+
+	expr.function.generate(exe, currentBlock, ob)
+
+	generate_code(ob, expr.Position(), DVM_INVOKE)
+
+}
 
 // ==============================
 // BooleanExpression
@@ -291,6 +386,14 @@ type BooleanExpression struct {
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 	return expr
+}
+func (expr *BooleanExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	if expr.booleanValue {
+		generate_code(ob, expr.Position(), DVM_PUSH_INT_1BYTE, 1)
+	} else {
+		generate_code(ob, expr.Position(), DVM_PUSH_INT_1BYTE, 0)
+	}
+
 }
 
 // ==============================
@@ -309,6 +412,22 @@ func (expr *NumberExpression) fix(currentBlock *Block) Expression {
 
 	return expr
 }
+func (expr *NumberExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var cp ConstantPool
+	var cp_idx int
+
+	if expr.numberValue == 0.0 {
+		generate_code(ob, expr.Position(), DVM_PUSH_DOUBLE_0)
+	} else if expr.numberValue == 1.0 {
+		generate_code(ob, expr.Position(), DVM_PUSH_DOUBLE_1)
+	} else {
+		cp.tag = DVM_CONSTANT_DOUBLE
+		cp.u.c_double = expr.u.double_value
+		cp_idx = add_constant_pool(cf, &cp)
+
+		generate_code(ob, expr.Position(), DVM_PUSH_DOUBLE, cp_idx)
+	}
+}
 
 // ==============================
 // StringExpression
@@ -324,6 +443,16 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: StringType}
 
 	return expr
+}
+func (expr *StringExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var cp ConstantPool
+	var cp_idx int
+
+	cp.tag = DVM_CONSTANT_STRING
+	cp.u.c_string = expr.u.string_value
+	cp_idx = add_constant_pool(cf, &cp)
+	generate_code(ob, expr.Position(), DVM_PUSH_STRING, cp_idx)
+
 }
 
 // ==============================
@@ -367,6 +496,68 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	compileError(expr.Position(), 0, "")
 	return nil
 
+}
+func (expr *IdentifierExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	if expr.u.identifier.is_function {
+		generate_code(ob, expr.Position(), DVM_PUSH_FUNCTION,
+			expr.u.identifier.u.function.index)
+		return
+	}
+
+	if expr.u.identifier.u.declaration.is_local {
+		generate_code(ob, expr.Position(), DVM_PUSH_STACK_INT+get_opcode_type_offset(expr.u.identifier.u.declaration.typeS().basic_type), expr.u.identifier.u.declaration.variable_index)
+	} else {
+		generate_code(ob, expr.Position(), DVM_PUSH_STATIC_INT+get_opcode_type_offset(expr.u.identifier.u.declaration.typeS().basic_type), expr.u.identifier.u.declaration.variable_index)
+	}
+
+}
+
+// ==============================
+// CastExpression
+// ==============================
+
+type CastType int
+
+const (
+	BooleanToStringCast CastType = iota
+	NumberToStringCast
+)
+
+type CastExpression struct {
+	ExpressionImpl
+
+	castType CastType
+
+	operand Expression
+}
+
+func (expr *CastExpression) fix(currentBlock *Block) Expression {}
+
+func (expr *CastExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	generate_expression(exe, block, expr.u.cast.operand, ob)
+	switch expr.u.cast.typeS() {
+	case BooleanToStringCast:
+		generate_code(ob, expr.Position(), DVM_CAST_BOOLEAN_TO_STRING)
+		break
+	case NumberToStringCast:
+		generate_code(ob, expr.Position(), DVM_CAST_DOUBLE_TO_STRING)
+		break
+	default:
+		compileError(expr.Position(), 0, "")
+	}
+}
+
+func allocCastExpression(castType CastType, expr Expression) Expression {
+
+	castExpr := &CastExpression{castType: castType, operand: expr}
+	castExpr.SetPosition(expr.Position())
+
+	switch castType {
+	case BooleanToStringCast, NumberToStringCast:
+		castExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
+	}
+
+	return castExpr
 }
 
 // ==============================
@@ -628,38 +819,4 @@ func checkArgument(currentBlock *Block, fd *FunctionDefinition, expr Expression)
 		createAssignCast(argumentList[i], ParameterList[i].typeSpecifier)
 	}
 
-}
-
-// ==============================
-// CastExpression
-// ==============================
-
-type CastType int
-
-const (
-	BooleanToStringCast CastType = iota
-	NumberToStringCast
-)
-
-type CastExpression struct {
-	ExpressionImpl
-
-	castType CastType
-
-	operand Expression
-}
-
-func (expr *CastExpression) fix(currentBlock *Block) Expression {}
-
-func allocCastExpression(castType CastType, expr Expression) Expression {
-
-	castExpr := &CastExpression{castType: castType, operand: expr}
-	castExpr.SetPosition(expr.Position())
-
-	switch castType {
-	case BooleanToStringCast, NumberToStringCast:
-		castExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
-	}
-
-	return castExpr
 }

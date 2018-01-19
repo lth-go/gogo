@@ -1,5 +1,9 @@
 package parser
 
+import (
+	"encoding/binary"
+)
+
 type OpcodeBuf struct {
 	size       int
 	alloc_size int
@@ -93,34 +97,36 @@ func addTopLevel(compiler *Compiler, exe *Executable) {
 // generateCode
 //
 func generateCode(ob []*Opcode, pos Position, code Opcode, rest ...int) {
-	line_number := pos.Line
-
 	// 获取参数类型
-	param := dvm_opcode_info[code].parameter
+	paramList := []byte(opcode_info[code].parameter)
 
 	start_pc = ob.size
 	ob.code[ob.size] = code
 	ob.size++
-	for i := 0; param[i] != '0'; i++ {
-		for _, value := range rest {
-			switch param[i] {
-			case 'b': /* byte */
-				ob.code[ob.size] = value
-				ob.size++
-			case 's': /* short(2byte int) */
-				ob.code[ob.size] = (value >> 8)
-				ob.code[ob.size+1] = (value & 0xff)
-				ob.size += 2
-			case 'p': /* constant pool index */
-				ob.code[ob.size] = (value >> 8)
-				ob.code[ob.size+1] = (value & 0xff)
-				ob.size += 2
-			default:
-				panic("TODO")
-			}
+	for i, param := range paramList {
+		value := rest[i]
+		switch param {
+		case "b": /* byte */
+			ob.code[ob.size] = value
+			ob.size++
+		case "s": /* short(2byte int) */
+			b := make([]byte, 2)
+			binary.BigEndian.PutUint16(b, uint16(value))
+			ob.code[ob.size] = b[0]
+			ob.code[ob.size+1] = b[1]
+			ob.size += 2
+		case "p": /* constant pool index */
+			b := make([]byte, 2)
+			binary.BigEndian.PutUint16(b, uint16(value))
+			ob.code[ob.size] = b[0]
+			ob.code[ob.size+1] = b[1]
+			ob.size += 2
+		case "":
+		default:
+			panic("TODO")
 		}
 	}
-	add_line_number(ob, line_number, start_pc)
+	add_line_number(ob, pos.Line, start_pc)
 }
 
 //

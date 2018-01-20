@@ -384,12 +384,12 @@ continue_statement
 declaration_statement
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit}
+            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
         | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit, initializer: $4}
+            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit, initializer: $4, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
         ;

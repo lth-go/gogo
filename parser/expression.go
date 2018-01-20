@@ -36,7 +36,7 @@ type Expression interface {
 	expr()
 
 	fix(*Block) Expression
-	generate(*Executable, *Block, *OpcodeBuf, ...int)
+	generate(*Executable, *Block, *OpcodeBuf)
 
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
@@ -116,28 +116,46 @@ func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	operand := expr.operand.fix(currentBlock)
 	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
 	expr.typeSpecifier = expr.left.typeS()
-	return expr
 
+	return expr
 }
+
 func (expr *AssignExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
-	// TODO
-	//if !is_toplevel {
-	//    generate_code(ob, expr.Position(), DVM_DUPLICATE);
-	//}
+	generateCode(ob, expr.Position(), DUPLICATE)
+
 	identifierExpr, ok := expr.left.(*IdentifierExpression)
 	if !ok {
 		compileError(expr.Position(), 0, "")
 	}
 	decl := identifierExpr.declaration
 
-	if decl.isLocal {
-		generate_code(ob, expr.Position(), DVM_POP_STACK_INT+get_opcode_type_offset(decl.typeS().basic_type), decl.variable_index)
-	} else {
-		generate_code(ob, expr.Position(), DVM_POP_STATIC_INT+get_opcode_type_offset(decl.typeS().basic_type), decl.variable_index)
-	}
+	generatePopToIdentifier(decl, expr.Position(), ob)
+}
 
+// TODO
+func (expr *AssignExpression) generateEx(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr.operand.generate(exe, currentBlock, ob)
+
+	identifierExpr, ok := expr.left.(*IdentifierExpression)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
+	decl := identifierExpr.declaration
+
+	generatePopToIdentifier(decl, expr.Position(), ob)
+}
+
+func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
+	var code Opcode
+
+	if decl.isLocal {
+		code = POP_STACK_INT + get_opcode_type_offset(decl.typeSpecifier.basicType)
+	} else {
+		code = POP_STATIC_INT + get_opcode_type_offset(decl.typeSpecifier.basicType)
+	}
+	generateCode(ob, pos, code, decl.variableIndex)
 }
 
 // ==============================
@@ -174,10 +192,18 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		// 类型转换
 		newExpr = castBinaryExpression(expr)
 
-		if isNumber(newExpr.left.typeS()) && isNumber(newExpr.right.typeS()) {
-			newExpr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
-		} else if isString(newExpr.left.typeS()) && isString(newExpr.right.typeS()) {
-			newExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
+		newBinaryExpr, ok := newExpr.(*BinaryExpression)
+		if !ok {
+			compileError(expr.Position(), 0, "")
+		}
+
+		newBinaryExprLeftType := newBinaryExpr.left.typeS()
+		newBinaryExprRightType := newBinaryExpr.right.typeS()
+
+		if isNumber(newBinaryExprLeftType) && isNumber(newBinaryExprRightType) {
+			newExpr.setType(&TypeSpecifier{basicType: NumberType})
+		} else if isString(newBinaryExprLeftType) && isString(newBinaryExprRightType) {
+			newExpr.setType(&TypeSpecifier{basicType: StringType})
 		} else {
 			compileError(expr.Position(), 0, "")
 		}
@@ -192,16 +218,25 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newExpr = evalCompareExpression(expr)
 
 		switch newExpr.(type) {
-		case BooleanExpression:
+		case *BooleanExpression:
 			return newExpr
 		}
 
 		newExpr = castBinaryExpression(expr)
 
-		if (newExpr.left.typeS().basicType != newExpr.right.typeS().basicType) || newExpr.left.typeS().derive != nil || newExpr.right.typeS.derive != nil {
+		newBinaryExpr, ok := newExpr.(*BinaryExpression)
+		if !ok {
 			compileError(expr.Position(), 0, "")
 		}
-		newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+
+		newBinaryExprLeftType := newBinaryExpr.left.typeS()
+		newBinaryExprRightType := newBinaryExpr.right.typeS()
+
+		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) || newBinaryExprLeftType.derive != nil || newBinaryExprRightType.derive != nil {
+			compileError(expr.Position(), 0, "")
+		}
+
+		newExpr.setType(&TypeSpecifier{basicType: BooleanType})
 
 		return newExpr
 
@@ -215,8 +250,25 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 			compileError(expr.Position(), 0, "")
 		}
 		return expr
+	default:
+		compileError(expr.Position(), 0, "")
 	}
+	return nil
 }
+
+var operatorCodeMap = map[BinaryOperatorKind]Opcode{
+	EqOperator:  EQ_INT,
+	NeOperator:  NE_INT,
+	GtOperator:  GT_INT,
+	GeOperator:  GE_INT,
+	LtOperator:  LT_INT,
+	LeOperator:  LE_INT,
+	AddOperator: ADD_INT,
+	SubOperator: SUB_INT,
+	MulOperator: MUL_INT,
+	DivOperator: DIV_INT,
+}
+
 func (expr *BinaryExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	switch expr.operator {
@@ -226,36 +278,38 @@ func (expr *BinaryExpression) generate(exe *Executable, currentBlock *Block, ob 
 			compileError(expr.Position(), 0, "")
 		}
 
-		// TODO
-		code := expr.operator
+		code, ok := operatorCodeMap[expr.operator]
+		if !ok {
+			compileError(expr.Position(), 0, "")
+		}
 
 		expr.left.generate(exe, currentBlock, ob)
 		expr.right.generate(exe, currentBlock, ob)
-		generate_code(ob, expr.Position(), code+get_opcode_type_offset(expr.left.typeS().basic_type))
+		generateCode(ob, expr.Position(), code+get_opcode_type_offset(expr.left.typeS().basicType))
 
 	case LogicalAndOperator:
 
-		false_label := get_label(ob)
+		falseLabel := getLabel(ob)
 
 		expr.left.generate(exe, currentBlock, ob)
-		generate_code(ob, expr.Position(), DVM_DUPLICATE)
-		generate_code(ob, expr.Position(), DVM_JUMP_IF_FALSE, false_label)
+		generateCode(ob, expr.Position(), DUPLICATE)
+		generateCode(ob, expr.Position(), JUMP_IF_FALSE, falseLabel)
 
 		expr.right.generate(exe, currentBlock, ob)
-		generate_code(ob, expr.Position(), DVM_LOGICAL_AND)
-		set_label(ob, false_label)
+		generateCode(ob, expr.Position(), LOGICAL_AND)
+		setLabel(ob, falseLabel)
 
 	case LogicalOrOperator:
 
-		true_label := get_label(ob)
+		trueLabel := getLabel(ob)
 
 		expr.left.generate(exe, currentBlock, ob)
-		generate_code(ob, expr.Position(), DVM_DUPLICATE)
-		generate_code(ob, expr.Position(), DVM_JUMP_IF_TRUE, true_label)
+		generateCode(ob, expr.Position(), DUPLICATE)
+		generateCode(ob, expr.Position(), JUMP_IF_TRUE, trueLabel)
 
 		expr.right.generate(exe, currentBlock, ob)
-		generate_code(ob, expr.Position(), DVM_LOGICAL_OR)
-		set_label(ob, true_label)
+		generateCode(ob, expr.Position(), LOGICAL_OR)
+		setLabel(ob, trueLabel)
 	}
 }
 
@@ -278,7 +332,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), 0, "")
 	}
 
-	kind, ok := newExpr.(NumberType)
+	kind, ok := newExpr.(*NumberExpression)
 	if ok {
 		kind.numberValue = -kind.numberValue
 		return newExpr
@@ -290,7 +344,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 }
 func (expr *MinusExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
-	generate_code(ob, expr.Position(), DVM_MINUS_INT+get_opcode_type_offset(expr.typeS().basic_type))
+	generateCode(ob, expr.Position(), MINUS_INT+get_opcode_type_offset(expr.typeS().basicType))
 }
 
 // ==============================
@@ -312,17 +366,17 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 		return boolExpr
 	}
 
-	if !isBoolea(newExpr.typeS()) {
+	if !isBoolean(newExpr.typeS()) {
 		compileError(expr.Position(), 0, "")
 	}
 
 	expr.setType(newExpr.typeS())
 
-	return Expr
+	return expr
 }
 func (expr *LogicalNotExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
-	generate_code(ob, expr.Position(), DVM_LOGICAL_NOT)
+	generateCode(ob, expr.Position(), LOGICAL_NOT)
 
 }
 
@@ -368,8 +422,7 @@ func (expr *FunctionCallExpression) generate(exe *Executable, currentBlock *Bloc
 
 	expr.function.generate(exe, currentBlock, ob)
 
-	generate_code(ob, expr.Position(), DVM_INVOKE)
-
+	generateCode(ob, expr.Position(), INVOKE)
 }
 
 // ==============================
@@ -389,9 +442,9 @@ func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 }
 func (expr *BooleanExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if expr.booleanValue {
-		generate_code(ob, expr.Position(), DVM_PUSH_INT_1BYTE, 1)
+		generateCode(ob, expr.Position(), PUSH_INT_1BYTE, 1)
 	} else {
-		generate_code(ob, expr.Position(), DVM_PUSH_INT_1BYTE, 0)
+		generateCode(ob, expr.Position(), PUSH_INT_1BYTE, 0)
 	}
 
 }
@@ -413,19 +466,18 @@ func (expr *NumberExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 func (expr *NumberExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var cp ConstantPool
-	var cp_idx int
 
 	if expr.numberValue == 0.0 {
-		generate_code(ob, expr.Position(), DVM_PUSH_DOUBLE_0)
-	} else if expr.numberValue == 1.0 {
-		generate_code(ob, expr.Position(), DVM_PUSH_DOUBLE_1)
-	} else {
-		cp.tag = DVM_CONSTANT_DOUBLE
-		cp.u.c_double = expr.u.double_value
-		cp_idx = add_constant_pool(cf, &cp)
+		generateCode(ob, expr.Position(), PUSH_DOUBLE_0)
 
-		generate_code(ob, expr.Position(), DVM_PUSH_DOUBLE, cp_idx)
+	} else if expr.numberValue == 1.0 {
+		generateCode(ob, expr.Position(), PUSH_DOUBLE_1)
+
+	} else {
+		cp := &ConstantNumber{numberValue: expr.numberValue}
+		cpIdx := addConstantPool(exe, cp)
+
+		generateCode(ob, expr.Position(), PUSH_DOUBLE, cpIdx)
 	}
 }
 
@@ -445,14 +497,11 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 func (expr *StringExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var cp ConstantPool
-	var cp_idx int
 
-	cp.tag = DVM_CONSTANT_STRING
-	cp.u.c_string = expr.u.string_value
-	cp_idx = add_constant_pool(cf, &cp)
-	generate_code(ob, expr.Position(), DVM_PUSH_STRING, cp_idx)
+	cp := &ConstantString{stringValue: expr.stringValue}
 
+	cpIdx := addConstantPool(exe, cp)
+	generateCode(ob, expr.Position(), PUSH_STRING, cpIdx)
 }
 
 // ==============================
@@ -498,18 +547,22 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 
 }
 func (expr *IdentifierExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	if expr.u.identifier.is_function {
-		generate_code(ob, expr.Position(), DVM_PUSH_FUNCTION,
-			expr.u.identifier.u.function.index)
+	// 函数
+	if expr.function != nil {
+		generateCode(ob, expr.Position(), PUSH_FUNCTION, expr.function.index)
 		return
 	}
 
-	if expr.u.identifier.u.declaration.is_local {
-		generate_code(ob, expr.Position(), DVM_PUSH_STACK_INT+get_opcode_type_offset(expr.u.identifier.u.declaration.typeS().basic_type), expr.u.identifier.u.declaration.variable_index)
+	// 变量
+	var code Opcode
+
+	if expr.declaration.isLocal {
+		code = PUSH_STACK_INT + get_opcode_type_offset(expr.declaration.typeSpecifier.basicType)
 	} else {
-		generate_code(ob, expr.Position(), DVM_PUSH_STATIC_INT+get_opcode_type_offset(expr.u.identifier.u.declaration.typeS().basic_type), expr.u.identifier.u.declaration.variable_index)
+		code = PUSH_STATIC_INT + get_opcode_type_offset(expr.declaration.typeSpecifier.basicType)
 	}
 
+	generateCode(ob, expr.Position(), code, expr.declaration.variableIndex)
 }
 
 // ==============================
@@ -531,17 +584,21 @@ type CastExpression struct {
 	operand Expression
 }
 
-func (expr *CastExpression) fix(currentBlock *Block) Expression {}
+func (expr *CastExpression) fix(currentBlock *Block) Expression {
+	return nil
+}
 
 func (expr *CastExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	generate_expression(exe, block, expr.u.cast.operand, ob)
-	switch expr.u.cast.typeS() {
+	expr.operand.generate(exe, currentBlock, ob)
+
+	switch expr.castType {
+
 	case BooleanToStringCast:
-		generate_code(ob, expr.Position(), DVM_CAST_BOOLEAN_TO_STRING)
-		break
+		generateCode(ob, expr.Position(), CAST_BOOLEAN_TO_STRING)
+
 	case NumberToStringCast:
-		generate_code(ob, expr.Position(), DVM_CAST_DOUBLE_TO_STRING)
-		break
+		generateCode(ob, expr.Position(), CAST_DOUBLE_TO_STRING)
+
 	default:
 		compileError(expr.Position(), 0, "")
 	}
@@ -600,7 +657,7 @@ func castBinaryExpression(expr Expression) Expression {
 		newExpr := allocCastExpression(BooleanToStringCast, binaryExpr.right)
 		return newExpr
 
-	} else if isString(binaryExpr.left.typeS()) && isInt(binaryExpr.right.typeS()) {
+	} else if isString(binaryExpr.left.typeS()) && isNumber(binaryExpr.right.typeS()) {
 		newExpr := allocCastExpression(NumberToStringCast, binaryExpr.right)
 		return newExpr
 
@@ -615,9 +672,9 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	}
 
 	// number 运算
-	leftNumberExpr, ok := binaryExpr.left.(NumberExpression)
+	leftNumberExpr, ok := binaryExpr.left.(*NumberExpression)
 	if ok {
-		rightNumberExpr, ok := binaryExpr.right.(NumberExpression)
+		rightNumberExpr, ok := binaryExpr.right.(*NumberExpression)
 		if ok {
 			newExpr := evalMathExpressionNumber(binaryExpr, leftNumberExpr.numberValue, rightNumberExpr.numberValue)
 			return newExpr
@@ -625,7 +682,7 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	}
 
 	// 字符串链接
-	leftStringExpr, ok := binaryExpr.left.(StringExpression)
+	leftStringExpr, ok := binaryExpr.left.(*StringExpression)
 	if ok {
 		newExpr := chainString(expr)
 	}
@@ -634,6 +691,8 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 }
 
 func evalMathExpressionNumber(expr Expression, left, right float64) Expression {
+	var value float64
+
 	binaryExpr, ok := expr.(*BinaryExpression)
 	if !ok {
 		compileError(binaryExpr.Position(), 0, "")
@@ -641,17 +700,18 @@ func evalMathExpressionNumber(expr Expression, left, right float64) Expression {
 
 	switch binaryExpr.operator {
 	case AddOperator:
-		value := left + right
+		value = left + right
 	case SubOperator:
-		value := left - right
+		value = left - right
 	case MulOperator:
-		value := left * right
+		value = left * right
 	case DivOperator:
-		value := left / right
+		value = left / right
 	default:
 		compileError(binaryExpr.Position(), 0, "")
 	}
-	newExpr := &NumberExpression{numberValue: value, typeSpecifier: &TypeSpecifier{basicType: NumberType}}
+	newExpr := &NumberExpression{numberValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
 	return newExpr
 }
 
@@ -661,65 +721,67 @@ func chainString(expr Expression) Expression {
 		compileError(binaryExpr.Position(), 0, "")
 	}
 
-	rightStr = expressionToString(binaryExpr.right)
-	if !rightStr {
+	rightStr := expressionToString(binaryExpr.right)
+	if rightStr != "" {
 		return expr
 	}
 
-	leftStringExpr, ok := binaryExpr.(*StringExpression)
+	leftStringExpr, ok := binaryExpr.left.(*StringExpression)
 	if !ok {
 		compileError(binaryExpr.Position(), 0, "")
 	}
 
-	newStr = leftStringExpr.stringValue + rightStr
+	newStr := leftStringExpr.stringValue + rightStr
 
-	newExpr := &StringExpression{stringValue: newStr, typeSpecifier: &TypeSpecifier{basicType: StringType}}
+	newExpr := &StringExpression{stringValue: newStr}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
 
 	return newExpr
 }
 
 func expressionToString(expr Expression) string {
+	var newStr string
 
 	switch e := expr.(type) {
-	case BooleanExpression:
+	case *BooleanExpression:
 		if e.booleanValue == true {
-			newStr := "true"
+			newStr = "true"
 		} else {
-			newStr := "false"
+			newStr = "false"
 		}
-	case NumberExpression:
-		newStr := strconv.FormatFloat(e.numberValue, 'f', 64)
-	case StringExpression:
-		newStr := e.stringValue
+	case *NumberExpression:
+		newStr = strconv.FormatFloat(e.numberValue, 'f', -1, 64)
+	case *StringExpression:
+		newStr = e.stringValue
 	default:
-		newStr := ""
+		newStr = ""
 	}
 
 	return newStr
 }
 
-func evalCompareExpression(expr Expression) {
+func evalCompareExpression(expr Expression) Expression {
 	binaryExpr, ok := expr.(*BinaryExpression)
 	if !ok {
 		compileError(expr.Position(), 0, "")
 	}
 
 	switch leftExpr := binaryExpr.left.(type) {
-	case BooleanType:
+	case *BooleanExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-		case BooleanType:
+		case *BooleanExpression:
 			newExpr := evalCompareExpressionBoolean(binaryExpr, leftExpr.booleanValue, rightExpr.booleanValue)
 			return newExpr
 		}
-	case NumberType:
+	case *NumberExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-		case NumberType:
+		case *NumberExpression:
 			newExpr := evalCompareExpressionNumber(binaryExpr, leftExpr.numberValue, rightExpr.numberValue)
 			return newExpr
 		}
-	case StringType:
+	case *StringExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-		case StringType:
+		case *StringExpression:
 			newExpr := evalCompareExpressionString(binaryExpr, leftExpr.stringValue, rightExpr.stringValue)
 			return newExpr
 		}
@@ -728,6 +790,8 @@ func evalCompareExpression(expr Expression) {
 }
 
 func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression {
+	var value bool
+
 	binaryExpr, ok := expr.(*BinaryExpression)
 	if !ok {
 		compileError(binaryExpr.Position(), 0, "")
@@ -735,18 +799,21 @@ func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression 
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value := (left == right)
+		value = (left == right)
 	case NeOperator:
-		value := (left != right)
+		value = (left != right)
 	default:
 		compileError(binaryExpr.Position(), 0, "")
 	}
 
-	newExpr := &BooleanExpression{booleanValue: value, typeSpecifier: &TypeSpecifier{basicType: BooleanType}}
+	newExpr := &BooleanExpression{booleanValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 	return newExpr
 }
 
-func evalCompareExpressionNumber(expr Expression, left, right float64) {
+func evalCompareExpressionNumber(expr Expression, left, right float64) Expression {
+	var value bool
+
 	binaryExpr, ok := expr.(*BinaryExpression)
 	if !ok {
 		compileError(binaryExpr.Position(), 0, "")
@@ -754,26 +821,28 @@ func evalCompareExpressionNumber(expr Expression, left, right float64) {
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value := (left == right)
+		value = (left == right)
 	case NeOperator:
-		value := (left != right)
+		value = (left != right)
 	case GtOperator:
-		value := (left > right)
+		value = (left > right)
 	case GeOperator:
-		value := (left >= right)
+		value = (left >= right)
+	case LtOperator:
+		value = (left < right)
 	case LeOperator:
-		value := (left < right)
-	case LeOperator:
-		value := (left <= right)
+		value = (left <= right)
 	default:
 		compileError(binaryExpr.Position(), 0, "")
 	}
 
-	newExpr := &BooleanExpression{booleanValue: value, typeSpecifier: &TypeSpecifier{basicType: BooleanType}}
+	newExpr := &BooleanExpression{booleanValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
 	return newExpr
 }
 
-func evalCompareExpressionString(expr Expression, left, right string) {
+func evalCompareExpressionString(expr Expression, left, right string) Expression {
+	var value bool
 	binaryExpr, ok := expr.(*BinaryExpression)
 	if !ok {
 		compileError(binaryExpr.Position(), 0, "")
@@ -781,37 +850,39 @@ func evalCompareExpressionString(expr Expression, left, right string) {
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value := (left == right)
+		value = (left == right)
 	case NeOperator:
-		value := (left != right)
+		value = (left != right)
 	case GtOperator:
-		value := (left > right)
+		value = (left > right)
 	case GeOperator:
-		value := (left >= right)
+		value = (left >= right)
+	case LtOperator:
+		value = (left < right)
 	case LeOperator:
-		value := (left < right)
-	case LeOperator:
-		value := (left <= right)
+		value = (left <= right)
 	default:
 		compileError(binaryExpr.Position(), 0, "")
 	}
 
-	newExpr := &BooleanExpression{booleanValue: value, typeSpecifier: &TypeSpecifier{basicType: BooleanType}}
+	newExpr := &BooleanExpression{booleanValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+
 	return newExpr
 }
 
 func checkArgument(currentBlock *Block, fd *FunctionDefinition, expr Expression) {
 	functionCallExpr, ok := expr.(*FunctionCallExpression)
 	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(expr.Position(), 0, "")
 	}
 
 	ParameterList := fd.parameterList
 	argumentList := functionCallExpr.argumentList
 
-	length = len(ParameterList)
+	length := len(ParameterList)
 	if len(argumentList) != length {
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(expr.Position(), 0, "")
 	}
 
 	for i := 0; i < length; i++ {
@@ -819,4 +890,36 @@ func checkArgument(currentBlock *Block, fd *FunctionDefinition, expr Expression)
 		createAssignCast(argumentList[i], ParameterList[i].typeSpecifier)
 	}
 
+}
+
+func get_opcode_type_offset(basicType BasicType) Opcode {
+	switch basicType {
+	case BooleanType:
+		return Opcode(0)
+	case NumberType:
+		return Opcode(0)
+	case StringType:
+		return Opcode(1)
+	default:
+		panic("basic type")
+	}
+}
+
+func getLabel(ob *OpcodeBuf) int {
+
+	ret := len(ob.labelTableList)
+
+	return ret
+}
+
+func setLabel(ob *OpcodeBuf, label int) {
+	ob.labelTableList[label].labelAddress = len(ob.labelTableList)
+}
+
+func addConstantPool(exe *Executable, cp Constant) int {
+	ret := len(exe.constantPool)
+
+	exe.constantPool = append(exe.constantPool, cp)
+
+	return ret
 }

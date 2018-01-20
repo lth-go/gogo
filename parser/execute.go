@@ -11,14 +11,11 @@ type Executable struct {
 	functionList []*Function
 
 	// 顶层结构代码
-	codeList *Byte
-
-	// 顶层代码栈的需求量
-	needStackSize int
+	codeList []byte
 
 	// 行号对应表
 	// 保存字节码和与之对应的源代码的行号
-	lineNumber *LineNumber
+	lineNumberList []*LineNumber
 }
 
 // ==============================
@@ -67,13 +64,15 @@ type Function struct {
 	// 局部变量列表
 	localVariable []*LocalVariable
 	// 字节码类表
-	codeList []*Byte
+	codeList []byte
 
 	// 行号对应表
 	lineNumberList []*LineNumber
+}
 
-	// 需要栈空间
-	needStackSize int
+type LocalVariable struct {
+	name          string
+	typeSpecifier TypeSpecifier
 }
 
 // ==============================
@@ -180,12 +179,12 @@ const (
 
 type OpcodeInfo struct {
 	// 注记符
-	mnemonic        string
+	mnemonic string
+
 	// 参数类型，
 	// `b` 一个字节整数
 	// `s` 两个字节整数
 	// `p` 常量池索引值
-
 	parameter       string
 	stack_increment int
 }

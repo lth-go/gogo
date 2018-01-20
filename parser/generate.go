@@ -5,23 +5,18 @@ import (
 )
 
 type OpcodeBuf struct {
-	size       int
-	alloc_size int
-	code       string
-	LabelTable *label_table
-	lineNumber []*LineNumber
+	codeList       []byte
+	labelTableList []*LabelTable
+	lineNumberList []*LineNumber
+}
+type LabelTable struct {
+	labelAddress int
 }
 
 func init_opcode_buf(ob *OpcodeBuf) {
-	// TODO
-	ob.size = 0
-	ob.alloc_size = 0
-	ob.code = NULL
-	ob.label_table_size = 0
-	ob.label_table_alloc_size = 0
-	ob.label_table = nil
-	ob.line_number_size = 0
-	ob.line_number = nil
+	ob.codeList = []byte{}
+	ob.labelTableList = []*LabelTable{}
+	ob.lineNumberList = []*LineNumber{}
 }
 
 func generate(compiler *Compiler) *Executable {
@@ -73,9 +68,7 @@ func addFunctions(compiler *Compiler, exe *Executable) {
 		f.isImplemented = true
 		f.code_size = ob.size
 		f.code = fix_opcode_buf(&ob)
-		f.lineNumber_size = ob.lineNumber_size
-		f.lineNumber = ob.lineNumber
-		f.need_stack_size = calc_need_stack_size(f.code, f.code_size)
+		f.lineNumberLine = ob.lineNumberLine
 	}
 }
 
@@ -89,44 +82,36 @@ func addTopLevel(compiler *Compiler, exe *Executable) {
 	exe.code_size = ob.size
 	exe.code = fix_opcode_buf(&ob)
 	exe.lineNumber_size = ob.lineNumber_size
-	exe.lineNumber = ob.lineNumber
-	exe.need_stack_size = calc_need_stack_size(exe.code, exe.code_size)
+	exe.lineNumberList = ob.lineNumberList
 }
 
 //
 // generateCode
 //
-func generateCode(ob []*Opcode, pos Position, code Opcode, rest ...int) {
+func generateCode(ob *OpcodeBuf, pos Position, code Opcode, rest ...int) {
 	// 获取参数类型
 	paramList := []byte(opcode_info[code].parameter)
 
-	start_pc = ob.size
-	ob.code[ob.size] = code
-	ob.size++
+	ob.codeList = append(ob.codeList, code)
 	for i, param := range paramList {
 		value := rest[i]
 		switch param {
-		case "b": /* byte */
-			ob.code[ob.size] = value
-			ob.size++
-		case "s": /* short(2byte int) */
+			case "b": /* byte */
+			ob.codeList = append(ob.codeList, value)
+			case "s": /* short(2byte int) */
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
-			ob.code[ob.size] = b[0]
-			ob.code[ob.size+1] = b[1]
-			ob.size += 2
-		case "p": /* constant pool index */
+			ob.codeList = append(ob.codeList, b...)
+			case "p": /* constant pool index */
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
-			ob.code[ob.size] = b[0]
-			ob.code[ob.size+1] = b[1]
-			ob.size += 2
+			ob.codeList = append(ob.codeList, b...)
 		case "":
 		default:
 			panic("TODO")
 		}
 	}
-	add_line_number(ob, pos.Line, start_pc)
+	add_line_number(ob, pos.Line, len(ob.codeList))
 }
 
 //
@@ -139,3 +124,43 @@ func generateStatementList(exe *Executable, currentBlock *Block, statementList [
 		statement.generate(exe, currentBlock, ob)
 	}
 }
+
+func copy_type_specifier(src *TypeSpecifier) *TypeSpecifier {
+
+	dest := &TypeSpecifier{basicType: src.basicType}
+
+	dest.deriveList = []TypeDerive{}
+
+	for _, derive := range src.deriveList {
+		switch f := derive.(type) {
+		case *FunctionDerive:
+			newDerive := &FunctionDerive{parameterList: copy_parameter_list(f.parameterList)}
+			dest.deriveList = append(dest.deriveList, newDerive)
+		default:
+			panic("derive error")
+		}
+	}
+
+	return dest
+}
+
+
+//func copy_parameter_list(src *ParameterList, int *param_count_p) *LocalVariable{
+//    int param_count = 0;
+//    ParameterList *param;
+//    DVM_LocalVariable *dest;
+//    int i;
+
+//    for (param = src; param; param = param->next) {
+//        param_count++;
+//    }
+//    *param_count_p = param_count;
+//    dest = MEM_malloc(sizeof(DVM_LocalVariable) * param_count);
+
+//    for (param = src, i = 0; param; param = param->next, i++) {
+//        dest[i].name = MEM_strdup(param->name);
+//        dest[i].type = copy_type_specifier(param->type);
+//    }
+
+//    return dest;
+//}

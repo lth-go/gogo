@@ -24,7 +24,7 @@ type TypeDerive interface {
 }
 
 type FunctionDerive struct {
-	parameterList []*Parameter
+	parameterList []*LocalVariable
 }
 
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
@@ -94,7 +94,7 @@ type FunctionDefinition struct {
 
 	index int
 
-	localVariable []*Declaration
+	localVariableList []*Declaration
 }
 
 func (fd *FunctionDefinition) typeS() *TypeSpecifier {

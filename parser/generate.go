@@ -66,9 +66,8 @@ func addFunctions(compiler *Compiler, exe *Executable) {
 		generateStatementList(exe, fd.block, fd.block.statementList, &ob)
 
 		f.isImplemented = true
-		f.code_size = ob.size
-		f.code = fix_opcode_buf(&ob)
-		f.lineNumberLine = ob.lineNumberLine
+		f.codeList = fixOpcodeBuf(&ob)
+		f.lineNumberList = ob.lineNumberList
 	}
 }
 
@@ -79,9 +78,7 @@ func addTopLevel(compiler *Compiler, exe *Executable) {
 	init_opcode_buf(&ob)
 	generateStatementList(exe, nil, compiler.statementList, &ob)
 
-	exe.code_size = ob.size
-	exe.code = fix_opcode_buf(&ob)
-	exe.lineNumber_size = ob.lineNumber_size
+	exe.codeList = fixOpcodeBuf(&ob)
 	exe.lineNumberList = ob.lineNumberList
 }
 
@@ -90,23 +87,22 @@ func addTopLevel(compiler *Compiler, exe *Executable) {
 //
 func generateCode(ob *OpcodeBuf, pos Position, code Opcode, rest ...int) {
 	// 获取参数类型
-	paramList := []byte(opcode_info[code].parameter)
+	paramList := []byte(opcodeInfo[code].parameter)
 
-	ob.codeList = append(ob.codeList, code)
+	ob.codeList = append(ob.codeList, byte(code))
 	for i, param := range paramList {
 		value := rest[i]
 		switch param {
-			case "b": /* byte */
-			ob.codeList = append(ob.codeList, value)
-			case "s": /* short(2byte int) */
+		case 'b': /* byte */
+			ob.codeList = append(ob.codeList, byte(value))
+		case 's': /* short(2byte int) */
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
-			case "p": /* constant pool index */
+		case 'p': /* constant pool index */
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
-		case "":
 		default:
 			panic("TODO")
 		}
@@ -118,10 +114,10 @@ func generateCode(ob *OpcodeBuf, pos Position, code Opcode, rest ...int) {
 // generateStatementList
 //
 
-func generateStatementList(exe *Executable, currentBlock *Block, statementList []*Statement, ob *OpcodeBuf) {
+func generateStatementList(exe *Executable, currentBlock *Block, statementList []Statement, ob *OpcodeBuf) {
 
-	for _, pos := range statementList {
-		statement.generate(exe, currentBlock, ob)
+	for _, stmt := range statementList {
+		stmt.generate(exe, currentBlock, ob)
 	}
 }
 
@@ -144,23 +140,83 @@ func copy_type_specifier(src *TypeSpecifier) *TypeSpecifier {
 	return dest
 }
 
+func copy_parameter_list(src []*Parameter) []*LocalVariable {
+	var dest []*LocalVariable = []*LocalVariable{}
 
-//func copy_parameter_list(src *ParameterList, int *param_count_p) *LocalVariable{
-//    int param_count = 0;
-//    ParameterList *param;
-//    DVM_LocalVariable *dest;
-//    int i;
+	for _, param := range src {
+		dest = append(dest, &LocalVariable{
+			name:          param.name,
+			typeSpecifier: copy_type_specifier(param.typeSpecifier),
+		})
+	}
 
-//    for (param = src; param; param = param->next) {
-//        param_count++;
-//    }
-//    *param_count_p = param_count;
-//    dest = MEM_malloc(sizeof(DVM_LocalVariable) * param_count);
+	return dest
+}
 
-//    for (param = src, i = 0; param; param = param->next, i++) {
-//        dest[i].name = MEM_strdup(param->name);
-//        dest[i].type = copy_type_specifier(param->type);
-//    }
+func copyFunction(src *FunctionDefinition, dest *Function) {
+	dest.typeSpecifier = copy_type_specifier(src.typeSpecifier)
+	dest.name = src.name
+	dest.parameterList = copy_parameter_list(src.parameterList)
+	if src.block != nil {
+		dest.localVariableList = copy_local_variables(src)
+	} else {
+		dest.localVariableList = nil
+	}
+}
 
-//    return dest;
-//}
+func fixOpcodeBuf(ob *OpcodeBuf) []byte {
+
+	fix_labels(ob)
+	ob.labelTableList = nil
+
+	return ob.codeList
+}
+
+// TODO 这是啥
+func fix_labels(ob *OpcodeBuf) {
+
+	for i := 0; i < len(ob.codeList); i++ {
+		if ob.codeList[i] == byte(JUMP) || ob.codeList[i] == byte(JUMP_IF_TRUE) || ob.codeList[i] == byte(JUMP_IF_FALSE) {
+			label := (ob.codeList[i+1] << 8) + (ob.codeList[i+2])
+			address := ob.labelTableList[label].labelAddress
+			ob.codeList[i+1] = (byte)(address >> 8)
+			ob.codeList[i+2] = (byte)(address & 0xff)
+		}
+		info := &opcodeInfo[ob.codeList[i]]
+		for _, p := range []byte(info.parameter) {
+			switch p {
+			case 'b':
+				i++
+			case 's': /* FALLTHRU */
+				fallthrough
+			case 'p':
+				i += 2
+			default:
+				panic("param error")
+			}
+		}
+	}
+}
+
+func add_line_number(ob *OpcodeBuf, lineNumber int, start_pc int) {
+	if ob.lineNumberList == nil || (ob.lineNumberList[len(ob.lineNumberList)-1].lineNumber != lineNumber) {
+		ob.lineNumberList = append(ob.lineNumberList, &LineNumber{
+			lineNumber: lineNumber,
+			startPc:    start_pc,
+			pcCount:    len(ob.lineNumberList) - start_pc,
+		})
+	} else {
+		ob.lineNumberList[len(ob.lineNumberList)-1].pcCount += len(ob.lineNumberList) - start_pc
+	}
+}
+
+func copy_local_variables(fd *FunctionDefinition) []*LocalVariable {
+	// TODO 形参占用位置
+	var dest []*LocalVariable = []*LocalVariable{}
+
+	for _, v := range fd.localVariableList {
+		dest = append(dest, &LocalVariable{name: v.name, typeSpecifier: copy_type_specifier(v.typeSpecifier)})
+	}
+
+	return dest
+}

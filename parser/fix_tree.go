@@ -20,7 +20,7 @@ func fixTree(c *Compiler) {
 		addReturnFunction(fd)
 	}
 
-	for varCount, decl := range compiler.declarationList {
+	for varCount, decl := range c.declarationList {
 		decl.variableIndex = varCount
     }
 
@@ -86,8 +86,8 @@ func addReturnFunction(fd *FunctionDefinition) {
 }
 
 func addLocalVariable(fd *FunctionDefinition, decl *Declaration) {
-	decl.variableIndex = len(fd.localVariable)
-	fd.localVariable = append(fd.localVariable, decl)
+	decl.variableIndex = len(fd.localVariableList)
+	fd.localVariableList = append(fd.localVariableList, decl)
 }
 
 func searchDeclaration(name string, currentBlock *Block) *Declaration {

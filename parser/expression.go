@@ -232,7 +232,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
-		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) || newBinaryExprLeftType.derive != nil || newBinaryExprRightType.derive != nil {
+		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) || newBinaryExprLeftType.deriveList != nil || newBinaryExprRightType.deriveList != nil {
 			compileError(expr.Position(), 0, "")
 		}
 
@@ -411,7 +411,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
 
 	// TODO
-	expr.typeSpecifier.derive = fd.typeS().derive
+	expr.typeSpecifier.deriveList = fd.typeS().deriveList
 	return expr
 }
 func (expr *FunctionCallExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -634,7 +634,7 @@ func isString(t *TypeSpecifier) bool {
 // 声明类型转换, 目前仅有number类型,不存在类型转换
 // TODO: 待去除
 func createAssignCast(src Expression, dest *TypeSpecifier) Expression {
-	if src.typeS().derive != nil || dest.derive != nil {
+	if src.typeS().deriveList != nil || dest.deriveList != nil {
 		compileError(src.Position(), 0, "")
 	}
 

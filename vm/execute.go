@@ -1,4 +1,4 @@
-package parser
+package vm
 
 import (
 	"encoding/binary"
@@ -384,7 +384,7 @@ func newVirtualMachine() *VmVirtualMachine {
 // Stack
 //
 type Stack struct {
-	int   stackPointer
+	stackPointer int
 	stack []VmValue
 }
 

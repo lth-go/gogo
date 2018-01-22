@@ -1,4 +1,4 @@
-package parser
+package compiler
 
 // ==============================
 // 基本类型
@@ -76,7 +76,6 @@ type FunctionBlockInfo struct {
 }
 
 type Block struct {
-	BlockType       int
 	outerBlock      *Block
 	statementList   []Statement
 	declarationList []*Declaration

@@ -1,8 +1,9 @@
-package parser
+package compiler
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"unicode"
 )
 
@@ -25,7 +26,8 @@ var opName = map[string]int{
 	"true":     TRUE_T,
 	"false":    FALSE_T,
 	"boolean":  BOOLEAN_T,
-	"number":   NUMBER_T,
+	"int":      INT_T,
+	"double":   DOUBLE_T,
 	"string":   STRING_T,
 	"(":        LP,
 	")":        RP,
@@ -68,10 +70,15 @@ retry:
 		}
 	// 数字
 	case isDigit(ch):
-		tok = DOUBLE_LITERAL
 		lit, err = s.scanNumber()
 		if err != nil {
 			return
+		}
+		// 判断lit中有无 `.`
+		if strings.Contains(lit, ".") {
+			tok = DOUBLE_LITERAL
+		} else {
+			tok = INT_LITERAL
 		}
 	// 字符串
 	case ch == '"':
@@ -184,11 +191,6 @@ func isDigit(ch rune) bool {
 	return '0' <= ch && ch <= '9'
 }
 
-// isHex returns true if the rune is a hex digits.
-func isHex(ch rune) bool {
-	return ('0' <= ch && ch <= '9') || ('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F')
-}
-
 // isEOL returns true if the rune is at end-of-line or end-of-file.
 func isEOL(ch rune) bool {
 	return ch == '\n' || ch == -1
@@ -213,13 +215,15 @@ func (s *Scanner) peek() rune {
 
 // next moves offset to next.
 func (s *Scanner) next() {
-	if !s.reachEOF() {
-		if s.peek() == '\n' {
-			s.lineHead = s.offset + 1
-			s.line++
-		}
-		s.offset++
+	if s.reachEOF() {
+		return
 	}
+
+	if s.peek() == '\n' {
+		s.lineHead = s.offset + 1
+		s.line++
+	}
+	s.offset++
 }
 
 // back moves back offset once to top.
@@ -237,11 +241,6 @@ func (s *Scanner) skipBlank() {
 // reachEOF returns true if offset is at end-of-file.
 func (s *Scanner) reachEOF() bool {
 	return len(s.src) <= s.offset
-}
-
-// current returns the current offset.
-func (s *Scanner) current() int {
-	return s.offset
 }
 
 // pos returns the position of current.
@@ -272,37 +271,14 @@ func (s *Scanner) scanNumber() (string, error) {
 	ch := s.peek()
 	ret = append(ret, ch)
 	s.next()
-	if ch == '0' && s.peek() == 'x' {
+
+	for isDigit(s.peek()) || s.peek() == '.' {
 		ret = append(ret, s.peek())
 		s.next()
-		for isHex(s.peek()) {
-			ret = append(ret, s.peek())
-			s.next()
-		}
-	} else {
-		for isDigit(s.peek()) || s.peek() == '.' {
-			ret = append(ret, s.peek())
-			s.next()
-		}
-		if s.peek() == 'e' {
-			ret = append(ret, s.peek())
-			s.next()
-			if isDigit(s.peek()) || s.peek() == '+' || s.peek() == '-' {
-				ret = append(ret, s.peek())
-				s.next()
-				for isDigit(s.peek()) || s.peek() == '.' {
-					ret = append(ret, s.peek())
-					s.next()
-				}
-			}
-			for isDigit(s.peek()) || s.peek() == '.' {
-				ret = append(ret, s.peek())
-				s.next()
-			}
-		}
-		if isLetter(s.peek()) {
-			return "", errors.New("identifier starts immediately after numeric literal")
-		}
+	}
+
+	if isLetter(s.peek()) {
+		return "", errors.New("identifier starts immediately after numeric literal")
 	}
 	return string(ret), nil
 }

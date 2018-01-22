@@ -1,4 +1,4 @@
-package parser
+package compiler
 
 // Pos interface provies two functions to get/set the position for expression or statement.
 type Pos interface {

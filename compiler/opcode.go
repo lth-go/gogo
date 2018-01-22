@@ -1,4 +1,4 @@
-package parser
+package compiler
 
 var opcodeInfo []OpcodeInfo = []OpcodeInfo{
 	{"dummy", "", 0},

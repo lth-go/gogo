@@ -1,19 +1,21 @@
 %{
-package parser
+package compiler
 %}
 
 %union{
-    expression          Expression
-    statement           Statement
-    block               *Block
-    elif                *Elif
-    elif_list           []*Elif
     parameter_list      []*Parameter
     argument_list       []Expression
+
     statement_list      []Statement
-    assignment_operator AssignmentOperator
+    expression          Expression
+    statement           Statement
+
+    block               *Block
+    elif_list           []*Elif
+
     type_specifier      *TypeSpecifier
-    tok Token
+
+    tok                 Token
 }
 
 %token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
@@ -23,14 +25,14 @@ package parser
         LOGICAL_AND LOGICAL_OR
         EQ NE GT GE LT LE
         ADD SUB MUL DIV
-        DOUBLE_LITERAL STRING_LITERAL
-        TRUE_T FALSE_T
+        INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRUE_T FALSE_T
         IDENTIFIER
         EXCLAMATION DOT
-        BOOLEAN_T NUMBER_T STRING_T
+        BOOLEAN_T INT_T DOUBLE_T STRING_T
 
 %type <expression> expression expression_opt
-      assignment_expression logical_and_expression logical_or_expression
+      assignment_expression
+      logical_and_expression logical_or_expression
       equality_expression relational_expression
       additive_expression multiplicative_expression
       unary_expression postfix_expression primary_expression
@@ -43,9 +45,7 @@ package parser
 %type <parameter_list> parameter_list
 %type <argument_list> argument_list
 %type <block> block
-%type <elif> elif
 %type <elif_list> elif_list
-%type <assignment_operator> assignment_operator
 %type <type_specifier> type_specifier
 
 %%
@@ -69,9 +69,13 @@ type_specifier
             $$ = &TypeSpecifier{basicType: BooleanType}
             $$.SetPosition($1.Position())
         }
-        | NUMBER_T
+        | INT_T
         {
-            $$ = &TypeSpecifier{basicType: NumberType}
+            $$ = &TypeSpecifier{basicType: IntType}
+        }
+        | DOUBLE_T
+        {
+            $$ = &TypeSpecifier{basicType: DoubleType}
             $$.SetPosition($1.Position())
         }
         | STRING_T
@@ -148,16 +152,10 @@ expression
         ;
 assignment_expression
         : logical_or_expression
-        | postfix_expression assignment_operator assignment_expression
+        | postfix_expression ASSIGN_T assignment_expression
         {
             $$ = &AssignExpression{left: $1, operator: $2, operand: $3}
             $$.SetPosition($1.Position())
-        }
-        ;
-assignment_operator
-        : ASSIGN_T
-        {
-            $$ = NormalAssign;
         }
         ;
 logical_or_expression
@@ -274,6 +272,11 @@ primary_expression
             $$ = &IdentifierExpression{name: $1.Lit}
             $$.SetPosition($1.Position())
         }
+        | INT_LITERAL
+        {
+            $$ = &BooleanExpression{booleanValue: true}
+            $$.SetPosition($1.Position())
+        }
         | DOUBLE_LITERAL
         {
             $$ = &BooleanExpression{booleanValue: true}
@@ -331,19 +334,13 @@ if_statement
         }
         ;
 elif_list
-        : elif
-        {
-            $$ = []*Elif{$1}
-        }
-        | elif_list elif
-        {
-            $$ = append([]*Elif{$2}, $1...)
-        }
-        ;
-elif
         : ELIF expression block
         {
-            $$ = &Elif{condition: $2, block: $3}
+            $$ = []*Elif{&Elif{condition: $2, block: $3}}
+        }
+        | elif_list ELIF expression block
+        {
+            $$ = append([]*Elif{&Elif{condition: $3, block: $4}}, $1...)
         }
         ;
 for_statement

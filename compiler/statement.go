@@ -1,19 +1,7 @@
 package compiler
 
-// ==============================
-// 基本类型
-// ==============================
-
-// BasicType 基础类型
-type BasicType int
-
-const (
-	// BooleanType 布尔类型
-	BooleanType BasicType = iota
-	// NumberType 数字类型
-	NumberType
-	// StringType 字符串类型
-	StringType
+import (
+	"../vm"
 )
 
 // ==============================
@@ -24,14 +12,14 @@ type TypeDerive interface {
 }
 
 type FunctionDerive struct {
-	parameterList []*LocalVariable
+	parameterList []*Parameter
 }
 
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
 	PosImpl
 	// 基本类型
-	basicType BasicType
+	basicType vm.BasicType
 	// 派生类型
 	deriveList []TypeDerive
 }
@@ -49,18 +37,37 @@ type Statement interface {
 	generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf)
 }
 
-// StatementImpl provide commonly implementations for Stmt..
 type StatementImpl struct {
-	PosImpl    // StmtImpl provide Pos() function.
-	lineNumber int
+	PosImpl
 }
 
-// stmt provide restraint interface.
-func (stmt *StatementImpl) stmt() {}
+//
+// Block ...
+//
+type Block struct {
+	outerBlock      *Block
+	statementList   []Statement
+	declarationList []*Declaration
 
-//
-// Block 块接口
-//
+	// 块信息，函数块，还是条件语句
+	parent BlockInfo
+}
+
+func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Position) {
+	if searchDeclaration(decl.name, b) != nil {
+		compileError(pos, 0, "")
+	}
+
+	if b != nil {
+		b.declarationList = append(b.declarationList, decl)
+		fd.addLocalVariable(decl)
+		decl.isLocal = true
+	} else {
+		compiler := getCurrentCompiler()
+		compiler.declarationList = append(compiler.declarationList, decl)
+		decl.isLocal = false
+	}
+}
 
 type BlockInfo interface{}
 
@@ -75,16 +82,9 @@ type FunctionBlockInfo struct {
 	endLabel int
 }
 
-type Block struct {
-	outerBlock      *Block
-	statementList   []Statement
-	declarationList []*Declaration
-
-	// 块信息，函数块，还是条件语句
-	parent BlockInfo
-}
-
+//
 // FunctionDefinition 函数定义
+//
 type FunctionDefinition struct {
 	typeSpecifier *TypeSpecifier
 	name          string
@@ -96,24 +96,56 @@ type FunctionDefinition struct {
 	localVariableList []*Declaration
 }
 
+// TODO 是否可以去掉
 func (fd *FunctionDefinition) typeS() *TypeSpecifier {
 	return fd.typeSpecifier
 }
 
+func (fd *FunctionDefinition) addParameterAsDeclaration() {
+
+	for _, param := range fd.parameterList {
+		if searchDeclaration(param.name, fd.block) != nil {
+			compileError(param.Position(), 0, "")
+		}
+		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
+
+		fd.block.addDeclaration(decl, fd, param.Position())
+	}
+}
+
+func (fd *FunctionDefinition) addReturnFunction() {
+
+	if fd.block.statementList == nil {
+		ret := &ReturnStatement{returnValue: nil}
+		ret.fix(fd.block, fd)
+		fd.block.statementList = []Statement{ret}
+		return
+	}
+
+	last := fd.block.statementList[len(fd.block.statementList)-1]
+	_, ok := last.(*ReturnStatement)
+	if ok {
+		return
+	}
+	ret := &ReturnStatement{returnValue: nil}
+	ret.fix(fd.block, fd)
+	fd.block.statementList = append(fd.block.statementList, ret)
+	return
+}
+
+func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
+	decl.variableIndex = len(fd.localVariableList)
+	fd.localVariableList = append(fd.localVariableList, decl)
+}
+
+//
 // Parameter 形参
+//
 type Parameter struct {
 	PosImpl
 	typeSpecifier *TypeSpecifier
 	name          string
 }
-
-// AssignmentOperator ...
-type AssignmentOperator int
-
-const (
-	// NormalAssign 赋值操作符 =
-	NormalAssign AssignmentOperator = iota
-)
 
 // ==============================
 // ExpressionStatement
@@ -148,6 +180,7 @@ func (stmt *ExpressionStatement) generate(exe *Executable, currentBlock *Block, 
 // IfStatement if表达式
 type IfStatement struct {
 	StatementImpl
+
 	condition Expression
 	thenBlock *Block
 	elifList  []*Elif
@@ -286,33 +319,33 @@ type ReturnStatement struct {
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
+	var returnValue Expression
 	stmt.returnValue.fix(currentBlock)
 
-	if stmt.returnValue == nil {
-		switch fd.typeSpecifier.basicType {
-		case BooleanType:
-			stmt.returnValue = &BooleanExpression{
-				booleanValue:  false,
-				typeSpecifier: &TypeSpecifier{basicType: BooleanType},
-			}
-			return
-		case NumberType:
-			stmt.returnValue = &NumberExpression{
-				numberValue:   0.0,
-				typeSpecifier: &TypeSpecifier{basicType: NumberType},
-			}
-			return
-		case StringType:
-			stmt.returnValue = &StringExpression{
-				stringValue:   "",
-				typeSpecifier: &TypeSpecifier{basicType: StringType},
-			}
-			return
-		}
-
+	if stmt.returnValue != nil {
+		// 类型转换
+		returnValue = createAssignCast(stmt.returnValue, fd.typeSpecifier)
+		stmt.returnValue = returnValue
+		return
 	}
-	// 类型转换
-	createAssignCast(stmt.returnValue, fd.typeSpecifier)
+
+	if fd.typeSpecifier.deriveList != nil {
+		panic("TODO")
+	}
+
+	switch fd.typeSpecifier.basicType {
+	case vm.BooleanType:
+		returnValue = &BooleanExpression{booleanValue: false}
+	case vm.IntType:
+		returnValue = &IntExpression{intValue: 0}
+	case vm.DoubleType:
+		stmt.returnValue = &DoubleExpression{doubleValue: 0.0}
+	case vm.StringType:
+		stmt.returnValue = &StringExpression{stringValue: ""}
+	}
+
+	returnValue.SetPosition(stmt.Position())
+	stmt.returnValue = returnValue
 }
 
 func (stmt *ReturnStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -426,6 +459,7 @@ func (stmt *ContinueStatement) generate(exe *Executable, currentBlock *Block, ob
 // Declaration 声明语句
 type Declaration struct {
 	StatementImpl
+
 	typeSpecifier *TypeSpecifier
 
 	name        string
@@ -437,19 +471,7 @@ type Declaration struct {
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
-	if searchDeclaration(stmt.name, currentBlock) != nil {
-		compileError(stmt.Position(), 0, "")
-	}
-
-	if currentBlock != nil {
-		currentBlock.declarationList = append(currentBlock.declarationList, stmt)
-		addLocalVariable(fd, stmt)
-		stmt.isLocal = true
-	} else {
-		compiler := getCurrentCompiler()
-		compiler.declarationList = append(compiler.declarationList, stmt)
-		stmt.isLocal = false
-	}
+	currentBlock.addDeclaration(stmt, fd, stmt.Position())
 
 	stmt.initializer.fix(currentBlock)
 

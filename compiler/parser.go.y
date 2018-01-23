@@ -1,5 +1,9 @@
 %{
 package compiler
+
+import (
+    "../vm"
+)
 %}
 
 %union{
@@ -66,21 +70,21 @@ definition_or_statement
 type_specifier
         : BOOLEAN_T
         {
-            $$ = &TypeSpecifier{basicType: BooleanType}
+            $$ = &TypeSpecifier{basicType: vm.BooleanType}
             $$.SetPosition($1.Position())
         }
         | INT_T
         {
-            $$ = &TypeSpecifier{basicType: IntType}
+            $$ = &TypeSpecifier{basicType: vm.IntType}
         }
         | DOUBLE_T
         {
-            $$ = &TypeSpecifier{basicType: DoubleType}
+            $$ = &TypeSpecifier{basicType: vm.DoubleType}
             $$.SetPosition($1.Position())
         }
         | STRING_T
         {
-            $$ = &TypeSpecifier{basicType: StringType}
+            $$ = &TypeSpecifier{basicType: vm.StringType}
             $$.SetPosition($1.Position())
         }
         ;

@@ -68,13 +68,13 @@ func (c *Compiler) fixTree() {
 		}
 
 		// 添加形参声明
-		addParameterAsDeclaration(fd)
+		fd.addParameterAsDeclaration()
 
 		// 修正表达式列表
 		fixStatementList(fd.block, fd.block.statementList, fd)
 
 		// 修正返回值
-		addReturnFunction(fd)
+		fd.addReturnFunction()
 	}
 
 	for varCount, decl := range c.declarationList {
@@ -92,60 +92,6 @@ func fixStatementList(currentBlock *Block, statementList []Statement, fd *Functi
 // ==============================
 // utils
 // ==============================
-
-func addParameterAsDeclaration(fd *FunctionDefinition) {
-
-	for _, param := range fd.parameterList {
-		if searchDeclaration(param.name, fd.block) != nil {
-			compileError(param.Position(), 0, "")
-		}
-		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
-
-		addDeclaration(fd.block, decl, fd, param.Position())
-	}
-}
-
-func addDeclaration(currentBlock *Block, decl *Declaration, fd *FunctionDefinition, pos Position) {
-	if searchDeclaration(decl.name, currentBlock) != nil {
-		compileError(pos, 0, "")
-	}
-
-	if currentBlock != nil {
-		currentBlock.declarationList = append(currentBlock.declarationList, decl)
-		addLocalVariable(fd, decl)
-		decl.isLocal = true
-	} else {
-		compiler := getCurrentCompiler()
-		compiler.declarationList = append(compiler.declarationList, decl)
-		decl.isLocal = false
-	}
-
-}
-
-func addReturnFunction(fd *FunctionDefinition) {
-
-	if fd.block.statementList == nil {
-		ret := &ReturnStatement{returnValue: nil}
-		ret.fix(fd.block, fd)
-		fd.block.statementList = []Statement{ret}
-		return
-	}
-
-	last := fd.block.statementList[len(fd.block.statementList)-1]
-	_, ok := last.(*ReturnStatement)
-	if ok {
-		return
-	}
-	ret := &ReturnStatement{returnValue: nil}
-	ret.fix(fd.block, fd)
-	fd.block.statementList = append(fd.block.statementList, ret)
-	return
-}
-
-func addLocalVariable(fd *FunctionDefinition, decl *Declaration) {
-	decl.variableIndex = len(fd.localVariableList)
-	fd.localVariableList = append(fd.localVariableList, decl)
-}
 
 func searchDeclaration(name string, currentBlock *Block) *Declaration {
 

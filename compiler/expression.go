@@ -2,12 +2,13 @@ package compiler
 
 import (
 	"strconv"
+
+	"../vm"
 )
 
-// ==============================
-// BinaryOperatorKind
-// ==============================
-
+//
+// BinaryOperatorKind ...
+//
 type BinaryOperatorKind int
 
 const (
@@ -28,8 +29,6 @@ const (
 //
 // Expression interface
 //
-
-// Expression 表达式接口
 type Expression interface {
 	// Pos接口
 	Pos
@@ -45,17 +44,12 @@ type Expression interface {
 //
 // Expression impl
 //
-
-// ExpressionImpl provide commonly implementations for Expr.
 type ExpressionImpl struct {
 	PosImpl // ExprImpl provide Pos() function.
 
 	// 类型
 	typeSpecifier *TypeSpecifier
 }
-
-// expr provide restraint interface.
-func (expr *ExpressionImpl) expr() {}
 
 func (expr *ExpressionImpl) typeS() *TypeSpecifier {
 	return expr.typeSpecifier
@@ -98,10 +92,9 @@ func (expr *CommaExpression) generate(exe *Executable, currentBlock *Block, ob *
 // AssignExpression 赋值表达式
 type AssignExpression struct {
 	ExpressionImpl
+
 	// 左值
 	left Expression
-	// 符号
-	operator AssignmentOperator
 	// 操作数
 	operand Expression
 }
@@ -183,15 +176,13 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		// 能否合并计算
 		newExpr = evalMathExpression(currentBlock, expr)
-
 		switch newExpr.(type) {
-		case *NumberExpression, *StringExpression:
+		case *IntExpression, *DoubleExpression, *StringExpression:
 			return newExpr
 		}
 
 		// 类型转换
 		newExpr = castBinaryExpression(expr)
-
 		newBinaryExpr, ok := newExpr.(*BinaryExpression)
 		if !ok {
 			compileError(expr.Position(), 0, "")
@@ -200,30 +191,30 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
-		if isNumber(newBinaryExprLeftType) && isNumber(newBinaryExprRightType) {
-			newExpr.setType(&TypeSpecifier{basicType: NumberType})
+		if isInt(newBinaryExprLeftType) && isInt(newBinaryExprRightType) {
+			newExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+		} else if isDouble(newBinaryExprLeftType) && isDouble(newBinaryExprRightType) {
+			newExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
 		} else if isString(newBinaryExprLeftType) && isString(newBinaryExprRightType) {
-			newExpr.setType(&TypeSpecifier{basicType: StringType})
+			newExpr.setType(&TypeSpecifier{basicType: vm.StringType})
 		} else {
 			compileError(expr.Position(), 0, "")
 		}
 
 		return newExpr
 
-		// 比较
+	// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
 
 		newExpr = evalCompareExpression(expr)
-
 		switch newExpr.(type) {
 		case *BooleanExpression:
 			return newExpr
 		}
 
 		newExpr = castBinaryExpression(expr)
-
 		newBinaryExpr, ok := newExpr.(*BinaryExpression)
 		if !ok {
 			compileError(expr.Position(), 0, "")
@@ -232,20 +223,23 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
-		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) || newBinaryExprLeftType.deriveList != nil || newBinaryExprRightType.deriveList != nil {
+		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) ||
+			newBinaryExprLeftType.deriveList != nil ||
+			newBinaryExprRightType.deriveList != nil {
 			compileError(expr.Position(), 0, "")
 		}
 
-		newExpr.setType(&TypeSpecifier{basicType: BooleanType})
+		newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 
 		return newExpr
 
+	// && ||
 	case LogicalAndOperator, LogicalOrOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
 
 		if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
-			expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+			expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 		} else {
 			compileError(expr.Position(), 0, "")
 		}
@@ -328,13 +322,13 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 	newExpr = expr.operand.fix(currentBlock)
 
-	if !isNumber(newExpr.typeS()) {
+	if !isDouble(newExpr.typeS()) {
 		compileError(expr.Position(), 0, "")
 	}
 
-	kind, ok := newExpr.(*NumberExpression)
+	kind, ok := newExpr.(*DoubleExpression)
 	if ok {
-		kind.numberValue = -kind.numberValue
+		kind.doubleValue = -kind.doubleValue
 		return newExpr
 	}
 
@@ -354,6 +348,7 @@ func (expr *MinusExpression) generate(exe *Executable, currentBlock *Block, ob *
 // LogicalNotExpression 逻辑非表达式
 type LogicalNotExpression struct {
 	ExpressionImpl
+
 	operand Expression
 }
 
@@ -437,9 +432,10 @@ type BooleanExpression struct {
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+	expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 	return expr
 }
+
 func (expr *BooleanExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if expr.booleanValue {
 		generateCode(ob, expr.Position(), PUSH_INT_1BYTE, 1)
@@ -450,31 +446,48 @@ func (expr *BooleanExpression) generate(exe *Executable, currentBlock *Block, ob
 }
 
 // ==============================
-// NumberExpression
+// IntExpression
 // ==============================
 
-// NumberExpression 数字表达式
-type NumberExpression struct {
+// IntExpression 数字表达式
+type IntExpression struct {
 	ExpressionImpl
 
-	numberValue float64
+	intValue int
 }
 
-func (expr *NumberExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
-
+func (expr *IntExpression) fix(currentBlock *Block) Expression {
+	expr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
 	return expr
 }
-func (expr *NumberExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *DoubleExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+}
 
-	if expr.numberValue == 0.0 {
+// ==============================
+// DoubleExpression
+// ==============================
+
+// DoubleExpression 数字表达式
+type DoubleExpression struct {
+	ExpressionImpl
+
+	doubleValue float64
+}
+
+func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
+	expr.typeSpecifier = &TypeSpecifier{basicType: vm.DoubleType}
+	return expr
+}
+func (expr *DoubleExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	if expr.doubleValue == 0.0 {
 		generateCode(ob, expr.Position(), PUSH_DOUBLE_0)
 
-	} else if expr.numberValue == 1.0 {
+	} else if expr.doubleValue == 1.0 {
 		generateCode(ob, expr.Position(), PUSH_DOUBLE_1)
 
 	} else {
-		cp := &ConstantNumber{numberValue: expr.numberValue}
+		cp := &ConstantNumber{doubleValue: expr.doubleValue}
 		cpIdx := addConstantPool(exe, cp)
 
 		generateCode(ob, expr.Position(), PUSH_DOUBLE, cpIdx)
@@ -492,10 +505,10 @@ type StringExpression struct {
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: StringType}
-
+	expr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
 	return expr
 }
+
 func (expr *StringExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	cp := &ConstantString{stringValue: expr.stringValue}
@@ -507,6 +520,7 @@ func (expr *StringExpression) generate(exe *Executable, currentBlock *Block, ob 
 // ==============================
 // IdentifierExpression
 // ==============================
+type IdentifierInner interface{}
 
 // IdentifierExpression 变量表达式
 type IdentifierExpression struct {
@@ -514,12 +528,8 @@ type IdentifierExpression struct {
 
 	name string
 
-	// 是否可以去除
-	isFunction bool
-
-	// 声明要么是变量，要么是函数
-	function    *FunctionDefinition
-	declaration *Declaration
+	// 声明要么是变量，要么是函数 (FunctionDefinition Declaration)
+	inner IdentifierInner
 }
 
 func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
@@ -528,17 +538,16 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	decl := searchDeclaration(expr.name, currentBlock)
 	if decl != nil {
 		expr.typeSpecifier = decl.typeSpecifier
-		expr.isFunction = false
-		expr.declaration = decl
+		expr.inner = decl
 		return expr
 	}
 
 	// 判断是否是函数
 	fd := searchFunction(expr.name)
 	if fd != nil {
-		expr.typeSpecifier = fd.typeS()
-		expr.isFunction = true
-		expr.function = fd
+		expr.typeSpecifier = fd.typeSpecifier
+		expr.inner = fd
+		return expr
 	}
 
 	// 都不是,报错
@@ -572,8 +581,11 @@ func (expr *IdentifierExpression) generate(exe *Executable, currentBlock *Block,
 type CastType int
 
 const (
-	BooleanToStringCast CastType = iota
-	NumberToStringCast
+	IntToStringCast CastType = iota
+	BooleanToStringCast
+	DoubleToStringCast
+	IntToDoubleCast
+	DoubleToIntCast
 )
 
 type CastExpression struct {
@@ -611,7 +623,7 @@ func allocCastExpression(castType CastType, expr Expression) Expression {
 
 	switch castType {
 	case BooleanToStringCast, NumberToStringCast:
-		castExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
+		castExpr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
 	}
 
 	return castExpr
@@ -621,48 +633,17 @@ func allocCastExpression(castType CastType, expr Expression) Expression {
 // utils
 // ==============================
 
-func isNumber(t *TypeSpecifier) bool {
-	return t.basicType == NumberType
+func isDouble(t *TypeSpecifier) bool {
+	return t.basicType == vm.DoubleType
+}
+func isInt(t *TypeSpecifier) bool {
+	return t.basicType == vm.IntType
 }
 func isBoolean(t *TypeSpecifier) bool {
-	return t.basicType == BooleanType
+	return t.basicType == vm.BooleanType
 }
 func isString(t *TypeSpecifier) bool {
-	return t.basicType == StringType
-}
-
-// 声明类型转换, 目前仅有number类型,不存在类型转换
-// TODO: 待去除
-func createAssignCast(src Expression, dest *TypeSpecifier) Expression {
-	if src.typeS().deriveList != nil || dest.deriveList != nil {
-		compileError(src.Position(), 0, "")
-	}
-
-	if src.typeS().basicType == dest.basicType {
-		return src
-	}
-
-	compileError(src.Position(), 0, "")
-	return nil
-}
-
-func castBinaryExpression(expr Expression) Expression {
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
-
-	if isString(binaryExpr.left.typeS()) && isBoolean(binaryExpr.right.typeS()) {
-		newExpr := allocCastExpression(BooleanToStringCast, binaryExpr.right)
-		return newExpr
-
-	} else if isString(binaryExpr.left.typeS()) && isNumber(binaryExpr.right.typeS()) {
-		newExpr := allocCastExpression(NumberToStringCast, binaryExpr.right)
-		return newExpr
-
-	}
-	return expr
+	return t.basicType == vm.StringType
 }
 
 func evalMathExpression(currentBlock *Block, expr Expression) Expression {
@@ -672,11 +653,11 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	}
 
 	// number 运算
-	leftNumberExpr, ok := binaryExpr.left.(*NumberExpression)
+	leftNumberExpr, ok := binaryExpr.left.(*DoubleExpression)
 	if ok {
-		rightNumberExpr, ok := binaryExpr.right.(*NumberExpression)
+		rightNumberExpr, ok := binaryExpr.right.(*DoubleExpression)
 		if ok {
-			newExpr := evalMathExpressionNumber(binaryExpr, leftNumberExpr.numberValue, rightNumberExpr.numberValue)
+			newExpr := evalMathExpressionNumber(binaryExpr, leftNumberExpr.doubleValue, rightNumberExpr.doubleValue)
 			return newExpr
 		}
 	}
@@ -710,8 +691,8 @@ func evalMathExpressionNumber(expr Expression, left, right float64) Expression {
 	default:
 		compileError(binaryExpr.Position(), 0, "")
 	}
-	newExpr := &NumberExpression{numberValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: NumberType}
+	newExpr := &DoubleExpression{doubleValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.DoubleType}
 	return newExpr
 }
 
@@ -734,7 +715,7 @@ func chainString(expr Expression) Expression {
 	newStr := leftStringExpr.stringValue + rightStr
 
 	newExpr := &StringExpression{stringValue: newStr}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: StringType}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
 
 	return newExpr
 }
@@ -749,8 +730,8 @@ func expressionToString(expr Expression) string {
 		} else {
 			newStr = "false"
 		}
-	case *NumberExpression:
-		newStr = strconv.FormatFloat(e.numberValue, 'f', -1, 64)
+	case *DoubleExpression:
+		newStr = strconv.FormatFloat(e.doubleValue, 'f', -1, 64)
 	case *StringExpression:
 		newStr = e.stringValue
 	default:
@@ -773,10 +754,10 @@ func evalCompareExpression(expr Expression) Expression {
 			newExpr := evalCompareExpressionBoolean(binaryExpr, leftExpr.booleanValue, rightExpr.booleanValue)
 			return newExpr
 		}
-	case *NumberExpression:
+	case *DoubleExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-		case *NumberExpression:
-			newExpr := evalCompareExpressionNumber(binaryExpr, leftExpr.numberValue, rightExpr.numberValue)
+		case *DoubleExpression:
+			newExpr := evalCompareExpressionNumber(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
 			return newExpr
 		}
 	case *StringExpression:
@@ -807,7 +788,7 @@ func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression 
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 	return newExpr
 }
 
@@ -837,7 +818,7 @@ func evalCompareExpressionNumber(expr Expression, left, right float64) Expressio
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 	return newExpr
 }
 
@@ -866,7 +847,7 @@ func evalCompareExpressionString(expr Expression, left, right string) Expression
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: BooleanType}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 
 	return newExpr
 }
@@ -892,13 +873,13 @@ func checkArgument(currentBlock *Block, fd *FunctionDefinition, expr Expression)
 
 }
 
-func get_opcode_type_offset(basicType BasicType) Opcode {
+func get_opcode_type_offset(basicType vm.BasicType) Opcode {
 	switch basicType {
-	case BooleanType:
+	case vm.BooleanType:
 		return Opcode(0)
-	case NumberType:
+	case vm.DoubleType:
 		return Opcode(0)
-	case StringType:
+	case vm.StringType:
 		return Opcode(1)
 	default:
 		panic("basic type")

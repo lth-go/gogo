@@ -319,20 +319,22 @@ type MinusExpression struct {
 }
 
 func (expr *MinusExpression) fix(currentBlock *Block) Expression {
-	var newExpr Expression
-	newExpr = expr.operand.fix(currentBlock)
+	expr.operand = expr.operand.fix(currentBlock)
 
-	if !isDouble(newExpr.typeS()) {
+	if !isInt(expr.operand.typeS()) && !isDouble(expr.operand.typeS()) {
 		compileError(expr.Position(), 0, "")
 	}
 
-	kind, ok := newExpr.(*DoubleExpression)
-	if ok {
-		kind.doubleValue = -kind.doubleValue
+	expr.setType(expr.operand.typeS())
+
+	switch newExpr := expr.operand.(type) {
+	case *IntExpression:
+		newExpr.intValue = -e.intValue
+		return newExpr
+	case *DoubleExpression:
+		newExpr.doubleValue = -e.doubleValue
 		return newExpr
 	}
-
-	expr.setType(newExpr.typeS())
 
 	return expr
 }
@@ -353,19 +355,19 @@ type LogicalNotExpression struct {
 }
 
 func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
-	newExpr := expr.operand.fix(currentBlock)
+	expr.operand = expr.operand.fix(currentBlock)
 
-	boolExpr, ok := newExpr.(*BooleanExpression)
-	if ok {
-		boolExpr.booleanValue = !boolExpr.booleanValue
-		return boolExpr
+	switch newExpr := expr.operand.(type) {
+	case *BooleanExpression:
+		newExpr.booleanValue = !newExpr.booleanValue
+		return newExpr
 	}
 
-	if !isBoolean(newExpr.typeS()) {
+	if !isBoolean(expr.operand.typeS()) {
 		compileError(expr.Position(), 0, "")
 	}
 
-	expr.setType(newExpr.typeS())
+	expr.setType(expr.operand.typeS())
 
 	return expr
 }
@@ -391,6 +393,7 @@ type FunctionCallExpression struct {
 
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	funcExpr := expr.function.fix(currentBlock)
+
 	identifierExpr, ok := funcExpr.(*IdentifierExpression)
 	if !ok {
 		compileError(expr.Position(), 0, "")
@@ -401,11 +404,9 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), 0, "")
 	}
 
-	checkArgument(currentBlock, fd, expr)
+	fd.checkArgument(currentBlock, expr)
 
 	expr.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
-
-	// TODO
 	expr.typeSpecifier.deriveList = fd.typeS().deriveList
 	return expr
 }
@@ -555,6 +556,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	return nil
 
 }
+
 func (expr *IdentifierExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
 	// 函数
 	if expr.function != nil {
@@ -633,18 +635,10 @@ func allocCastExpression(castType CastType, expr Expression) Expression {
 // utils
 // ==============================
 
-func isDouble(t *TypeSpecifier) bool {
-	return t.basicType == vm.DoubleType
-}
-func isInt(t *TypeSpecifier) bool {
-	return t.basicType == vm.IntType
-}
-func isBoolean(t *TypeSpecifier) bool {
-	return t.basicType == vm.BooleanType
-}
-func isString(t *TypeSpecifier) bool {
-	return t.basicType == vm.StringType
-}
+func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
+func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
+func isBoolean(t *TypeSpecifier) bool { return t.basicType == vm.BooleanType }
+func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
 
 func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	binaryExpr, ok := expr.(*BinaryExpression)
@@ -652,26 +646,43 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 		compileError(binaryExpr.Position(), 0, "")
 	}
 
-	// number 运算
-	leftNumberExpr, ok := binaryExpr.left.(*DoubleExpression)
-	if ok {
-		rightNumberExpr, ok := binaryExpr.right.(*DoubleExpression)
-		if ok {
-			newExpr := evalMathExpressionNumber(binaryExpr, leftNumberExpr.doubleValue, rightNumberExpr.doubleValue)
+	switch leftExpr := binaryExpr.left.(type) {
+
+	case *IntExpression:
+		switch rightExpr := binaryExpr.right.(type) {
+
+		case *IntExpression:
+			newExpr := evalMathExpressionInt(binaryExpr, left.intValue, right.intValue)
+			return newExpr
+
+		case *DoubleExpression:
+			newExpr := evalMathExpressionDouble(binaryExpr, float64(left.intValue), right.doubleValue)
 			return newExpr
 		}
-	}
 
-	// 字符串链接
-	leftStringExpr, ok := binaryExpr.left.(*StringExpression)
-	if ok {
-		newExpr := chainString(expr)
+	case *DoubleExpression:
+		switch rightExpr := binaryExpr.right.(type) {
+
+		case *IntExpression:
+			newExpr := evalMathExpressionDouble(binaryExpr, left.doubleValue, float64(right.intValue))
+			return newExpr
+
+		case *DoubleExpression:
+			newExpr := evalMathExpressionDouble(binaryExpr, left.doubleValue, right.doubleValue)
+			return newExpr
+		}
+
+	case *StringExpression:
+		if binaryExpr.operator == AddOperator {
+			newExpr := chainString(expr)
+			return newExpr
+		}
 	}
 
 	return expr
 }
 
-func evalMathExpressionNumber(expr Expression, left, right float64) Expression {
+func evalMathExpressionDouble(expr Expression, left, right float64) Expression {
 	var value float64
 
 	binaryExpr, ok := expr.(*BinaryExpression)
@@ -850,27 +861,6 @@ func evalCompareExpressionString(expr Expression, left, right string) Expression
 	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 
 	return newExpr
-}
-
-func checkArgument(currentBlock *Block, fd *FunctionDefinition, expr Expression) {
-	functionCallExpr, ok := expr.(*FunctionCallExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
-
-	ParameterList := fd.parameterList
-	argumentList := functionCallExpr.argumentList
-
-	length := len(ParameterList)
-	if len(argumentList) != length {
-		compileError(expr.Position(), 0, "")
-	}
-
-	for i := 0; i < length; i++ {
-		argumentList[i] = argumentList[i].fix(currentBlock)
-		createAssignCast(argumentList[i], ParameterList[i].typeSpecifier)
-	}
-
 }
 
 func get_opcode_type_offset(basicType vm.BasicType) Opcode {

@@ -127,15 +127,35 @@ func (fd *FunctionDefinition) addReturnFunction() {
 	if ok {
 		return
 	}
+
 	ret := &ReturnStatement{returnValue: nil}
 	ret.fix(fd.block, fd)
 	fd.block.statementList = append(fd.block.statementList, ret)
-	return
 }
 
 func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
 	decl.variableIndex = len(fd.localVariableList)
 	fd.localVariableList = append(fd.localVariableList, decl)
+}
+
+func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression) {
+	functionCallExpr, ok := expr.(*FunctionCallExpression)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
+
+	ParameterList := fd.parameterList
+	argumentList := functionCallExpr.argumentList
+
+	length := len(ParameterList)
+	if len(argumentList) != length {
+		compileError(expr.Position(), 0, "")
+	}
+
+	for i := 0; i < length; i++ {
+		argumentList[i] = argumentList[i].fix(currentBlock)
+		argumentList[i] = createAssignCast(argumentList[i], ParameterList[i].typeSpecifier)
+	}
 }
 
 //

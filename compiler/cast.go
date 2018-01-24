@@ -35,14 +35,24 @@ func castBinaryExpression(expr Expression) Expression {
 		compileError(expr.Position(), 0, "")
 	}
 
-	if isString(binaryExpr.left.typeS()) && isBoolean(binaryExpr.right.typeS()) {
-		newExpr := allocCastExpression(BooleanToStringCast, binaryExpr.right)
-		return newExpr
+	leftType := binaryExpr.left.typeS()
+	rightType := binaryExpr.right.typeS()
 
-	} else if isString(binaryExpr.left.typeS()) && isDouble(binaryExpr.right.typeS()) {
-		newExpr := allocCastExpression(NumberToStringCast, binaryExpr.right)
-		return newExpr
+	if isInt(leftType) && isDouble(rightType) {
+		binaryExpr.left = allocCastExpression(IntToDoubleCast, binaryExpr.left)
+
+	} else if isDouble(leftType) && isInt(rightType) {
+		binaryExpr.right = allocCastExpression(IntToDoubleCast, binaryExpr.right)
+
+	} else if isString(leftType) && isBoolean(rightType) {
+		binaryExpr.right = allocCastExpression(BooleanToStringCast, binaryExpr.right)
+
+	} else if isString(leftType) && isInt(rightType) {
+		binaryExpr.right = allocCastExpression(IntToStringCast, binaryExpr.right)
+
+	} else if isString(leftType) && isDouble(rightType) {
+		binaryExpr.right = allocCastExpression(DoubleToStringCast, binaryExpr.right)
 
 	}
-	return expr
+	return binaryExpr
 }

@@ -682,6 +682,31 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 	return expr
 }
 
+func evalMathExpressionInt(expr Expression, left, right int) Expression {
+	var value int
+
+	binaryExpr, ok := expr.(*BinaryExpression)
+	if !ok {
+		compileError(binaryExpr.Position(), 0, "")
+	}
+
+	switch binaryExpr.operator {
+	case AddOperator:
+		value = left + right
+	case SubOperator:
+		value = left - right
+	case MulOperator:
+		value = left * right
+	case DivOperator:
+		value = left / right
+	default:
+		compileError(binaryExpr.Position(), 0, "")
+	}
+
+	newExpr := &IntExpression{intValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
+	return newExpr
+}
 func evalMathExpressionDouble(expr Expression, left, right float64) Expression {
 	var value float64
 
@@ -741,6 +766,8 @@ func expressionToString(expr Expression) string {
 		} else {
 			newStr = "false"
 		}
+	case *IntExpression:
+		newStr = strconv.Itoa(e.intValue)
 	case *DoubleExpression:
 		newStr = strconv.FormatFloat(e.doubleValue, 'f', -1, 64)
 	case *StringExpression:
@@ -765,10 +792,22 @@ func evalCompareExpression(expr Expression) Expression {
 			newExpr := evalCompareExpressionBoolean(binaryExpr, leftExpr.booleanValue, rightExpr.booleanValue)
 			return newExpr
 		}
+	case *IntExpression:
+		switch rightExpr := binaryExpr.right.(type) {
+		case *IntExpression:
+			newExpr := evalCompareExpressionInt(binaryExpr, leftExpr.intValue, rightExpr.intValue)
+			return newExpr
+		case *DoubleExpression:
+			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.intValue, rightExpr.doubleValue)
+			return newExpr
+		}
 	case *DoubleExpression:
 		switch rightExpr := binaryExpr.right.(type) {
+		case *IntExpression:
+			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.intValue)
+			return newExpr
 		case *DoubleExpression:
-			newExpr := evalCompareExpressionNumber(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
+			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
 			return newExpr
 		}
 	case *StringExpression:
@@ -803,7 +842,37 @@ func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression 
 	return newExpr
 }
 
-func evalCompareExpressionNumber(expr Expression, left, right float64) Expression {
+func evalCompareExpressionInt(expr Expression, left, right int) Expression {
+	var value bool
+
+	binaryExpr, ok := expr.(*BinaryExpression)
+	if !ok {
+		compileError(binaryExpr.Position(), 0, "")
+	}
+
+	switch binaryExpr.operator {
+	case EqOperator:
+		value = (left == right)
+	case NeOperator:
+		value = (left != right)
+	case GtOperator:
+		value = (left > right)
+	case GeOperator:
+		value = (left >= right)
+	case LtOperator:
+		value = (left < right)
+	case LeOperator:
+		value = (left <= right)
+	default:
+		compileError(binaryExpr.Position(), 0, "")
+	}
+
+	newExpr := &BooleanExpression{booleanValue: value}
+	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+	return newExpr
+}
+
+func evalCompareExpressionDouble(expr Expression, left, right float64) Expression {
 	var value bool
 
 	binaryExpr, ok := expr.(*BinaryExpression)

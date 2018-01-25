@@ -19,23 +19,14 @@ func init_opcode_buf(ob *OpcodeBuf) {
 	ob.lineNumberList = []*LineNumber{}
 }
 
-func generate(compiler *Compiler) *Executable {
-	exe := newExecutable()
-
-	addGlobalVariable(compiler, exe)
-	addFunctions(compiler, exe)
-	addTopLevel(compiler, exe)
-
-	return exe
-}
 
 func addGlobalVariable(compiler *Compiler, exe *Executable) {
-	var v *Variable
+	var v *vm.VmVariable
 
-	exe.globalVariableList = []*Variable{}
+	exe.globalVariableList = []*vm.VmVariable{}
 
 	for _, dl := range compiler.declarationList {
-		v = &Variable{
+		v = &vm.VmVariable{
 			name:          dl.name,
 			typeSpecifier: copy_type_specifier(dl.typeSpecifier),
 		}
@@ -140,11 +131,11 @@ func copy_type_specifier(src *TypeSpecifier) *TypeSpecifier {
 	return dest
 }
 
-func copy_parameter_list(src []*Parameter) []*LocalVariable {
-	var dest []*LocalVariable = []*LocalVariable{}
+func copy_parameter_list(src []*Parameter) []*VmLocalVariable {
+	var dest []*VmLocalVariable = []*VmLocalVariable{}
 
 	for _, param := range src {
-		dest = append(dest, &LocalVariable{
+		dest = append(dest, &VmLocalVariable{
 			name:          param.name,
 			typeSpecifier: copy_type_specifier(param.typeSpecifier),
 		})
@@ -210,12 +201,12 @@ func add_line_number(ob *OpcodeBuf, lineNumber int, start_pc int) {
 	}
 }
 
-func copy_local_variables(fd *FunctionDefinition) []*LocalVariable {
+func copy_local_variables(fd *FunctionDefinition) []*VmLocalVariable {
 	// TODO 形参占用位置
-	var dest []*LocalVariable = []*LocalVariable{}
+	var dest []*VmLocalVariable = []*VmLocalVariable{}
 
 	for _, v := range fd.localVariableList {
-		dest = append(dest, &LocalVariable{name: v.name, typeSpecifier: copy_type_specifier(v.typeSpecifier)})
+		dest = append(dest, &VmLocalVariable{name: v.name, typeSpecifier: copy_type_specifier(v.typeSpecifier)})
 	}
 
 	return dest

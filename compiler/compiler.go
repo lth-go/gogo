@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"os"
+	"../vm"
 )
 
 // Compiler 编译器
@@ -81,6 +82,16 @@ func (c *Compiler) fixTree() {
 		decl.variableIndex = varCount
 	}
 
+}
+
+func (c *Compiler) generate() *vm.Executable {
+	exe := newExecutable()
+
+	addGlobalVariable(c, exe)
+	addFunctions(c, exe)
+	addTopLevel(c, exe)
+
+	return exe
 }
 
 func fixStatementList(currentBlock *Block, statementList []Statement, fd *FunctionDefinition) {

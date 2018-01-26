@@ -141,7 +141,7 @@ func (expr *AssignExpression) generateEx(exe *Executable, currentBlock *Block, o
 }
 
 func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
-	var code Opcode
+	var code byte
 
 	if decl.isLocal {
 		code = POP_STACK_INT + get_opcode_type_offset(decl.typeSpecifier.basicType)
@@ -250,7 +250,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	return nil
 }
 
-var operatorCodeMap = map[BinaryOperatorKind]Opcode{
+var operatorCodeMap = map[BinaryOperatorKind]byte{
 	EqOperator:  EQ_INT,
 	NeOperator:  NE_INT,
 	GtOperator:  GT_INT,
@@ -299,7 +299,7 @@ func (expr *BinaryExpression) generate(exe *Executable, currentBlock *Block, ob 
 
 		expr.left.generate(exe, currentBlock, ob)
 		generateCode(ob, expr.Position(), DUPLICATE)
-		generateCode(ob, expr.Position(), JUMP_IF_TRUE, trueLabel)
+		generateCode(ob, expr.Position(), vm.VM_JUMP_IF_TRUE, trueLabel)
 
 		expr.right.generate(exe, currentBlock, ob)
 		generateCode(ob, expr.Position(), LOGICAL_OR)
@@ -565,7 +565,7 @@ func (expr *IdentifierExpression) generate(exe *Executable, currentBlock *Block,
 	}
 
 	// 变量
-	var code Opcode
+	var code byte
 
 	if expr.declaration.isLocal {
 		code = PUSH_STACK_INT + get_opcode_type_offset(expr.declaration.typeSpecifier.basicType)
@@ -932,14 +932,14 @@ func evalCompareExpressionString(expr Expression, left, right string) Expression
 	return newExpr
 }
 
-func get_opcode_type_offset(basicType vm.BasicType) Opcode {
+func get_opcode_type_offset(basicType vm.BasicType) byte {
 	switch basicType {
 	case vm.BooleanType:
-		return Opcode(0)
+		return byte(0)
 	case vm.DoubleType:
-		return Opcode(0)
+		return byte(0)
 	case vm.StringType:
-		return Opcode(1)
+		return byte(1)
 	default:
 		panic("basic type")
 	}

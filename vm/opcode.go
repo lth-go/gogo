@@ -1,4 +1,16 @@
-package compiler
+package vm
+
+type OpcodeInfo struct {
+	// 注记符
+	mnemonic string
+
+	// 参数类型，
+	// `b` 一个字节整数
+	// `s` 两个字节整数
+	// `p` 常量池索引值
+	parameter       string
+	stack_increment int
+}
 
 var opcodeInfo []OpcodeInfo = []OpcodeInfo{
 	{"dummy", "", 0},

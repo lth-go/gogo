@@ -233,7 +233,7 @@ func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *Opco
 
 	ifFalseLabel = getLabel(ob)
 
-	generateCode(ob, stmt.Position(), JUMP_IF_FALSE, ifFalseLabel)
+	generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 	generateStatementList(exe, stmt.thenBlock, stmt.thenBlock.statementList, ob)
 
@@ -247,7 +247,7 @@ func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *Opco
 		elif.condition.generate(exe, currentBlock, ob)
 		ifFalseLabel = getLabel(ob)
 
-		generateCode(ob, statement.Position(), JUMP_IF_FALSE, ifFalseLabel)
+		generateCode(ob, statement.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 		generateStatementList(exe, elif.block, elif.block.statementList, ob)
 		generateCode(ob, statement.Position(), JUMP, endLabel)
@@ -311,7 +311,7 @@ func (stmt *ForStatement) generate(exe *Executable, currentBlock *Block, ob *Opc
 	parent.continueLabel = getLabel(ob)
 
 	if stmt.condition != nil {
-		generateCode(ob, stmt.Position(), JUMP_IF_FALSE, parent.breakLabel)
+		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, parent.breakLabel)
 	}
 
 	generateStatementList(exe, stmt.block, stmt.block.statementList, ob)

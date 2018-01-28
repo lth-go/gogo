@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"strconv"
-
 	"../vm"
 )
 
@@ -35,7 +33,7 @@ type Expression interface {
 	expr()
 
 	fix(*Block) Expression
-	generate(*Executable, *Block, *OpcodeBuf)
+	generate(*vm.Executable, *Block, *OpcodeBuf)
 
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
@@ -79,7 +77,7 @@ func (expr *CommaExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *CommaExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *CommaExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	expr.left.generate(exe, currentBlock, ob)
 	expr.right.generate(exe, currentBlock, ob)
@@ -113,29 +111,38 @@ func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *AssignExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
-	generateCode(ob, expr.Position(), DUPLICATE)
+	// 与generateEx的区别
+	generateCode(ob, expr.Position(), vm.VM_DUPLICATE)
 
 	identifierExpr, ok := expr.left.(*IdentifierExpression)
 	if !ok {
 		compileError(expr.Position(), 0, "")
 	}
-	decl := identifierExpr.declaration
+	inner := identifierExpr.inner
+	decl, ok := inner.(*Declaration)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
 
 	generatePopToIdentifier(decl, expr.Position(), ob)
 }
 
 // TODO
-func (expr *AssignExpression) generateEx(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
 	identifierExpr, ok := expr.left.(*IdentifierExpression)
 	if !ok {
 		compileError(expr.Position(), 0, "")
 	}
-	decl := identifierExpr.declaration
+	inner := identifierExpr.inner
+	decl, ok := inner.(*Declaration)
+	if !ok {
+		compileError(expr.Position(), 0, "")
+	}
 
 	generatePopToIdentifier(decl, expr.Position(), ob)
 }
@@ -144,9 +151,9 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
 	var code byte
 
 	if decl.isLocal {
-		code = POP_STACK_INT + get_opcode_type_offset(decl.typeSpecifier.basicType)
+		code = POP_STACK_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
 	} else {
-		code = POP_STATIC_INT + get_opcode_type_offset(decl.typeSpecifier.basicType)
+		code = POP_STATIC_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
 	}
 	generateCode(ob, pos, code, decl.variableIndex)
 }
@@ -169,7 +176,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 
 	switch expr.operator {
-	// 数学计算
+		// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -203,7 +210,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-	// 比较
+		// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -224,8 +231,8 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
 		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) ||
-			newBinaryExprLeftType.deriveList != nil ||
-			newBinaryExprRightType.deriveList != nil {
+		newBinaryExprLeftType.deriveList != nil ||
+		newBinaryExprRightType.deriveList != nil {
 			compileError(expr.Position(), 0, "")
 		}
 
@@ -233,7 +240,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-	// && ||
+		// && ||
 	case LogicalAndOperator, LogicalOrOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -251,59 +258,59 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 }
 
 var operatorCodeMap = map[BinaryOperatorKind]byte{
-	EqOperator:  EQ_INT,
-	NeOperator:  NE_INT,
-	GtOperator:  GT_INT,
-	GeOperator:  GE_INT,
-	LtOperator:  LT_INT,
-	LeOperator:  LE_INT,
-	AddOperator: ADD_INT,
-	SubOperator: SUB_INT,
-	MulOperator: MUL_INT,
-	DivOperator: DIV_INT,
+	EqOperator:  vm.VM_EQ_INT,
+	NeOperator:  vm.VM_NE_INT,
+	GtOperator:  vm.VM_GT_INT,
+	GeOperator:  vm.VM_GE_INT,
+	LtOperator:  vm.VM_LT_INT,
+	LeOperator:  vm.VM_LE_INT,
+	AddOperator: vm.VM_ADD_INT,
+	SubOperator: vm.VM_SUB_INT,
+	MulOperator: vm.VM_MUL_INT,
+	DivOperator: vm.VM_DIV_INT,
 }
 
-func (expr *BinaryExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
-	switch expr.operator {
-	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator, AddOperator, SubOperator, MulOperator, DivOperator:
+	switch operator := expr.operator {
+		case EqOperator, NeOperator,
+		GtOperator, GeOperator, LtOperator, LeOperator,
+		AddOperator, SubOperator, MulOperator, DivOperator:
 
 		if expr.left.typeS().basicType != expr.right.typeS().basicType {
 			compileError(expr.Position(), 0, "")
 		}
 
-		code, ok := operatorCodeMap[expr.operator]
+		expr.left.generate(exe, currentBlock, ob)
+		expr.right.generate(exe, currentBlock, ob)
+
+		code, ok := operatorCodeMap[operator]
 		if !ok {
 			compileError(expr.Position(), 0, "")
 		}
+		codeOffset := code + getOpcodeTypeOffset(expr.left.typeS().basicType)
+		generateCode(ob, expr.Position(), codeOffset)
+
+	case LogicalAndOperator, LogicalOrOperator:
+		var jumpCode, logicalCode byte
+
+		if operator == LogicalAndOperator {
+			jumpCode  = vm.VM_JUMP_IF_FALSE
+			logicalCode = vm.VM_LOGICAL_AND
+		} else {
+			jumpCode  = vm.VM_JUMP_IF_TRUE
+			logicalCode = vm.VM_LOGICAL_OR
+		}
+
+		label := getLabel(ob)
 
 		expr.left.generate(exe, currentBlock, ob)
-		expr.right.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), code+get_opcode_type_offset(expr.left.typeS().basicType))
-
-	case LogicalAndOperator:
-
-		falseLabel := getLabel(ob)
-
-		expr.left.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), DUPLICATE)
-		generateCode(ob, expr.Position(), JUMP_IF_FALSE, falseLabel)
+		generateCode(ob, expr.Position(), vm.VM_DUPLICATE)
+		generateCode(ob, expr.Position(), jumpCode, label)
 
 		expr.right.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), LOGICAL_AND)
-		setLabel(ob, falseLabel)
-
-	case LogicalOrOperator:
-
-		trueLabel := getLabel(ob)
-
-		expr.left.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), DUPLICATE)
-		generateCode(ob, expr.Position(), vm.VM_JUMP_IF_TRUE, trueLabel)
-
-		expr.right.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), LOGICAL_OR)
-		setLabel(ob, trueLabel)
+		generateCode(ob, expr.Position(), logicalCode)
+		setLabel(ob, label)
 	}
 }
 
@@ -338,9 +345,10 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 
 	return expr
 }
-func (expr *MinusExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
-	generateCode(ob, expr.Position(), MINUS_INT+get_opcode_type_offset(expr.typeS().basicType))
+	code := vm.VM_MINUS_INT+getOpcodeTypeOffset(expr.typeS().basicType)
+	generateCode(ob, expr.Position(), code)
 }
 
 // ==============================
@@ -371,10 +379,10 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 
 	return expr
 }
-func (expr *LogicalNotExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	expr.operand.generate(exe, currentBlock, ob)
-	generateCode(ob, expr.Position(), LOGICAL_NOT)
 
+func (expr *LogicalNotExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr.operand.generate(exe, currentBlock, ob)
+	generateCode(ob, expr.Position(), vm.VM_LOGICAL_NOT)
 }
 
 // ==============================
@@ -410,7 +418,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier.deriveList = fd.typeS().deriveList
 	return expr
 }
-func (expr *FunctionCallExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	for _, arg := range expr.argumentList {
 		arg.generate(exe, currentBlock, ob)
@@ -418,7 +426,7 @@ func (expr *FunctionCallExpression) generate(exe *Executable, currentBlock *Bloc
 
 	expr.function.generate(exe, currentBlock, ob)
 
-	generateCode(ob, expr.Position(), INVOKE)
+	generateCode(ob, expr.Position(), vm.VM_INVOKE)
 }
 
 // ==============================
@@ -437,11 +445,11 @@ func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *BooleanExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if expr.booleanValue {
-		generateCode(ob, expr.Position(), PUSH_INT_1BYTE, 1)
+		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
 	} else {
-		generateCode(ob, expr.Position(), PUSH_INT_1BYTE, 0)
+		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_1BYTE, 0)
 	}
 
 }
@@ -461,7 +469,18 @@ func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
 	return expr
 }
-func (expr *DoubleExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	if expr.intValue >= 0 && expr.intValue < 256 {
+		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
+	} else if expr.intValue >= 0 && expr.intValue < 65536 {
+		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
+	} else {
+		cp := &vm.ConstantInt{intValue: expr.intValue}
+		cpIdx = addConstantPool(cf, cp)
+
+		generateCode(ob, expr.Position(), vm.VM_PUSH_INT, cpIdx)
+	}
 }
 
 // ==============================
@@ -479,19 +498,19 @@ func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: vm.DoubleType}
 	return expr
 }
-func (expr *DoubleExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	if expr.doubleValue == 0.0 {
-		generateCode(ob, expr.Position(), PUSH_DOUBLE_0)
+		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE_0)
 
 	} else if expr.doubleValue == 1.0 {
-		generateCode(ob, expr.Position(), PUSH_DOUBLE_1)
+		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE_1)
 
 	} else {
 		cp := &ConstantNumber{doubleValue: expr.doubleValue}
 		cpIdx := addConstantPool(exe, cp)
 
-		generateCode(ob, expr.Position(), PUSH_DOUBLE, cpIdx)
+		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
 	}
 }
 
@@ -510,12 +529,12 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *StringExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	cp := &ConstantString{stringValue: expr.stringValue}
 
 	cpIdx := addConstantPool(exe, cp)
-	generateCode(ob, expr.Position(), PUSH_STRING, cpIdx)
+	generateCode(ob, expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }
 
 // ==============================
@@ -554,26 +573,26 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	// 都不是,报错
 	compileError(expr.Position(), 0, "")
 	return nil
-
 }
 
-func (expr *IdentifierExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	// 函数
-	if expr.function != nil {
-		generateCode(ob, expr.Position(), PUSH_FUNCTION, expr.function.index)
-		return
+func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	switch inner := expr.inner.(type) {
+
+		// 函数
+	case *FunctionDefinition:
+		generateCode(ob, expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
+
+		// 变量
+	case *Declaration:
+		var code byte
+
+		if inner.isLocal {
+			code = vm.VM_PUSH_STACK_INT + getOpcodeTypeOffset(inner.typeSpecifier.basicType)
+		} else {
+			code = vm.VM_PUSH_STATIC_INT + getOpcodeTypeOffset(inner.typeSpecifier.basicType)
+		}
+		generateCode(ob, expr.Position(), code, inner.variableIndex)
 	}
-
-	// 变量
-	var code byte
-
-	if expr.declaration.isLocal {
-		code = PUSH_STACK_INT + get_opcode_type_offset(expr.declaration.typeSpecifier.basicType)
-	} else {
-		code = PUSH_STATIC_INT + get_opcode_type_offset(expr.declaration.typeSpecifier.basicType)
-	}
-
-	generateCode(ob, expr.Position(), code, expr.declaration.variableIndex)
 }
 
 // ==============================
@@ -602,16 +621,24 @@ func (expr *CastExpression) fix(currentBlock *Block) Expression {
 	return nil
 }
 
-func (expr *CastExpression) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
 	switch expr.castType {
+	case IntToDoubleCast:
+		generateCode(ob, expr.Position(), vm.VM_CAST_INT_TO_DOUBLE)
+
+	case DoubleToIntCast:
+		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_INT)
 
 	case BooleanToStringCast:
-		generateCode(ob, expr.Position(), CAST_BOOLEAN_TO_STRING)
+		generateCode(ob, expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
 
-	case NumberToStringCast:
-		generateCode(ob, expr.Position(), CAST_DOUBLE_TO_STRING)
+	case IntToStringCast:
+		generateCode(ob, expr.Position(), vm.VM_CAST_INT_TO_STRING)
+
+	case DoubleToStringCast:
+		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
 
 	default:
 		compileError(expr.Position(), 0, "")
@@ -624,7 +651,7 @@ func allocCastExpression(castType CastType, expr Expression) Expression {
 	castExpr.SetPosition(expr.Position())
 
 	switch castType {
-	case BooleanToStringCast, NumberToStringCast:
+	case BooleanToStringCast, DoubleToStringCast:
 		castExpr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
 	}
 
@@ -640,306 +667,16 @@ func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
 func isBoolean(t *TypeSpecifier) bool { return t.basicType == vm.BooleanType }
 func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
 
-func evalMathExpression(currentBlock *Block, expr Expression) Expression {
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch leftExpr := binaryExpr.left.(type) {
-
-	case *IntExpression:
-		switch rightExpr := binaryExpr.right.(type) {
-
-		case *IntExpression:
-			newExpr := evalMathExpressionInt(binaryExpr, left.intValue, right.intValue)
-			return newExpr
-
-		case *DoubleExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, float64(left.intValue), right.doubleValue)
-			return newExpr
-		}
-
-	case *DoubleExpression:
-		switch rightExpr := binaryExpr.right.(type) {
-
-		case *IntExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, left.doubleValue, float64(right.intValue))
-			return newExpr
-
-		case *DoubleExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, left.doubleValue, right.doubleValue)
-			return newExpr
-		}
-
-	case *StringExpression:
-		if binaryExpr.operator == AddOperator {
-			newExpr := chainString(expr)
-			return newExpr
-		}
-	}
-
-	return expr
-}
-
-func evalMathExpressionInt(expr Expression, left, right int) Expression {
-	var value int
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch binaryExpr.operator {
-	case AddOperator:
-		value = left + right
-	case SubOperator:
-		value = left - right
-	case MulOperator:
-		value = left * right
-	case DivOperator:
-		value = left / right
-	default:
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	newExpr := &IntExpression{intValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
-	return newExpr
-}
-func evalMathExpressionDouble(expr Expression, left, right float64) Expression {
-	var value float64
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch binaryExpr.operator {
-	case AddOperator:
-		value = left + right
-	case SubOperator:
-		value = left - right
-	case MulOperator:
-		value = left * right
-	case DivOperator:
-		value = left / right
-	default:
-		compileError(binaryExpr.Position(), 0, "")
-	}
-	newExpr := &DoubleExpression{doubleValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.DoubleType}
-	return newExpr
-}
-
-func chainString(expr Expression) Expression {
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	rightStr := expressionToString(binaryExpr.right)
-	if rightStr != "" {
-		return expr
-	}
-
-	leftStringExpr, ok := binaryExpr.left.(*StringExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	newStr := leftStringExpr.stringValue + rightStr
-
-	newExpr := &StringExpression{stringValue: newStr}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
-
-	return newExpr
-}
-
-func expressionToString(expr Expression) string {
-	var newStr string
-
-	switch e := expr.(type) {
-	case *BooleanExpression:
-		if e.booleanValue == true {
-			newStr = "true"
-		} else {
-			newStr = "false"
-		}
-	case *IntExpression:
-		newStr = strconv.Itoa(e.intValue)
-	case *DoubleExpression:
-		newStr = strconv.FormatFloat(e.doubleValue, 'f', -1, 64)
-	case *StringExpression:
-		newStr = e.stringValue
-	default:
-		newStr = ""
-	}
-
-	return newStr
-}
-
-func evalCompareExpression(expr Expression) Expression {
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
-
-	switch leftExpr := binaryExpr.left.(type) {
-	case *BooleanExpression:
-		switch rightExpr := binaryExpr.right.(type) {
-		case *BooleanExpression:
-			newExpr := evalCompareExpressionBoolean(binaryExpr, leftExpr.booleanValue, rightExpr.booleanValue)
-			return newExpr
-		}
-	case *IntExpression:
-		switch rightExpr := binaryExpr.right.(type) {
-		case *IntExpression:
-			newExpr := evalCompareExpressionInt(binaryExpr, leftExpr.intValue, rightExpr.intValue)
-			return newExpr
-		case *DoubleExpression:
-			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.intValue, rightExpr.doubleValue)
-			return newExpr
-		}
-	case *DoubleExpression:
-		switch rightExpr := binaryExpr.right.(type) {
-		case *IntExpression:
-			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.intValue)
-			return newExpr
-		case *DoubleExpression:
-			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
-			return newExpr
-		}
-	case *StringExpression:
-		switch rightExpr := binaryExpr.right.(type) {
-		case *StringExpression:
-			newExpr := evalCompareExpressionString(binaryExpr, leftExpr.stringValue, rightExpr.stringValue)
-			return newExpr
-		}
-	}
-	return expr
-}
-
-func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression {
-	var value bool
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch binaryExpr.operator {
-	case EqOperator:
-		value = (left == right)
-	case NeOperator:
-		value = (left != right)
-	default:
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
-	return newExpr
-}
-
-func evalCompareExpressionInt(expr Expression, left, right int) Expression {
-	var value bool
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch binaryExpr.operator {
-	case EqOperator:
-		value = (left == right)
-	case NeOperator:
-		value = (left != right)
-	case GtOperator:
-		value = (left > right)
-	case GeOperator:
-		value = (left >= right)
-	case LtOperator:
-		value = (left < right)
-	case LeOperator:
-		value = (left <= right)
-	default:
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
-	return newExpr
-}
-
-func evalCompareExpressionDouble(expr Expression, left, right float64) Expression {
-	var value bool
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch binaryExpr.operator {
-	case EqOperator:
-		value = (left == right)
-	case NeOperator:
-		value = (left != right)
-	case GtOperator:
-		value = (left > right)
-	case GeOperator:
-		value = (left >= right)
-	case LtOperator:
-		value = (left < right)
-	case LeOperator:
-		value = (left <= right)
-	default:
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
-	return newExpr
-}
-
-func evalCompareExpressionString(expr Expression, left, right string) Expression {
-	var value bool
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	switch binaryExpr.operator {
-	case EqOperator:
-		value = (left == right)
-	case NeOperator:
-		value = (left != right)
-	case GtOperator:
-		value = (left > right)
-	case GeOperator:
-		value = (left >= right)
-	case LtOperator:
-		value = (left < right)
-	case LeOperator:
-		value = (left <= right)
-	default:
-		compileError(binaryExpr.Position(), 0, "")
-	}
-
-	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
-
-	return newExpr
-}
-
-func get_opcode_type_offset(basicType vm.BasicType) byte {
+func getOpcodeTypeOffset(basicType vm.BasicType) byte {
 	switch basicType {
 	case vm.BooleanType:
 		return byte(0)
-	case vm.DoubleType:
+	case vm.IntType:
 		return byte(0)
-	case vm.StringType:
+	case vm.DoubleType:
 		return byte(1)
+	case vm.StringType:
+		return byte(2)
 	default:
 		panic("basic type")
 	}
@@ -956,7 +693,7 @@ func setLabel(ob *OpcodeBuf, label int) {
 	ob.labelTableList[label].labelAddress = len(ob.labelTableList)
 }
 
-func addConstantPool(exe *Executable, cp Constant) int {
+func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
 	ret := len(exe.constantPool)
 
 	exe.constantPool = append(exe.constantPool, cp)

@@ -189,7 +189,7 @@ func (stmt *ExpressionStatement) generate(exe *Executable, currentBlock *Block, 
 		assignExpr.generateEx(exe, currentBlock, ob)
 	default:
 		expr.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), POP)
+		generateCode(ob, expr.Position(), vm.VM_POP)
 	}
 }
 
@@ -228,6 +228,8 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 }
 
 func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var ifFalseLabel int
+	var endLabel int
 
 	stmt.condition.generate(exe, currentBlock, ob)
 
@@ -239,7 +241,7 @@ func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *Opco
 
 	endLabel = getLabel(ob)
 
-	generateCode(ob, statement.Position(), JUMP, endLabel)
+	generateCode(ob, statement.Position(), vm.VM_JUMP, endLabel)
 
 	setLabel(ob, ifFalseLabel)
 
@@ -250,7 +252,7 @@ func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *Opco
 		generateCode(ob, statement.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 		generateStatementList(exe, elif.block, elif.block.statementList, ob)
-		generateCode(ob, statement.Position(), JUMP, endLabel)
+		generateCode(ob, statement.Position(), vm.VM_JUMP, endLabel)
 
 		setLabel(ob, ifFalseLabel)
 	}
@@ -290,6 +292,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 }
 func (stmt *ForStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var loop_label int
 
 	if stmt.init != nil {
 		stmt.generate(exe, currentBlock, ob)
@@ -322,7 +325,7 @@ func (stmt *ForStatement) generate(exe *Executable, currentBlock *Block, ob *Opc
 		stmt.post.generate(exe, currentBlock, ob)
 	}
 
-	generateCode(ob, statement.Position(), JUMP, loop_label)
+	generateCode(ob, statement.Position(), vm.VM_JUMP, loop_label)
 
 	setLabel(ob, parent.breakLabel)
 }
@@ -375,7 +378,7 @@ func (stmt *ReturnStatement) generate(exe *Executable, currentBlock *Block, ob *
 
 	stmt.returnValue.generate(exe, currentBlock, ob)
 
-	generateCode(ob, stmt.Position(), RETURN)
+	generateCode(ob, stmt.Position(), vm.VM_RETURN)
 }
 
 // ==============================
@@ -421,7 +424,7 @@ func (stmt *BreakStatement) generate(exe *Executable, currentBlock *Block, ob *O
 		compileError(stmt.Position(), 0, "")
 	}
 
-	generateCode(ob, statement.Position(), JUMP, parent.breakLabel)
+	generateCode(ob, statement.Position(), vm.VM_JUMP, parent.breakLabel)
 
 }
 
@@ -468,7 +471,7 @@ func (stmt *ContinueStatement) generate(exe *Executable, currentBlock *Block, ob
 		dkc_compile_error(statement.Position(), 0, "")
 	}
 
-	generateCode(ob, statement.Position(), JUMP, block.parent.statement.continueLabel)
+	generateCode(ob, statement.Position(), vm.VM_JUMP, block.parent.statement.continueLabel)
 
 }
 
@@ -506,5 +509,5 @@ func (stmt *Declaration) generate(exe *Executable, currentBlock *Block, ob *Opco
 	}
 
 	stmt.initializer.generate(exe, currentBlock, ob)
-	generate_pop_to_identifier(decl, statement.Position(), ob)
+	generatePopToIdentifier(decl, statement.Position(), ob)
 }

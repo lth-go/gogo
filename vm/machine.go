@@ -116,7 +116,10 @@ func (v *VmObjectValue) setObjectValue(value VmObject) {
 //
 // VmObject
 //
-type VmObject interface{}
+type VmObject interface{
+	isMarked() bool
+	setMark(bool)
+}
 
 type VmObjectImpl struct {
 	// gc用
@@ -127,6 +130,14 @@ type VmObjectImpl struct {
 	next VmObject
 }
 
+func (obj *VmObjectImpl) isMarked() bool {
+	return obj.marked
+}
+
+func (obj *VmObjectImpl) setMark(m bool) {
+	obj.marked = m
+}
+
 type VmObjectString struct {
 	VmObjectImpl
 
@@ -134,14 +145,6 @@ type VmObjectString struct {
 	isLiteral   bool
 }
 
-//
-// Heap
-//
-type Heap struct {
-	// TODO:阈值
-	currentThreshold int
-	objectList       []VmObject
-}
 
 //
 // Static
@@ -295,7 +298,7 @@ func (vm *VmVirtualMachine) STO_WRITE_I(sp int, r VmObject) {
 
 //
 
-func (vm *VmVirtualMachine) alloc_object_string() {
+func (vm *VmVirtualMachine) alloc_object_string() *VmObjectString{
 
 	//check_gc(vm)
 	ret := VmObjectString{}
@@ -307,15 +310,6 @@ func (vm *VmVirtualMachine) alloc_object_string() {
 	return ret
 }
 
-func (vm *VmVirtualMachine) literal_to_vm_string_i(value string) VmObject {
-	// TODO
-	ret := vm.alloc_object_string()
-
-	ret.stringValue = value
-	ret.isLiteral = true
-
-	return ret
-}
 
 func GET_2BYTE_INT(b []byte, pc int) int {
 	return int(binary.BigEndian.Uint16(b))

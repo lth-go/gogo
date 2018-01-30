@@ -42,7 +42,7 @@ func (c *ConstantImpl) getDouble() float64 {
 	panic("error")
 }
 
-func (c *ConstantImpl) getString() float64 {
+func (c *ConstantImpl) getString() string {
 	panic("error")
 }
 
@@ -66,7 +66,7 @@ type ConstantString struct {
 	stringValue string
 }
 
-func (c *ConstantString) getString() float64 {
+func (c *ConstantString) getString() string {
 	return c.stringValue
 }
 

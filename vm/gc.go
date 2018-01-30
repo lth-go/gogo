@@ -1,15 +1,10 @@
 package vm
-//
-// Heap
-//
-type Heap struct {
-	// TODO:阈值
-	currentThreshold int
-	objectList       []VmObject
-}
 
 var HeapThresholdSize = 1024 * 256
 
+//
+// 判断是否下需要gc
+//
 func (vm *VmVirtualMachine) check_gc() {
 	if len(vm.heap.objectList) > vm.heap.currentThreshold {
 		vm.garbage_collect()
@@ -18,7 +13,10 @@ func (vm *VmVirtualMachine) check_gc() {
 	}
 }
 
-func (vm *VmVirtualMachine) alloc_object() VmObject{
+//
+// 创建对象
+//
+func (vm *VmVirtualMachine) alloc_object() VmObject {
 	ret := &VmObjectString{}
 
 	vm.check_gc()
@@ -40,7 +38,7 @@ func (vm *VmVirtualMachine) literal_to_vm_string_i(value string) VmObject {
 	return ret
 }
 
-func (vm *VmVirtualMachine) create_vm_string_i(str string) *VmObjectString{
+func (vm *VmVirtualMachine) create_vm_string_i(str string) *VmObjectString {
 	ret := vm.alloc_object_string()
 	ret.stringValue = str
 	ret.isLiteral = false
@@ -48,51 +46,57 @@ func (vm *VmVirtualMachine) create_vm_string_i(str string) *VmObjectString{
 	return ret
 }
 
-func gc_mark(obj VmObject) { obj.setMark(true) }
+//
+// 标记，取消标记
+//
+func mark(obj VmObject) { obj.setMark(true) }
 
-func gc_reset_mark(obj VmObject) { obj.setMark(false) }
+func reset_mark(obj VmObject) { obj.setMark(false) }
 
 //
 // 标记
 //
 // TODO
-func (vm *VmVirtualMachine) gc_mark_objects() {
+func (vm *VmVirtualMachine) mark_objects() {
 	for _, obj := range vm.heap.objectList {
-		gc_reset_mark(obj)
+		reset_mark(obj)
 	}
 
-		for i, v := range vm.static.variableList {
-		if vm.executable.globalVariableList[i].typeSpecifier.basicType == StringType {
-			gc_mark(v)
+	for i, v := range vm.static.variableList {
+		if o, ok := v.(VmObject); ok {
+			mark(o)
 		}
 	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
-		if (vm.stack.pointer_flags[i]) {
-			gc_mark(vm.stack.stack[i].object)
+		if vm.stack.stack[i].isPointer() {
+			o := vm.stack.stack[i].(VmObject)
+			mark(o)
 		}
 	}
 }
 
-
 //
 // 删除对象
 //
-func  (vm *VmVirtualMachine)gc_dispose_object(obj VmObject) {
-	delete(obj)
+func (vm *VmVirtualMachine) dispose_object(obj VmObject) {
+	switch o := obj.(type) {
+	case *VmObjectString:
+		if !o.isLiteral {
+			//
+		}
+	}
+	obj = nil
 }
 
 //
 // 清理
 //
-func (vm *VmVirtualMachine) gc_sweep_objects() {
-	vm_Object *obj;
-	vm_Object *tmp;
-
+func (vm *VmVirtualMachine) sweep_objects() {
 	newObjectList := []VmObject{}
 	for _, obj := range vm.heap.objectList {
-		if !obj.isMarked {
-			vm.gc_dispose_object(obj)
+		if !obj.isMarked() {
+			vm.dispose_object(obj)
 		} else {
 			newObjectList = append(newObjectList, obj)
 		}
@@ -101,6 +105,6 @@ func (vm *VmVirtualMachine) gc_sweep_objects() {
 }
 
 func (vm *VmVirtualMachine) garbage_collect() {
-	vm.gc_mark_objects();
-	vm.gc_sweep_objects();
+	vm.mark_objects()
+	vm.sweep_objects()
 }

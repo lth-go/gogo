@@ -487,13 +487,11 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 		case VM_CAST_INT_TO_STRING:
 
 			buf := fmt.Sprintf("%d", vm.STI_GET(-1))
-			wc_str := dvm_mbstowcs_alloc(exe, funcList, pc, buf)
-			vm.STO_WRITE(-1, vm.create_vm_string_i(wc_str))
+			vm.STO_WRITE(-1, vm.create_vm_string_i(buf))
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
 			buf := fmt.Sprintf("%f", vm.STD_GET(-1))
-			wc_str := dvm_mbstowcs_alloc(exe, funcList, pc, buf)
-			vm.STO_WRITE(-1, vm.create_vm_string_i(wc_str))
+			vm.STO_WRITE(-1, vm.create_vm_string_i(buf))
 			pc++
 		case VM_EQ_INT:
 			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) == vm.STI_GET(-1)))
@@ -504,7 +502,7 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
-			vm.STI_WRITE(-2, !vm_wcscmp(vm.STO_GET(-2).getString(), vm.STO_GET(-1).getString()))
+			vm.STI_WRITE(-2, boolToInt(!(vm.STO_GET(-2).getString() == vm.STO_GET(-1).getString())))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
@@ -516,7 +514,7 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
-			vm.STI_WRITE(-2, vm_wcscmp(vm.STO_GET(-2).getString(), vm.STO_GET(-1).getString()) > 0)
+			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() > vm.STO_GET(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
@@ -528,7 +526,7 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
-			vm.STI_WRITE(-2, vm_wcscmp(vm.STO_GET(-2).getString(), vm.STO_GET(-1).getString()) >= 0)
+			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() >= vm.STO_GET(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
@@ -540,7 +538,7 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
-			vm.STI_WRITE(-2, vm_wcscmp(vm.STO_GET(-2).getString(), vm.STO_GET(-1).getString()) < 0)
+			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() < vm.STO_GET(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
@@ -552,7 +550,7 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
-			vm.STI_WRITE(-2, vm_wcscmp(vm.STO_GET(-2).getString(), vm.STO_GET(-1).getString()) <= 0)
+			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() <= vm.STO_GET(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
@@ -564,19 +562,19 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
-			vm.STI_WRITE(-2, vm_wcscmp(vm.STO_GET(-2).getString(), vm.STO_GET(-1).getString()) != 0)
+			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() != vm.STO_GET(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) && vm.STI_GET(-1)))
+			vm.STI_SET(-2, boolToInt(intToBool(vm.STI_GET(-2)) && intToBool(vm.STI_GET(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_OR:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET( -2) || vm.STI_GET( -1)))
+			vm.STI_SET(-2, boolToInt(intToBool(vm.STI_GET(-2)) || intToBool(vm.STI_GET(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_NOT:
-			vm.STI_SET(-1, boolToInt(!vm.STI_GET( -1)))
+			vm.STI_SET(-1, boolToInt(!intToBool(vm.STI_GET(-1))))
 			pc++
 		case VM_POP:
 			vm.stack.stackPointer--
@@ -588,14 +586,14 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 		case VM_JUMP:
 			pc = GET_2BYTE_INT(codeList[pc+1:])
 		case VM_JUMP_IF_TRUE:
-			if vm.STI_GET( -1) {
+			if intToBool(vm.STI_GET(-1)) {
 				pc = GET_2BYTE_INT(codeList[pc+1:])
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_JUMP_IF_FALSE:
-			if !vm.STI_GET( -1) {
+			if !intToBool(vm.STI_GET(-1)) {
 				pc = GET_2BYTE_INT(codeList[pc+1:])
 			} else {
 				pc += 3
@@ -606,15 +604,18 @@ func (vm *VmVirtualMachine) execute(funcList []Function, codeList []byte) {
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_INVOKE:
-			func_idx := vm.STI_GET( -1)
-			if vm.function[func_idx].kind == NATIVE_FUNCTION {
-				invoke_native_function(vm, &vm.function[func_idx], &vm.stack.stackPointer)
+			func_idx := vm.STI_GET(-1)
+			switch f := vm.function[func_idx].(type) {
+			case *NativeFunction:
+				invoke_native_function(vm, f, &vm.stack.stackPointer)
 				pc++
-			} else {
-				invoke_g_function(vm, funcList, &vm.function[func_idx], &code, &code_size, &pc, &vm.stack.stackPointer, &base, &exe)
+			case *GFunction:
+				invoke_g_function(vm, funcList, f, &codeList,&pc, &vm.stack.stackPointer, &base, exe)
+			default:
+				panic("TODO")
 			}
 		case VM_RETURN:
-			return_function(vm, funcList, &code, &code_size, &pc, &vm.stack.stackPointer, &base, &exe)
+			return_function(vm, funcList, codeList, &pc, &vm.stack.stackPointer, &base, exe)
 		default:
 			panic("TODO")
 		}
@@ -626,7 +627,7 @@ func (vm *VmVirtualMachine) addStaticVariables(exe *Executable) {
 	vm.static.variableList = []VmValue{}
 
 	for _, exeValue := range exe.globalVariableList {
-		newVmValue := initialize_value(vm, exeValue.typeSpecifier.basicType)
+		newVmValue := vm.initialize_value(exeValue.typeSpecifier.basicType)
 		vm.static.variableList = append(vm.static.variableList, newVmValue)
 	}
 }
@@ -676,7 +677,7 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 
 	for i, code := range codeList {
 		switch code {
-		case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
+			case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
 			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
 			VM_PUSH_STACK_STRING, VM_POP_STACK_STRING:
 
@@ -704,7 +705,7 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 			switch p {
 			case 'b':
 				i++
-			case 's': /* FALLTHRU */
+				case 's': /* FALLTHRU */
 				fallthrough
 			case 'p':
 				i += 2
@@ -718,16 +719,16 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 
 func (vm *VmVirtualMachine) chain_string(str1 VmObject, str2 VmObject) VmObject {
 	//int len;
-	//DVM_Char *str;
-	//DVM_Object *ret;
+	//vm_Char *str;
+	//vm_Object *ret;
 
-	//len = dvm_wcslen(str1-.getString()) + dvm_wcslen(str2-.getString());
-	//str = MEM_malloc(sizeof(DVM_Char) * (len + 1));
+	//len = vm_wcslen(str1-.getString()) + vm_wcslen(str2-.getString());
+	//str = MEM_malloc(sizeof(vm_Char) * (len + 1));
 
-	//dvm_wcscpy(str, str1-.getString());
-	//dvm_wcscat(str, str2-.getString());
+	//vm_wcscpy(str, str1-.getString());
+	//vm_wcscat(str, str2-.getString());
 
-	//ret = dvm_create_dvm_string_i(dvm, str);
+	//ret = vm_create_vm_string_i(vm, str);
 
 	//return ret;
 }
@@ -757,6 +758,73 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-func vm_wcscmp(str1, str2 string) int {
-	// TODO
+func intToBool(i int) bool {
+	if i == 0 {
+		return false
+	}
+	return true
+}
+
+func invoke_native_function(vm *VmVirtualMachine,f *NativeFunction, sp_p *int) {
+
+	stack := vm.stack.stack
+	sp := *sp_p;
+
+	ret := f.proc(vm, f.argCount, stack[sp - f.argCount - 1])
+
+	stack[sp - f.argCount - 1] = ret
+
+	*sp_p = sp - f.argCount
+}
+
+func invoke_diksam_function(vm *VmVirtualMachine, func_p []Function,callee *GFunction, code_p []byte , pc_p *int, sp_p *int, base_p *int, exe_p *Executable) {
+
+	exe_p = callee.executable
+	callee_p := exe_p.functionList[callee.index]
+
+	callInfo := (CallInfo *)&vm.stack.stack[*sp_p - 1]
+	callInfo.caller = *caller_p;
+	callInfo.caller_address = *pc_p;
+	callInfo.base = *base_p;
+	for (i := 0; i < CALL_INFO_ALIGN_SIZE; i++) {
+		vm.stack.pointer_flags[*sp_p - 1 + i] = vm_FALSE;
+	}
+
+	*base_p = *sp_p - callee_p.parameter_count - 1;
+	*caller_p = callee;
+
+	initialize_local_variables(vm, callee_p, *sp_p + CALL_INFO_ALIGN_SIZE - 1);
+
+	*sp_p += CALL_INFO_ALIGN_SIZE + callee_p.local_variable_count - 1;
+	*pc_p = 0;
+
+	*code_p = (*exe_p).function[callee.u.diksam_f.index].code;
+	*code_size_p = (*exe_p).function[callee.u.diksam_f.index].code_size;
+}
+
+func return_function(vm *VmVirtualMachine, func_p []Function, code_p []byte , pc_p *int, sp_p *int, base_p *int, exe_p *Executable) {
+
+	return_value := vm.stack.stack[(*sp_p) - 1];
+
+	callee_p := &(*exe_p).function[(*func_p).u.diksam_f.index];
+	callInfo := (CallInfo *)&vm.stack.stack[*sp_p - 1 - callee_p.local_variable_count - CALL_INFO_ALIGN_SIZE];
+
+	if (callInfo.caller) {
+		*exe_p = callInfo.caller.u.diksam_f.executable;
+		caller_p := &(*exe_p).function[callInfo.caller.u.diksam_f.index];
+		*code_p = caller_p.code;
+		*code_size_p = caller_p.code_size;
+	} else {
+		*exe_p = vm.executable;
+		*code_p = vm.executable.code;
+		*code_size_p = vm.executable.code_size;
+	}
+	*func_p = callInfo.caller;
+
+	*pc_p = callInfo.caller_address + 1;
+	*base_p = callInfo.base;
+
+	*sp_p -= callee_p.local_variable_count + CALL_INFO_ALIGN_SIZE + callee_p.parameter_count;
+
+	vm.stack.stack[*sp_p - 1] = return_value;
 }

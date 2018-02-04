@@ -36,6 +36,8 @@ type Expression interface {
 
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
+
+	echo()
 }
 
 //
@@ -55,6 +57,8 @@ func (expr *ExpressionImpl) typeS() *TypeSpecifier {
 func (expr *ExpressionImpl) setType(t *TypeSpecifier) {
 	expr.typeSpecifier = t
 }
+
+func (expr *ExpressionImpl) echo() {}
 
 // ==============================
 // CommaExpression
@@ -247,7 +251,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
 			expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 		} else {
-			compileError(expr.Position(), 0, "")
+			compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "")
 		}
 		return expr
 	default:
@@ -555,7 +559,6 @@ type IdentifierExpression struct {
 }
 
 func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
-
 	// 判断是否是变量
 	decl := searchDeclaration(expr.name, currentBlock)
 	if decl != nil {

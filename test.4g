@@ -1,0 +1,60 @@
+# declaration stmt
+int a = 0;
+
+# if stmt
+
+if true {
+    print("true");
+} else {
+    print("false");
+}
+
+# for stmt
+
+for a = 0; true; a = a + 1 {
+    print(a);
+} 
+
+# function
+
+int test(int a) {
+    print(a);
+}
+
+# expression
+
+true;
+
+1;
+
+"foo";
+
+test;
+
+1,2,3;
+
+a = 2;
+
+1 + 1;
+
+1 - 1;
+
+1 * 1;
+
+1 / 1;
+
+a == 1;
+
+a != 1;
+
+a >= 1;
+
+a > 1;
+
+a < 1;
+
+a <= 1;
+
+true && true;
+
+false || false;

@@ -211,8 +211,9 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	stmt.condition.fix(currentBlock)
 
-	fixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
-
+	if stmt.thenBlock != nil {
+		fixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
+	}
 	for _, elifPos := range stmt.elifList {
 		elifPos.condition.fix(currentBlock)
 
@@ -221,7 +222,7 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		}
 	}
 
-	if stmt.elifList != nil {
+	if stmt.elseBlock != nil {
 		fixStatementList(stmt.elseBlock, stmt.elseBlock.statementList, fd)
 	}
 
@@ -288,8 +289,10 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	stmt.init.fix(currentBlock)
 	stmt.condition.fix(currentBlock)
 	stmt.post.fix(currentBlock)
-	fixStatementList(stmt.block, stmt.block.statementList, fd)
 
+	if stmt.block != nil {
+		fixStatementList(stmt.block, stmt.block.statementList, fd)
+	}
 }
 func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	var loop_label int

@@ -1,8 +1,9 @@
 package compiler
 
 import (
-	"os"
+	//"os"
 	"../vm"
+	"fmt"
 )
 
 // Compiler 编译器
@@ -133,8 +134,13 @@ func SearchFunction(name string) *FunctionDefinition {
 	return nil
 }
 
-func compileError(pos Position, compilerError int, message string) {
-	os.Exit(1)
+func compileError(pos Position, errorNumber int, format string, a ...interface{}) {
+	fmt.Println("编译错误")
+	fmt.Printf("Line: %d-%d\n", pos.Line, pos.Column)
+	fmt.Println(errMessageMap[errorNumber])
+	fmt.Printf(format, a)
+	panic("打印栈，看看哪里出错了")
+	//os.Exit(1)
 }
 
 var stCurrentCompiler *Compiler
@@ -163,16 +169,16 @@ func ParseSrc(src string) (*Compiler, error) {
 func parse(s *Scanner) (*Compiler, error) {
 	compiler := newCompiler()
 
-	l := &Lexer{s: s, compiler: compiler}
+	lexer := &Lexer{s: s, compiler: compiler}
 
-	compiler.lexer = l
+	compiler.lexer = lexer
 
-	if yyParse(l) != 0 {
-		return nil, l.e
+	if yyParse(lexer) != 0 {
+		return nil, lexer.e
 	}
 
 	// 修正树
-	l.compiler.fixTree()
+	lexer.compiler.fixTree()
 
-	return l.compiler, l.e
+	return lexer.compiler, lexer.e
 }

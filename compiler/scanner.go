@@ -117,6 +117,17 @@ retry:
 				tok = ASSIGN_T
 				lit = "="
 			}
+		case '!':
+			s.next()
+			switch s.peek() {
+			case '=':
+				tok = NE
+				lit = "!="
+			default:
+				s.back()
+				tok = EXCLAMATION
+				lit = "!"
+			}
 		case '>':
 			s.next()
 			switch s.peek() {
@@ -163,7 +174,7 @@ retry:
 				tok = int(ch)
 				lit = string(ch)
 			}
-		case '(', ')', '{', '}', ';', ',', '+', '-', '*', '/', '!', '.':
+		case '(', ')', '{', '}', ';', ',', '+', '-', '*', '/', '.':
 			tok = opName[string(ch)]
 			lit = string(ch)
 		default:

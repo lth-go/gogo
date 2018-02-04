@@ -3,6 +3,7 @@ package compiler
 
 import (
     "../vm"
+    "strconv"
 )
 %}
 
@@ -98,7 +99,7 @@ function_definition
         | type_specifier IDENTIFIER LP RP block
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.compiler.functionDefine($1, $2.Lit, nil, $5);
+                l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, $5);
             }
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
@@ -110,7 +111,7 @@ function_definition
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
             if l, ok := yylex.(*Lexer); ok {
-                l.compiler.functionDefine($1, $2.Lit, nil, nil);
+                l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, nil);
             }
         }
         ;
@@ -262,14 +263,14 @@ postfix_expression
         }
         | postfix_expression LP RP
         {
-            $$ = &FunctionCallExpression{function: $1, argumentList: nil}
+            $$ = &FunctionCallExpression{function: $1, argumentList: []Expression{}}
             $$.SetPosition($1.Position())
         }
         ;
 primary_expression
         : LP expression RP
         {
-            $$ = $2;
+            $$ = $2
         }
         | IDENTIFIER
         {
@@ -278,17 +279,19 @@ primary_expression
         }
         | INT_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: true}
+            value, _ := strconv.Atoi($1.Lit)
+            $$ = &IntExpression{intValue: value}
             $$.SetPosition($1.Position())
         }
         | DOUBLE_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: true}
+            value, _ := strconv.ParseFloat($1.Lit, 64)
+            $$ = &DoubleExpression{doubleValue: value}
             $$.SetPosition($1.Position())
         }
         | STRING_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: true}
+            $$ = &StringExpression{stringValue: $1.Lit}
             $$.SetPosition($1.Position())
         }
         | TRUE_T
@@ -318,12 +321,12 @@ statement
 if_statement
         : IF expression block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: nil, elseBlock: nil}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*Elif{}, elseBlock: nil}
             $$.SetPosition($1.Position())
         }
         | IF expression block ELSE block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: nil, elseBlock: $5}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*Elif{}, elseBlock: $5}
             $$.SetPosition($1.Position())
         }
         | IF expression block elif_list

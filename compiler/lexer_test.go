@@ -2,18 +2,16 @@ package compiler
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
-var src = `number a = 1 + 1; b = a;
-if (a > b) {
-	c = a;
-}
-`
-
 func TestLexer(t *testing.T) {
-
-	scanner := &Scanner{src: []rune(src)}
+	src, err := ioutil.ReadFile("../test.4g")
+	if err != nil {
+		panic(err)
+	}
+	scanner := &Scanner{src: []rune(string(src))}
 	l := Lexer{s: scanner}
 	for {
 		tok, lit, pos, err := l.s.Scan()
@@ -24,15 +22,7 @@ func TestLexer(t *testing.T) {
 			fmt.Println("end")
 			break
 		}
-		fmt.Printf("token: %v, lit: %v, pos: %v\n", tok, lit, pos)
+		fmt.Printf("tok: '%v', lit: '%v', pos: %v\n", tok, lit, pos)
 	}
 }
 
-func TestParse(t *testing.T) {
-	compiler, err := ParseSrc(src)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(len(compiler.statementList))
-}

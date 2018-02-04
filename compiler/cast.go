@@ -1,5 +1,9 @@
 package compiler
 
+import (
+	"../vm"
+)
+
 //
 // cast func
 //
@@ -15,12 +19,12 @@ func createAssignCast(src Expression, dest *TypeSpecifier) Expression {
 		return src
 	}
 
-	if src.typeS().basicType == vm.IntType && dest.basicType == DoubleType {
+	if src.typeS().basicType == vm.IntType && dest.basicType == vm.DoubleType {
 		castExpr = allocCastExpression(IntToDoubleCast, src)
 		return castExpr
 
-	} else if src.typeS().basicType == DoubleType && dest.basicType == vm.IntType {
-		castExpr = alloc_cast_expression(DoubleToIntCast, src)
+	} else if src.typeS().basicType == vm.DoubleType && dest.basicType == vm.IntType {
+		castExpr = allocCastExpression(DoubleToIntCast, src)
 		return castExpr
 	}
 

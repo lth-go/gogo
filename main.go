@@ -14,7 +14,8 @@ func main() {
 	}
 	filename := os.Args[1]
 
-	if !os.IsExist(filename) {
+	_, err := os.Stat(filename)
+	if err != nil {
 		panic("文件不存在")
 	}
 

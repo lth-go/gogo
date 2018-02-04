@@ -28,6 +28,18 @@ func (vm *VmVirtualMachine) alloc_object() VmObject {
 	return ret
 }
 
+func (vm *VmVirtualMachine) alloc_object_string() *VmObjectString {
+
+	//check_gc(vm)
+	ret := &VmObjectString{}
+
+	ret.marked = false
+
+	vm.heap.objectList = append(vm.heap.objectList, ret)
+
+	return ret
+}
+
 func (vm *VmVirtualMachine) literal_to_vm_string_i(value string) VmObject {
 	// TODO
 	ret := vm.alloc_object_string()
@@ -62,7 +74,7 @@ func (vm *VmVirtualMachine) mark_objects() {
 		reset_mark(obj)
 	}
 
-	for i, v := range vm.static.variableList {
+	for _, v := range vm.static.variableList {
 		if o, ok := v.(VmObject); ok {
 			mark(o)
 		}

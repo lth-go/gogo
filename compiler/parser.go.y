@@ -158,7 +158,7 @@ assignment_expression
         : logical_or_expression
         | postfix_expression ASSIGN_T assignment_expression
         {
-            $$ = &AssignExpression{left: $1, operator: $2, operand: $3}
+            $$ = &AssignExpression{left: $1, operand: $3}
             $$.SetPosition($1.Position())
         }
         ;

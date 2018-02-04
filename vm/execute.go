@@ -6,20 +6,20 @@ package vm
 
 type Executable struct {
 	// 常量池
-	constantPool []Constant
+	ConstantPool []Constant
 
 	// 全局变量
-	globalVariableList []*VmVariable
+	GlobalVariableList []*VmVariable
 
 	// 函数列表
-	functionList []*VmFunction
+	FunctionList []*VmFunction
 
 	// 顶层结构代码
-	codeList []byte
+	CodeList []byte
 
 	// 行号对应表
 	// 保存字节码和与之对应的源代码的行号
-	lineNumberList []*VmLineNumber
+	LineNumberList []*VmLineNumber
 }
 
 // ==============================
@@ -47,6 +47,7 @@ func (c *ConstantImpl) getString() string {
 }
 
 type ConstantInt struct {
+	ConstantImpl
 	intValue int
 }
 
@@ -54,7 +55,12 @@ func (c *ConstantInt) getInt() int {
 	return c.intValue
 }
 
+func (c *ConstantInt) SetInt(i int) {
+	c.intValue = i
+}
+
 type ConstantDouble struct {
+	ConstantImpl
 	doubleValue float64
 }
 
@@ -62,12 +68,21 @@ func (c *ConstantDouble) getDouble() float64 {
 	return c.doubleValue
 }
 
+func (c *ConstantDouble) SetDouble(value float64) {
+	c.doubleValue = value
+}
+
 type ConstantString struct {
+	ConstantImpl
 	stringValue string
 }
 
 func (c *ConstantString) getString() string {
 	return c.stringValue
+}
+
+func (c *ConstantString) SetString(value string) {
+	c.stringValue = value
 }
 
 //
@@ -76,11 +91,11 @@ func (c *ConstantString) getString() string {
 type VmTypeDerive interface{}
 
 type VmFunctionDerive struct {
-	parameterList []*VmLocalVariable
+	ParameterList []*VmLocalVariable
 }
 type VmTypeSpecifier struct {
-	basicType BasicType
-	derive    []VmTypeDerive
+	BasicType BasicType
+	DeriveList    []VmTypeDerive
 }
 
 // ==============================
@@ -92,31 +107,38 @@ type VmVariable struct {
 	typeSpecifier *VmTypeSpecifier
 }
 
+func NewVmVariable(name string, typeSpecifier *VmTypeSpecifier) *VmVariable{
+	return &VmVariable{
+		name: name,
+		typeSpecifier: typeSpecifier,
+	}
+}
+
 // ==============================
 // 函数
 // ==============================
 
 type VmFunction struct {
 	// 类型
-	typeSpecifier *VmTypeSpecifier
+	TypeSpecifier *VmTypeSpecifier
 	// 函数名
-	name string
+	Name string
 	// 形参列表
-	parameterList []*VmLocalVariable
+	ParameterList []*VmLocalVariable
 	// 是否原生函数
-	isImplemented bool
+	IsImplemented bool
 	// 局部变量列表
-	localVariableList []*VmLocalVariable
+	LocalVariableList []*VmLocalVariable
 	// 字节码类表
-	codeList []byte
+	CodeList []byte
 
 	// 行号对应表
-	lineNumberList []*VmLineNumber
+	LineNumberList []*VmLineNumber
 }
 
 type VmLocalVariable struct {
-	name          string
-	typeSpecifier *VmTypeSpecifier
+	Name          string
+	TypeSpecifier *VmTypeSpecifier
 }
 
 // ==============================
@@ -125,16 +147,16 @@ type VmLocalVariable struct {
 
 type VmLineNumber struct {
 	// 源代码行号
-	lineNumber int
+	LineNumber int
 
 	// 字节码开始的位置
-	startPc int
+	StartPc int
 
 	// 接下来有多少字节码对应相同的行号
-	pcCount int
+	PcCount int
 }
 
-func newExecutable() *Executable {
+func NewExecutable() *Executable {
 	exe := &Executable{}
 	return exe
 }

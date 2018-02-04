@@ -1,12 +1,12 @@
 package compiler
 
-import "strconv"
+import (
+	"strconv"
+	"../vm"
+)
 
 func evalMathExpression(currentBlock *Block, expr Expression) Expression {
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
+	binaryExpr := expr.(*BinaryExpression)
 
 	switch leftExpr := binaryExpr.left.(type) {
 
@@ -14,11 +14,11 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 		switch rightExpr := binaryExpr.right.(type) {
 
 		case *IntExpression:
-			newExpr := evalMathExpressionInt(binaryExpr, left.intValue, right.intValue)
+			newExpr := evalMathExpressionInt(binaryExpr, leftExpr.intValue, rightExpr.intValue)
 			return newExpr
 
 		case *DoubleExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, float64(left.intValue), right.doubleValue)
+			newExpr := evalMathExpressionDouble(binaryExpr, float64(leftExpr.intValue), rightExpr.doubleValue)
 			return newExpr
 		}
 
@@ -26,11 +26,11 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 		switch rightExpr := binaryExpr.right.(type) {
 
 		case *IntExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, left.doubleValue, float64(right.intValue))
+			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.doubleValue, float64(rightExpr.intValue))
 			return newExpr
 
 		case *DoubleExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, left.doubleValue, right.doubleValue)
+			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
 			return newExpr
 		}
 
@@ -160,13 +160,13 @@ func evalCompareExpression(expr Expression) Expression {
 			newExpr := evalCompareExpressionInt(binaryExpr, leftExpr.intValue, rightExpr.intValue)
 			return newExpr
 		case *DoubleExpression:
-			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.intValue, rightExpr.doubleValue)
+			newExpr := evalCompareExpressionDouble(binaryExpr, float64(leftExpr.intValue), rightExpr.doubleValue)
 			return newExpr
 		}
 	case *DoubleExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *IntExpression:
-			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.intValue)
+			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, float64(rightExpr.intValue))
 			return newExpr
 		case *DoubleExpression:
 			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)

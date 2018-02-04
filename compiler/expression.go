@@ -30,7 +30,6 @@ const (
 type Expression interface {
 	// Pos接口
 	Pos
-	expr()
 
 	fix(*Block) Expression
 	generate(*vm.Executable, *Block, *OpcodeBuf)
@@ -104,7 +103,7 @@ func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	}
 
 	expr.left = expr.left.fix(currentBlock)
-	operand := expr.operand.fix(currentBlock)
+	expr.operand.fix(currentBlock)
 	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
 	expr.typeSpecifier = expr.left.typeS()
 
@@ -151,9 +150,9 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
 	var code byte
 
 	if decl.isLocal {
-		code = POP_STACK_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
+		code = vm.VM_POP_STACK_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
 	} else {
-		code = POP_STATIC_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
+		code = vm.VM_POP_STATIC_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
 	}
 	generateCode(ob, pos, code, decl.variableIndex)
 }
@@ -272,7 +271,7 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 
 func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
-	switch operator := expr.operator {
+	switch operator := expr.operator; operator {
 		case EqOperator, NeOperator,
 		GtOperator, GeOperator, LtOperator, LeOperator,
 		AddOperator, SubOperator, MulOperator, DivOperator:
@@ -336,10 +335,10 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 
 	switch newExpr := expr.operand.(type) {
 	case *IntExpression:
-		newExpr.intValue = -e.intValue
+		newExpr.intValue = -newExpr.intValue
 		return newExpr
 	case *DoubleExpression:
-		newExpr.doubleValue = -e.doubleValue
+		newExpr.doubleValue = -newExpr.doubleValue
 		return newExpr
 	}
 
@@ -407,7 +406,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), 0, "")
 	}
 
-	fd := searchFunction(identifierExpr.name)
+	fd := SearchFunction(identifierExpr.name)
 	if fd == nil {
 		compileError(expr.Position(), 0, "")
 	}
@@ -476,8 +475,9 @@ func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob 
 	} else if expr.intValue >= 0 && expr.intValue < 65536 {
 		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
 	} else {
-		cp := &vm.ConstantInt{intValue: expr.intValue}
-		cpIdx = addConstantPool(cf, cp)
+		cp := &vm.ConstantInt{}
+		cp.SetInt(expr.intValue)
+		cpIdx := addConstantPool(exe, cp)
 
 		generateCode(ob, expr.Position(), vm.VM_PUSH_INT, cpIdx)
 	}
@@ -507,7 +507,8 @@ func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE_1)
 
 	} else {
-		cp := &ConstantNumber{doubleValue: expr.doubleValue}
+		cp := &vm.ConstantDouble{}
+		cp.SetDouble(expr.doubleValue)
 		cpIdx := addConstantPool(exe, cp)
 
 		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
@@ -531,7 +532,8 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 
 func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
-	cp := &ConstantString{stringValue: expr.stringValue}
+	cp := &vm.ConstantString{}
+	cp.SetString(expr.stringValue)
 
 	cpIdx := addConstantPool(exe, cp)
 	generateCode(ob, expr.Position(), vm.VM_PUSH_STRING, cpIdx)
@@ -563,7 +565,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// 判断是否是函数
-	fd := searchFunction(expr.name)
+	fd := SearchFunction(expr.name)
 	if fd != nil {
 		expr.typeSpecifier = fd.typeSpecifier
 		expr.inner = fd
@@ -694,9 +696,9 @@ func setLabel(ob *OpcodeBuf, label int) {
 }
 
 func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
-	ret := len(exe.constantPool)
+	ret := len(exe.ConstantPool)
 
-	exe.constantPool = append(exe.constantPool, cp)
+	exe.ConstantPool = append(exe.ConstantPool, cp)
 
 	return ret
 }

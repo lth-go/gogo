@@ -34,7 +34,7 @@ type Statement interface {
 	Pos
 
 	fix(*Block, *FunctionDefinition)
-	generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf)
+	generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf)
 }
 
 type StatementImpl struct {
@@ -181,7 +181,7 @@ func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition
 	stmt.expression.fix(currentBlock)
 }
 
-func (stmt *ExpressionStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr := stmt.expression
 	switch assignExpr := expr.(type) {
 	case *AssignExpression:
@@ -227,7 +227,7 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 }
 
-func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	var ifFalseLabel int
 	var endLabel int
 
@@ -241,7 +241,7 @@ func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *Opco
 
 	endLabel = getLabel(ob)
 
-	generateCode(ob, statement.Position(), vm.VM_JUMP, endLabel)
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, endLabel)
 
 	setLabel(ob, ifFalseLabel)
 
@@ -249,15 +249,15 @@ func (stmt *IfStatement) generate(exe *Executable, currentBlock *Block, ob *Opco
 		elif.condition.generate(exe, currentBlock, ob)
 		ifFalseLabel = getLabel(ob)
 
-		generateCode(ob, statement.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
+		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 		generateStatementList(exe, elif.block, elif.block.statementList, ob)
-		generateCode(ob, statement.Position(), vm.VM_JUMP, endLabel)
+		generateCode(ob, stmt.Position(), vm.VM_JUMP, endLabel)
 
 		setLabel(ob, ifFalseLabel)
 	}
 	if stmt.elseBlock != nil {
-		generateStatementList(exe, if_s.else_block, if_s.else_block.statement_list, ob)
+		generateStatementList(exe, stmt.elseBlock, stmt.elseBlock.statementList, ob)
 	}
 
 	setLabel(ob, endLabel)
@@ -291,7 +291,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	fixStatementList(stmt.block, stmt.block.statementList, fd)
 
 }
-func (stmt *ForStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	var loop_label int
 
 	if stmt.init != nil {
@@ -325,7 +325,7 @@ func (stmt *ForStatement) generate(exe *Executable, currentBlock *Block, ob *Opc
 		stmt.post.generate(exe, currentBlock, ob)
 	}
 
-	generateCode(ob, statement.Position(), vm.VM_JUMP, loop_label)
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, loop_label)
 
 	setLabel(ob, parent.breakLabel)
 }
@@ -371,7 +371,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	stmt.returnValue = returnValue
 }
 
-func (stmt *ReturnStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if stmt.returnValue == nil {
 		compileError(stmt.Position(), 0, "")
 	}
@@ -394,10 +394,11 @@ type BreakStatement struct {
 
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
-func (stmt *BreakStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	var parent *StatementBlockInfo
+	var block *Block
 
-	for block := currentBlock; block != nil; block = block.outerBlock {
+	for block = currentBlock; block != nil; block = block.outerBlock {
 		parent, ok := block.parent.(*StatementBlockInfo)
 		if !ok {
 			continue
@@ -424,7 +425,7 @@ func (stmt *BreakStatement) generate(exe *Executable, currentBlock *Block, ob *O
 		compileError(stmt.Position(), 0, "")
 	}
 
-	generateCode(ob, statement.Position(), vm.VM_JUMP, parent.breakLabel)
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, parent.breakLabel)
 
 }
 
@@ -442,11 +443,12 @@ type ContinueStatement struct {
 func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 }
-func (stmt *ContinueStatement) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var parent *StatementBlockInfo
+func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	var block *Block
 
 	for block := currentBlock; block != nil; block = block.outerBlock {
-		if parent, ok := block.parent.(*StatementBlockInfo); !ok {
+		parent, ok := block.parent.(*StatementBlockInfo)
+		if !ok {
 			continue
 		}
 
@@ -454,9 +456,7 @@ func (stmt *ContinueStatement) generate(exe *Executable, currentBlock *Block, ob
 			break
 		}
 
-		if parentFor, ok := parent.statement.(*ForStatement); !ok {
-			compileError(stmt.Position(), 0, "")
-		}
+		parentFor := parent.statement.(*ForStatement)
 
 		if parentFor.label == "" {
 			continue
@@ -468,10 +468,10 @@ func (stmt *ContinueStatement) generate(exe *Executable, currentBlock *Block, ob
 	}
 
 	if block == nil {
-		dkc_compile_error(statement.Position(), 0, "")
+		compileError(stmt.Position(), 0, "")
 	}
 
-	generateCode(ob, statement.Position(), vm.VM_JUMP, block.parent.statement.continueLabel)
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).continueLabel)
 
 }
 
@@ -503,11 +503,11 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 		stmt.initializer = createAssignCast(stmt.initializer, stmt.typeSpecifier)
 	}
 }
-func (stmt *Declaration) generate(exe *Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *Declaration) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if stmt.initializer == nil {
 		return
 	}
 
 	stmt.initializer.generate(exe, currentBlock, ob)
-	generatePopToIdentifier(decl, statement.Position(), ob)
+	generatePopToIdentifier(stmt, stmt.Position(), ob)
 }

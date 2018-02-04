@@ -1,6 +1,6 @@
 package vm
 
-type OpcodeInfo struct {
+type opcodeInfo struct {
 	// 注记符
 	mnemonic string
 
@@ -8,11 +8,11 @@ type OpcodeInfo struct {
 	// `b` 一个字节整数
 	// `s` 两个字节整数
 	// `p` 常量池索引值
-	parameter       string
+	Parameter       string
 	stack_increment int
 }
 
-var opcodeInfo []OpcodeInfo = []OpcodeInfo{
+var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"dummy", "", 0},
 	{"push_int_1byte", "b", 1},
 	{"push_int_2byte", "s", 1},

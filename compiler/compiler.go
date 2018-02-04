@@ -28,17 +28,17 @@ type Compiler struct {
 
 func (c *Compiler) functionDefine(typeSpecifier *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
 	// 定义重复
-	if searchFunction(identifier) || searchDeclaration(identifier, nil) {
-		compileError(nil, 0, "")
+	if SearchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {
+		panic("TODO")
 	}
 
 	fd := &FunctionDefinition{
 		typeSpecifier:    typeSpecifier,
 		name:             identifier,
-		fd.parameter:     parameterList,
-		fd.block:         block,
-		fd.index:         len(c.funcList),
-		fd.localVariable: nil,
+		parameterList:     parameterList,
+		block:         block,
+		index:         len(c.funcList),
+		localVariableList: nil,
 	}
 
 	if block != nil {
@@ -84,14 +84,11 @@ func (c *Compiler) fixTree() {
 
 }
 
-func (c *Compiler) generate() *vm.Executable {
-	exe := newExecutable()
+func (c *Compiler) Generate(exe *vm.Executable){
 
 	addGlobalVariable(c, exe)
 	addFunctions(c, exe)
 	addTopLevel(c, exe)
-
-	return exe
 }
 
 func fixStatementList(currentBlock *Block, statementList []Statement, fd *FunctionDefinition) {
@@ -125,7 +122,7 @@ func searchDeclaration(name string, currentBlock *Block) *Declaration {
 	return nil
 }
 
-func searchFunction(name string) *FunctionDefinition {
+func SearchFunction(name string) *FunctionDefinition {
 	compiler := getCurrentCompiler()
 
 	for _, pos := range compiler.funcList {

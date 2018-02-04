@@ -24,15 +24,12 @@ func iniCodeBuf(ob *OpcodeBuf) {
 func addGlobalVariable(compiler *Compiler, exe *vm.Executable) {
 	var v *vm.VmVariable
 
-	exe.globalVariableList = []*vm.VmVariable{}
+	exe.GlobalVariableList = []*vm.VmVariable{}
 
 	for _, dl := range compiler.declarationList {
-		v = &vm.VmVariable{
-			name:          dl.name,
-			typeSpecifier: copyTypeSpecifier(dl.typeSpecifier),
-		}
+		v = vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
 
-		exe.globalVariableList = append(exe.globalVariableList, v)
+		exe.GlobalVariableList = append(exe.GlobalVariableList, v)
 	}
 }
 
@@ -45,21 +42,21 @@ func addFunctions(compiler *Compiler, exe *vm.Executable) {
 
 	for _, fd := range compiler.funcList {
 		f = &vm.VmFunction{}
-		exe.functionList = append(exe.functionList, f)
+		exe.FunctionList = append(exe.FunctionList, f)
 
 		copyFunction(fd, f)
 		if fd.block == nil {
 			// 原生函数
-			f.isImplemented = false
+			f.IsImplemented = false
 			continue
 		}
 
 		iniCodeBuf(&ob)
 		generateStatementList(exe, fd.block, fd.block.statementList, &ob)
 
-		f.isImplemented = true
-		f.codeList = fixOpcodeBuf(&ob)
-		f.lineNumberList = ob.lineNumberList
+		f.IsImplemented = true
+		f.CodeList = fixOpcodeBuf(&ob)
+		f.LineNumberList = ob.lineNumberList
 	}
 }
 
@@ -70,8 +67,8 @@ func addTopLevel(compiler *Compiler, exe *vm.Executable) {
 	iniCodeBuf(&ob)
 	generateStatementList(exe, nil, compiler.statementList, &ob)
 
-	exe.codeList = fixOpcodeBuf(&ob)
-	exe.lineNumberList = ob.lineNumberList
+	exe.CodeList = fixOpcodeBuf(&ob)
+	exe.LineNumberList = ob.lineNumberList
 }
 
 //
@@ -79,9 +76,9 @@ func addTopLevel(compiler *Compiler, exe *vm.Executable) {
 //
 func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 	// 获取参数类型
-	paramList := []byte(vm.opcodeInfo[int(code)].parameter)
+	paramList := []byte(vm.OpcodeInfo[int(code)].Parameter)
 
-	startPc = len(ob.codeList)
+	startPc := len(ob.codeList)
 	ob.codeList = append(ob.codeList, code)
 
 	for i, param := range paramList {
@@ -105,15 +102,15 @@ func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 }
 
 func addLineNumber(ob *OpcodeBuf, lineNumber int, start_pc int) {
-	if ob.lineNumberList == nil || (ob.lineNumberList[len(ob.lineNumberList)-1].lineNumber != lineNumber) {
+	if ob.lineNumberList == nil || (ob.lineNumberList[len(ob.lineNumberList)-1].LineNumber != lineNumber) {
 		l := &vm.VmLineNumber{
-			lineNumber: lineNumber,
-			startPc:    start_pc,
-			pcCount:    len(ob.codeList) - start_pc,
+			LineNumber: lineNumber,
+			StartPc:    start_pc,
+			PcCount:    len(ob.codeList) - start_pc,
 		}
 		ob.lineNumberList = append(ob.lineNumberList, l)
 	} else {
-		ob.lineNumberList[len(ob.lineNumberList)-1].pcCount += len(ob.codeList) - start_pc
+		ob.lineNumberList[len(ob.lineNumberList)-1].PcCount += len(ob.codeList) - start_pc
 	}
 }
 
@@ -134,15 +131,13 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 
 func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
 
-	dest := &vm.VmTypeSpecifier{basicType: src.basicType}
-
-	dest.deriveList = []TypeDerive{}
+	dest := &vm.VmTypeSpecifier{BasicType: src.basicType}
 
 	for _, derive := range src.deriveList {
 		switch f := derive.(type) {
 		case *FunctionDerive:
-			newDerive := &vm.VmFunctionDerive{parameterList: copyParameterList(f.parameterList)}
-			dest.deriveList = append(dest.deriveList, newDerive)
+			newDerive := &vm.VmFunctionDerive{ParameterList: copyParameterList(f.parameterList)}
+			dest.DeriveList = append(dest.DeriveList, newDerive)
 		default:
 			panic("derive error")
 		}
@@ -156,8 +151,8 @@ func copyParameterList(src []*Parameter) []*vm.VmLocalVariable {
 
 	for _, param := range src {
 		v := &vm.VmLocalVariable{
-			name:          param.name,
-			typeSpecifier: copyTypeSpecifier(param.typeSpecifier),
+			Name:          param.name,
+			TypeSpecifier: copyTypeSpecifier(param.typeSpecifier),
 		}
 		dest = append(dest, v)
 	}
@@ -165,13 +160,13 @@ func copyParameterList(src []*Parameter) []*vm.VmLocalVariable {
 }
 
 func copyFunction(src *FunctionDefinition, dest *vm.VmFunction) {
-	dest.typeSpecifier = copyTypeSpecifier(src.typeSpecifier)
-	dest.name = src.name
-	dest.parameterList = copyParameterList(src.parameterList)
+	dest.TypeSpecifier = copyTypeSpecifier(src.typeSpecifier)
+	dest.Name = src.name
+	dest.ParameterList = copyParameterList(src.parameterList)
 	if src.block != nil {
-		dest.localVariableList = copy_local_variables(src)
+		dest.LocalVariableList = copy_local_variables(src)
 	} else {
-		dest.localVariableList = nil
+		dest.LocalVariableList = nil
 	}
 }
 
@@ -179,12 +174,12 @@ func copy_local_variables(fd *FunctionDefinition) []*vm.VmLocalVariable {
 	// TODO 形参占用位置
 	var dest []*vm.VmLocalVariable = []*vm.VmLocalVariable{}
 
-	localVariableCount = len(fd.localVariableList) - len(fd.parameterList)
+	localVariableCount := len(fd.localVariableList) - len(fd.parameterList)
 
 	for _, v := range fd.localVariableList[0:localVariableCount] {
 		vmV := &vm.VmLocalVariable{
-			name:          v.name,
-			typeSpecifier: copyTypeSpecifier(v.typeSpecifier),
+			Name:          v.name,
+			TypeSpecifier: copyTypeSpecifier(v.typeSpecifier),
 		}
 		dest = append(dest, vmV)
 	}
@@ -217,8 +212,8 @@ func fixLabels(ob *OpcodeBuf) {
 			ob.codeList[i+1] = (byte)(address >> 8)
 			ob.codeList[i+2] = (byte)(address & 0xff)
 		}
-		info := &vm.opcodeInfo[ob.codeList[i]]
-		for _, p := range []byte(info.parameter) {
+		info := &vm.OpcodeInfo[ob.codeList[i]]
+		for _, p := range []byte(info.Parameter) {
 			switch p {
 			case 'b':
 				i++

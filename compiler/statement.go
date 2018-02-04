@@ -55,7 +55,7 @@ type Block struct {
 
 func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Position) {
 	if searchDeclaration(decl.name, b) != nil {
-		compileError(pos, 0, "")
+		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, "Declaration name: %s\n", decl.name)
 	}
 
 	if b != nil {
@@ -105,7 +105,7 @@ func (fd *FunctionDefinition) addParameterAsDeclaration() {
 
 	for _, param := range fd.parameterList {
 		if searchDeclaration(param.name, fd.block) != nil {
-			compileError(param.Position(), 0, "")
+			compileError(param.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, "parameter name: %s\n", param.name)
 		}
 		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
 
@@ -139,17 +139,14 @@ func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
 }
 
 func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression) {
-	functionCallExpr, ok := expr.(*FunctionCallExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	functionCallExpr := expr.(*FunctionCallExpression)
 
 	ParameterList := fd.parameterList
 	argumentList := functionCallExpr.argumentList
 
 	length := len(ParameterList)
 	if len(argumentList) != length {
-		compileError(expr.Position(), 0, "")
+		compileError(expr.Position(), ARGUMENT_COUNT_MISMATCH_ERR, "Need: %d, Give: %d\n", length, len(argumentList))
 	}
 
 	for i := 0; i < length; i++ {
@@ -308,10 +305,7 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 		stmt.condition.generate(exe, currentBlock, ob)
 	}
 
-	parent, ok := stmt.block.parent.(*StatementBlockInfo)
-	if !ok {
-		compileError(stmt.Position(), 0, "")
-	}
+	parent := stmt.block.parent.(*StatementBlockInfo)
 
 	parent.breakLabel = getLabel(ob)
 	parent.continueLabel = getLabel(ob)
@@ -376,7 +370,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if stmt.returnValue == nil {
-		compileError(stmt.Position(), 0, "")
+		panic("Return value is nil.")
 	}
 
 	stmt.returnValue.generate(exe, currentBlock, ob)
@@ -411,10 +405,8 @@ func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob
 			break
 		}
 
-		parentFor, ok := parent.statement.(*ForStatement)
-		if !ok {
-			compileError(stmt.Position(), 0, "")
-		}
+		parentFor := parent.statement.(*ForStatement)
+
 		if parentFor.label == "" {
 			continue
 		}
@@ -425,7 +417,7 @@ func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob
 	}
 
 	if block == nil {
-		compileError(stmt.Position(), 0, "")
+		compileError(stmt.Position(), LABEL_NOT_FOUND_ERR, "Label: %s\n", stmt.label)
 	}
 
 	generateCode(ob, stmt.Position(), vm.VM_JUMP, parent.breakLabel)
@@ -471,7 +463,7 @@ func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block,
 	}
 
 	if block == nil {
-		compileError(stmt.Position(), 0, "")
+		compileError(stmt.Position(), LABEL_NOT_FOUND_ERR, "Label: %s\n", stmt.label)
 	}
 
 	generateCode(ob, stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).continueLabel)

@@ -103,7 +103,7 @@ type AssignExpression struct {
 func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	_, ok := expr.left.(*IdentifierExpression)
 	if !ok {
-		compileError(expr.left.Position(), 0, "")
+		compileError(expr.left.Position(), NOT_LVALUE_ERR, "")
 	}
 
 	expr.left = expr.left.fix(currentBlock)
@@ -120,15 +120,10 @@ func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, 
 	// 与generateEx的区别
 	generateCode(ob, expr.Position(), vm.VM_DUPLICATE)
 
-	identifierExpr, ok := expr.left.(*IdentifierExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	identifierExpr := expr.left.(*IdentifierExpression)
+
 	inner := identifierExpr.inner
-	decl, ok := inner.(*Declaration)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	decl := inner.(*Declaration)
 
 	generatePopToIdentifier(decl, expr.Position(), ob)
 }
@@ -137,15 +132,10 @@ func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, 
 func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
-	identifierExpr, ok := expr.left.(*IdentifierExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	identifierExpr := expr.left.(*IdentifierExpression)
+
 	inner := identifierExpr.inner
-	decl, ok := inner.(*Declaration)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	decl := inner.(*Declaration)
 
 	generatePopToIdentifier(decl, expr.Position(), ob)
 }
@@ -179,7 +169,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 
 	switch expr.operator {
-		// 数学计算
+	// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -193,10 +183,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		// 类型转换
 		newExpr = castBinaryExpression(expr)
-		newBinaryExpr, ok := newExpr.(*BinaryExpression)
-		if !ok {
-			compileError(expr.Position(), 0, "")
-		}
+		newBinaryExpr := newExpr.(*BinaryExpression)
 
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
@@ -208,7 +195,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		} else if isString(newBinaryExprLeftType) && isString(newBinaryExprRightType) {
 			newExpr.setType(&TypeSpecifier{basicType: vm.StringType})
 		} else {
-			compileError(expr.Position(), 0, "")
+			compileError(expr.Position(), MATH_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
 		}
 
 		return newExpr
@@ -225,18 +212,15 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		}
 
 		newExpr = castBinaryExpression(expr)
-		newBinaryExpr, ok := newExpr.(*BinaryExpression)
-		if !ok {
-			compileError(expr.Position(), 0, "")
-		}
+		newBinaryExpr := newExpr.(*BinaryExpression)
 
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
 		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) ||
-		newBinaryExprLeftType.deriveList != nil ||
-		newBinaryExprRightType.deriveList != nil {
-			compileError(expr.Position(), 0, "")
+			newBinaryExprLeftType.deriveList != nil ||
+			newBinaryExprRightType.deriveList != nil {
+			compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
 		}
 
 		newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
@@ -251,13 +235,12 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
 			expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 		} else {
-			compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "")
+			compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(expr.left.typeS().basicType), int(expr.right.typeS().basicType))
 		}
 		return expr
 	default:
-		compileError(expr.Position(), 0, "")
+		return nil
 	}
-	return nil
 }
 
 var operatorCodeMap = map[BinaryOperatorKind]byte{
@@ -276,11 +259,12 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	switch operator := expr.operator; operator {
-		case EqOperator, NeOperator,
+	case EqOperator, NeOperator,
 		GtOperator, GeOperator, LtOperator, LeOperator,
 		AddOperator, SubOperator, MulOperator, DivOperator:
 
 		if expr.left.typeS().basicType != expr.right.typeS().basicType {
+			// TODO
 			compileError(expr.Position(), 0, "")
 		}
 
@@ -289,6 +273,7 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 
 		code, ok := operatorCodeMap[operator]
 		if !ok {
+			// TODO
 			compileError(expr.Position(), 0, "")
 		}
 		codeOffset := code + getOpcodeTypeOffset(expr.left.typeS().basicType)
@@ -298,10 +283,10 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		var jumpCode, logicalCode byte
 
 		if operator == LogicalAndOperator {
-			jumpCode  = vm.VM_JUMP_IF_FALSE
+			jumpCode = vm.VM_JUMP_IF_FALSE
 			logicalCode = vm.VM_LOGICAL_AND
 		} else {
-			jumpCode  = vm.VM_JUMP_IF_TRUE
+			jumpCode = vm.VM_JUMP_IF_TRUE
 			logicalCode = vm.VM_LOGICAL_OR
 		}
 
@@ -332,7 +317,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	expr.operand = expr.operand.fix(currentBlock)
 
 	if !isInt(expr.operand.typeS()) && !isDouble(expr.operand.typeS()) {
-		compileError(expr.Position(), 0, "")
+		compileError(expr.Position(), MINUS_TYPE_MISMATCH_ERR, "")
 	}
 
 	expr.setType(expr.operand.typeS())
@@ -350,7 +335,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 }
 func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
-	code := vm.VM_MINUS_INT+getOpcodeTypeOffset(expr.typeS().basicType)
+	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.typeS().basicType)
 	generateCode(ob, expr.Position(), code)
 }
 
@@ -375,7 +360,7 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	}
 
 	if !isBoolean(expr.operand.typeS()) {
-		compileError(expr.Position(), 0, "")
+		compileError(expr.Position(), LOGICAL_NOT_TYPE_MISMATCH_ERR, "")
 	}
 
 	expr.setType(expr.operand.typeS())
@@ -405,14 +390,11 @@ type FunctionCallExpression struct {
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	funcExpr := expr.function.fix(currentBlock)
 
-	identifierExpr, ok := funcExpr.(*IdentifierExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	identifierExpr := funcExpr.(*IdentifierExpression)
 
 	fd := SearchFunction(identifierExpr.name)
 	if fd == nil {
-		compileError(expr.Position(), 0, "")
+		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, "Function name: %s\n", identifierExpr.name)
 	}
 
 	fd.checkArgument(currentBlock, expr)
@@ -576,14 +558,14 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// 都不是,报错
-	compileError(expr.Position(), 0, "")
+	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, "Identifier name: %s\n", expr.name)
 	return nil
 }
 
 func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	switch inner := expr.inner.(type) {
 
-		// 函数
+	// 函数
 	case *FunctionDefinition:
 		generateCode(ob, expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
 
@@ -646,6 +628,7 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
 
 	default:
+		// TODO
 		compileError(expr.Position(), 0, "")
 	}
 }

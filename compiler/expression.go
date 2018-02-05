@@ -37,7 +37,7 @@ type Expression interface {
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
 
-	echo()
+	show(ident int)
 }
 
 //
@@ -50,6 +50,8 @@ type ExpressionImpl struct {
 	typeSpecifier *TypeSpecifier
 }
 
+func (expr *ExpressionImpl) show(ident int)  {}
+
 func (expr *ExpressionImpl) typeS() *TypeSpecifier {
 	return expr.typeSpecifier
 }
@@ -57,8 +59,6 @@ func (expr *ExpressionImpl) typeS() *TypeSpecifier {
 func (expr *ExpressionImpl) setType(t *TypeSpecifier) {
 	expr.typeSpecifier = t
 }
-
-func (expr *ExpressionImpl) echo() {}
 
 // ==============================
 // CommaExpression
@@ -70,6 +70,13 @@ type CommaExpression struct {
 
 	left  Expression
 	right Expression
+}
+func (expr *CommaExpression) show(ident int){
+	printWithIdent("CommaExpr", ident)
+
+	subIdent := ident + 2
+	expr.left.show(subIdent)
+	expr.right.show(subIdent)
 }
 
 func (expr *CommaExpression) fix(currentBlock *Block) Expression {
@@ -98,6 +105,14 @@ type AssignExpression struct {
 	left Expression
 	// 操作数
 	operand Expression
+}
+
+func (expr *AssignExpression) show(ident int) {
+	printWithIdent("AssignExpr", ident)
+
+	subIdent := ident + 2
+	expr.left.show(subIdent)
+	expr.operand.show(subIdent)
 }
 
 func (expr *AssignExpression) fix(currentBlock *Block) Expression {
@@ -163,6 +178,14 @@ type BinaryExpression struct {
 	operator BinaryOperatorKind
 	left     Expression
 	right    Expression
+}
+
+func (expr *BinaryExpression) show(ident int) {
+	printWithIdent("BinaryExpr", ident)
+
+	subIdent := ident + 2
+	expr.left.show(subIdent)
+	expr.right.show(subIdent)
 }
 
 func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
@@ -313,6 +336,13 @@ type MinusExpression struct {
 	operand Expression
 }
 
+func (expr *MinusExpression) show(ident int) {
+	printWithIdent("MinusExpr", ident)
+
+	subIdent := ident + 2
+	expr.operand.show(subIdent)
+}
+
 func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	expr.operand = expr.operand.fix(currentBlock)
 
@@ -350,6 +380,14 @@ type LogicalNotExpression struct {
 	operand Expression
 }
 
+func (expr *LogicalNotExpression) show(ident int) {
+	printWithIdent("LogicalNotExpr", ident)
+
+	subIdent := ident + 2
+
+	expr.operand.show(subIdent)
+}
+
 func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	expr.operand = expr.operand.fix(currentBlock)
 
@@ -385,6 +423,18 @@ type FunctionCallExpression struct {
 	function Expression
 	// 实参列表
 	argumentList []Expression
+}
+
+func (expr *FunctionCallExpression) show(ident int) {
+	printWithIdent("FuncCallExpr", ident)
+
+	subIdent := ident + 2
+
+	expr.function.show(subIdent)
+	for _, arg := range expr.argumentList {
+		printWithIdent("ArgList", subIdent)
+		arg.show(subIdent + 2)
+	}
 }
 
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
@@ -425,6 +475,10 @@ type BooleanExpression struct {
 	booleanValue bool
 }
 
+func (expr *BooleanExpression) show(ident int) {
+	printWithIdent("BoolExpr", ident)
+}
+
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
 	return expr
@@ -448,6 +502,10 @@ type IntExpression struct {
 	ExpressionImpl
 
 	intValue int
+}
+
+func (expr *IntExpression) show(ident int) {
+	printWithIdent("IntExpr", ident)
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
@@ -478,6 +536,10 @@ type DoubleExpression struct {
 	ExpressionImpl
 
 	doubleValue float64
+}
+
+func (expr *DoubleExpression) show(ident int) {
+	printWithIdent("DoubleExpr", ident)
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
@@ -511,6 +573,10 @@ type StringExpression struct {
 	stringValue string
 }
 
+func (expr *StringExpression) show(ident int) {
+	printWithIdent("StringExpr", ident)
+}
+
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	expr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
 	return expr
@@ -538,6 +604,10 @@ type IdentifierExpression struct {
 
 	// 声明要么是变量，要么是函数 (FunctionDefinition Declaration)
 	inner IdentifierInner
+}
+
+func (expr *IdentifierExpression) show(ident int) {
+	printWithIdent("IdentifierExpr", ident)
 }
 
 func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
@@ -602,6 +672,10 @@ type CastExpression struct {
 	castType CastType
 
 	operand Expression
+}
+
+func (expr *CastExpression) show(ident int) {
+	printWithIdent("CastExpr", ident)
 }
 
 func (expr *CastExpression) fix(currentBlock *Block) Expression {

@@ -16,5 +16,7 @@ func TestParse(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	debug("%v", len(compiler.statementList))
+	for _, stmt := range compiler.statementList {
+		stmt.show(0)
+	}
 }

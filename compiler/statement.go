@@ -35,6 +35,8 @@ type Statement interface {
 
 	fix(*Block, *FunctionDefinition)
 	generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf)
+
+	show(ident int)
 }
 
 type StatementImpl struct {
@@ -51,6 +53,19 @@ type Block struct {
 
 	// 块信息，函数块，还是条件语句
 	parent BlockInfo
+}
+
+func (b *Block) show(ident int) {
+	printWithIdent("Block", ident)
+	subIdent := ident + 2
+
+	for _, stmt := range b.statementList {
+		stmt.show(subIdent)
+	}
+
+	for _, decl := range b.declarationList {
+		decl.show(subIdent)
+	}
 }
 
 func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Position) {
@@ -174,6 +189,14 @@ type ExpressionStatement struct {
 	expression Expression
 }
 
+func (stmt *ExpressionStatement) show(ident int) {
+	printWithIdent("ExprStmt", ident)
+
+	subIdent := ident + 2
+
+	stmt.expression.show(subIdent)
+}
+
 func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	stmt.expression.fix(currentBlock)
 }
@@ -202,6 +225,25 @@ type IfStatement struct {
 	thenBlock *Block
 	elifList  []*Elif
 	elseBlock *Block
+}
+
+func (stmt *IfStatement) show(ident int) {
+	printWithIdent("IfStmt", ident)
+
+	subIdent := ident + 2
+	stmt.condition.show(subIdent)
+	if stmt.thenBlock != nil {
+		stmt.thenBlock.show(subIdent)
+	}
+	for _, elif := range stmt.elifList {
+		printWithIdent("Elif", subIdent)
+		elif.condition.show(subIdent + 2)
+		elif.block.show(subIdent + 2)
+	}
+
+	if stmt.elseBlock != nil {
+		stmt.elseBlock.show(subIdent)
+	}
 }
 
 func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
@@ -282,6 +324,19 @@ type ForStatement struct {
 	block     *Block
 }
 
+func (stmt *ForStatement) show(ident int) {
+	printWithIdent("ForStmt", ident)
+	subIdent := ident + 2
+
+	stmt.init.show(subIdent)
+	stmt.condition.show(subIdent)
+	stmt.post.show(subIdent)
+
+	if stmt.block != nil {
+		stmt.block.show(subIdent)
+	}
+}
+
 func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	stmt.init.fix(currentBlock)
 	stmt.condition.fix(currentBlock)
@@ -338,6 +393,13 @@ type ReturnStatement struct {
 	returnValue Expression
 }
 
+func (stmt *ReturnStatement) show(ident int) {
+	printWithIdent("ReturnStmt", ident)
+	subIdent := ident + 2
+
+	stmt.returnValue.show(subIdent)
+}
+
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	var returnValue Expression
 	stmt.returnValue.fix(currentBlock)
@@ -389,6 +451,10 @@ type BreakStatement struct {
 	label string
 }
 
+func (stmt *BreakStatement) show(ident int) {
+	printWithIdent("BreakStmt", ident)
+}
+
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
 func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -435,9 +501,12 @@ type ContinueStatement struct {
 	label string
 }
 
-func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-
+func (stmt *ContinueStatement) show(ident int) {
+	printWithIdent("ContinueStmt", ident)
 }
+
+func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
+
 func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	var block *Block
 
@@ -486,6 +555,13 @@ type Declaration struct {
 	variableIndex int
 
 	isLocal bool
+}
+
+func (stmt *Declaration) show(ident int) {
+	printWithIdent("DeclStmt", ident)
+
+	subIdent := ident + 2
+	stmt.initializer.show(subIdent)
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {

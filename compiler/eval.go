@@ -5,9 +5,7 @@ import (
 	"../vm"
 )
 
-func evalMathExpression(currentBlock *Block, expr Expression) Expression {
-	binaryExpr := expr.(*BinaryExpression)
-
+func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expression {
 	switch leftExpr := binaryExpr.left.(type) {
 
 	case *IntExpression:
@@ -36,21 +34,16 @@ func evalMathExpression(currentBlock *Block, expr Expression) Expression {
 
 	case *StringExpression:
 		if binaryExpr.operator == AddOperator {
-			newExpr := chainString(expr)
+			newExpr := chainString(binaryExpr)
 			return newExpr
 		}
 	}
 
-	return expr
+	return binaryExpr
 }
 
-func evalMathExpressionInt(expr Expression, left, right int) Expression {
+func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expression {
 	var value int
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
 
 	switch binaryExpr.operator {
 	case AddOperator:
@@ -69,13 +62,8 @@ func evalMathExpressionInt(expr Expression, left, right int) Expression {
 	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
 	return newExpr
 }
-func evalMathExpressionDouble(expr Expression, left, right float64) Expression {
+func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64) Expression {
 	var value float64
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
 
 	switch binaryExpr.operator {
 	case AddOperator:
@@ -94,15 +82,11 @@ func evalMathExpressionDouble(expr Expression, left, right float64) Expression {
 	return newExpr
 }
 
-func chainString(expr Expression) Expression {
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
+func chainString(binaryExpr *BinaryExpression) Expression {
 
 	rightStr := expressionToString(binaryExpr.right)
 	if rightStr != "" {
-		return expr
+		return binaryExpr
 	}
 
 	leftStringExpr, ok := binaryExpr.left.(*StringExpression)
@@ -141,11 +125,7 @@ func expressionToString(expr Expression) string {
 	return newStr
 }
 
-func evalCompareExpression(expr Expression) Expression {
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 
 	switch leftExpr := binaryExpr.left.(type) {
 	case *BooleanExpression:
@@ -179,16 +159,11 @@ func evalCompareExpression(expr Expression) Expression {
 			return newExpr
 		}
 	}
-	return expr
+	return binaryExpr
 }
 
-func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression {
+func evalCompareExpressionBoolean(binaryExpr *BinaryExpression, left, right bool) Expression {
 	var value bool
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
 
 	switch binaryExpr.operator {
 	case EqOperator:
@@ -204,13 +179,8 @@ func evalCompareExpressionBoolean(expr Expression, left, right bool) Expression 
 	return newExpr
 }
 
-func evalCompareExpressionInt(expr Expression, left, right int) Expression {
+func evalCompareExpressionInt(binaryExpr *BinaryExpression, left, right int) Expression {
 	var value bool
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
 
 	switch binaryExpr.operator {
 	case EqOperator:
@@ -234,13 +204,8 @@ func evalCompareExpressionInt(expr Expression, left, right int) Expression {
 	return newExpr
 }
 
-func evalCompareExpressionDouble(expr Expression, left, right float64) Expression {
+func evalCompareExpressionDouble(binaryExpr *BinaryExpression, left, right float64) Expression {
 	var value bool
-
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
 
 	switch binaryExpr.operator {
 	case EqOperator:
@@ -264,12 +229,8 @@ func evalCompareExpressionDouble(expr Expression, left, right float64) Expressio
 	return newExpr
 }
 
-func evalCompareExpressionString(expr Expression, left, right string) Expression {
+func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right string) Expression {
 	var value bool
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
 
 	switch binaryExpr.operator {
 	case EqOperator:

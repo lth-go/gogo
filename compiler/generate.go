@@ -62,12 +62,12 @@ func addFunctions(compiler *Compiler, exe *vm.Executable) {
 
 // 生成解释器所需的信息
 func addTopLevel(compiler *Compiler, exe *vm.Executable) {
-	var ob OpcodeBuf
+	var ob *OpcodeBuf
 
-	iniCodeBuf(&ob)
-	generateStatementList(exe, nil, compiler.statementList, &ob)
+	iniCodeBuf(ob)
+	generateStatementList(exe, nil, compiler.statementList, ob)
 
-	exe.CodeList = fixOpcodeBuf(&ob)
+	exe.CodeList = fixOpcodeBuf(ob)
 	exe.LineNumberList = ob.lineNumberList
 }
 
@@ -84,13 +84,16 @@ func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 	for i, param := range paramList {
 		value := rest[i]
 		switch param {
-		case 'b': /* byte */
+		// byte
+		case 'b':
 			ob.codeList = append(ob.codeList, byte(value))
-		case 's': /* short(2byte int) */
+		// short(2byte int)
+		case 's': 
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
-		case 'p': /* constant pool index */
+		// constant pool index
+		case 'p': 
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
@@ -117,7 +120,6 @@ func addLineNumber(ob *OpcodeBuf, lineNumber int, start_pc int) {
 //
 // generateStatementList
 //
-
 func generateStatementList(exe *vm.Executable, currentBlock *Block, statementList []Statement, ob *OpcodeBuf) {
 
 	for _, stmt := range statementList {
@@ -128,7 +130,6 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 //
 // COPY
 //
-
 func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
 
 	dest := &vm.VmTypeSpecifier{BasicType: src.basicType}
@@ -190,7 +191,6 @@ func copy_local_variables(fd *FunctionDefinition) []*vm.VmLocalVariable {
 //
 // FIX
 //
-
 func fixOpcodeBuf(ob *OpcodeBuf) []byte {
 
 	fixLabels(ob)

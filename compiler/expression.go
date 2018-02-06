@@ -31,7 +31,9 @@ type Expression interface {
 	// Pos接口
 	Pos
 
+	// 用于类型修正,以及简单的类型转换
 	fix(*Block) Expression
+	// 生成字节码
 	generate(*vm.Executable, *Block, *OpcodeBuf)
 
 	typeS() *TypeSpecifier
@@ -50,7 +52,7 @@ type ExpressionImpl struct {
 	typeSpecifier *TypeSpecifier
 }
 
-func (expr *ExpressionImpl) show(ident int)  {}
+func (expr *ExpressionImpl) show(ident int) {}
 
 func (expr *ExpressionImpl) typeS() *TypeSpecifier {
 	return expr.typeSpecifier
@@ -71,7 +73,8 @@ type CommaExpression struct {
 	left  Expression
 	right Expression
 }
-func (expr *CommaExpression) show(ident int){
+
+func (expr *CommaExpression) show(ident int) {
 	printWithIdent("CommaExpr", ident)
 
 	subIdent := ident + 2
@@ -133,24 +136,24 @@ func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, 
 	expr.operand.generate(exe, currentBlock, ob)
 
 	// 与generateEx的区别
+	// 拷贝
 	generateCode(ob, expr.Position(), vm.VM_DUPLICATE)
 
 	identifierExpr := expr.left.(*IdentifierExpression)
 
-	inner := identifierExpr.inner
-	decl := inner.(*Declaration)
+	decl := identifierExpr.inner.(*Declaration)
 
 	generatePopToIdentifier(decl, expr.Position(), ob)
 }
 
 // TODO
+// 顶层
 func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
 	identifierExpr := expr.left.(*IdentifierExpression)
 
-	inner := identifierExpr.inner
-	decl := inner.(*Declaration)
+	decl := identifierExpr.inner.(*Declaration)
 
 	generatePopToIdentifier(decl, expr.Position(), ob)
 }
@@ -261,6 +264,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 			compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(expr.left.typeS().basicType), int(expr.right.typeS().basicType))
 		}
 		return expr
+
 	default:
 		return nil
 	}
@@ -282,13 +286,13 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	switch operator := expr.operator; operator {
-	case EqOperator, NeOperator,
-		GtOperator, GeOperator, LtOperator, LeOperator,
-		AddOperator, SubOperator, MulOperator, DivOperator:
+	case GtOperator, GeOperator, LtOperator, LeOperator,
+		AddOperator, SubOperator, MulOperator, DivOperator,
+		EqOperator, NeOperator:
 
 		if expr.left.typeS().basicType != expr.right.typeS().basicType {
 			// TODO
-			compileError(expr.Position(), 0, "")
+			panic("TODO")
 		}
 
 		expr.left.generate(exe, currentBlock, ob)
@@ -297,8 +301,10 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		code, ok := operatorCodeMap[operator]
 		if !ok {
 			// TODO
-			compileError(expr.Position(), 0, "")
+			panic("TODO")
 		}
+
+		// 如栈
 		codeOffset := code + getOpcodeTypeOffset(expr.left.typeS().basicType)
 		generateCode(ob, expr.Position(), codeOffset)
 
@@ -320,7 +326,10 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		generateCode(ob, expr.Position(), jumpCode, label)
 
 		expr.right.generate(exe, currentBlock, ob)
+
+		// 判断结果
 		generateCode(ob, expr.Position(), logicalCode)
+
 		setLabel(ob, label)
 	}
 }
@@ -363,6 +372,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 
 	return expr
 }
+
 func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.typeS().basicType)
@@ -440,7 +450,10 @@ func (expr *FunctionCallExpression) show(ident int) {
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	funcExpr := expr.function.fix(currentBlock)
 
-	identifierExpr := funcExpr.(*IdentifierExpression)
+	identifierExpr, ok := funcExpr.(*IdentifierExpression)
+	if !ok {
+		compileError(expr.Position(), FUNCTION_NOT_IDENTIFIER_ERR, "")
+	}
 
 	fd := SearchFunction(identifierExpr.name)
 	if fd == nil {
@@ -586,8 +599,8 @@ func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, 
 
 	cp := &vm.ConstantString{}
 	cp.SetString(expr.stringValue)
-
 	cpIdx := addConstantPool(exe, cp)
+
 	generateCode(ob, expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }
 
@@ -634,12 +647,10 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 
 func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	switch inner := expr.inner.(type) {
-
 	// 函数
 	case *FunctionDefinition:
 		generateCode(ob, expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
-
-		// 变量
+	// 变量
 	case *Declaration:
 		var code byte
 
@@ -678,9 +689,7 @@ func (expr *CastExpression) show(ident int) {
 	printWithIdent("CastExpr", ident)
 }
 
-func (expr *CastExpression) fix(currentBlock *Block) Expression {
-	return nil
-}
+func (expr *CastExpression) fix(currentBlock *Block) Expression { return nil }
 
 func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
@@ -688,22 +697,16 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 	switch expr.castType {
 	case IntToDoubleCast:
 		generateCode(ob, expr.Position(), vm.VM_CAST_INT_TO_DOUBLE)
-
 	case DoubleToIntCast:
 		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_INT)
-
 	case BooleanToStringCast:
 		generateCode(ob, expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
-
 	case IntToStringCast:
 		generateCode(ob, expr.Position(), vm.VM_CAST_INT_TO_STRING)
-
 	case DoubleToStringCast:
 		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
-
 	default:
-		// TODO
-		compileError(expr.Position(), 0, "")
+		panic("TODO")
 	}
 }
 
@@ -745,13 +748,12 @@ func getOpcodeTypeOffset(basicType vm.BasicType) byte {
 }
 
 func getLabel(ob *OpcodeBuf) int {
-
-	ret := len(ob.labelTableList)
-
-	return ret
+	// 返回栈顶位置
+	return len(ob.labelTableList)
 }
 
 func setLabel(ob *OpcodeBuf, label int) {
+	// 设置跳转
 	ob.labelTableList[label].labelAddress = len(ob.labelTableList)
 }
 

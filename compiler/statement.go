@@ -68,7 +68,7 @@ func (b *Block) show(ident int) {
 	}
 }
 
-func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Position) {
+func addDeclaration(b *Block, decl *Declaration, fd *FunctionDefinition, pos Position) {
 	if searchDeclaration(decl.name, b) != nil {
 		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, "Declaration name: %s\n", decl.name)
 	}
@@ -124,7 +124,7 @@ func (fd *FunctionDefinition) addParameterAsDeclaration() {
 		}
 		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
 
-		fd.block.addDeclaration(decl, fd, param.Position())
+		addDeclaration(fd.block, decl, fd, param.Position())
 	}
 }
 
@@ -253,53 +253,59 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.thenBlock != nil {
 		fixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
 	}
-	for _, elifPos := range stmt.elifList {
-		elifPos.condition.fix(currentBlock)
 
-		if elifPos.block != nil {
-			fixStatementList(elifPos.block, elifPos.block.statementList, fd)
+	for _, elif := range stmt.elifList {
+		elif.condition.fix(currentBlock)
+
+		if elif.block != nil {
+			fixStatementList(elif.block, elif.block.statementList, fd)
 		}
 	}
 
 	if stmt.elseBlock != nil {
 		fixStatementList(stmt.elseBlock, stmt.elseBlock.statementList, fd)
 	}
-
 }
 
 func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var ifFalseLabel int
-	var endLabel int
 
 	stmt.condition.generate(exe, currentBlock, ob)
 
-	ifFalseLabel = getLabel(ob)
-
+	// 获取false跳转地址
+	ifFalseLabel := getLabel(ob)
 	generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 	generateStatementList(exe, stmt.thenBlock, stmt.thenBlock.statementList, ob)
 
-	endLabel = getLabel(ob)
+	// 获取结束跳转地址
+	endLabel := getLabel(ob)
 
+	// 直接跳到最后
 	generateCode(ob, stmt.Position(), vm.VM_JUMP, endLabel)
 
+	// 设置false跳转地址,如果false,直接执行这里
 	setLabel(ob, ifFalseLabel)
 
 	for _, elif := range stmt.elifList {
 		elif.condition.generate(exe, currentBlock, ob)
-		ifFalseLabel = getLabel(ob)
 
+		// 获取false跳转地址
+		ifFalseLabel = getLabel(ob)
 		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 		generateStatementList(exe, elif.block, elif.block.statementList, ob)
+
+		// 直接跳到最后
 		generateCode(ob, stmt.Position(), vm.VM_JUMP, endLabel)
 
+		// 设置false跳转地址,如果false,直接执行这里
 		setLabel(ob, ifFalseLabel)
 	}
 	if stmt.elseBlock != nil {
 		generateStatementList(exe, stmt.elseBlock, stmt.elseBlock.statementList, ob)
 	}
 
+	// 设置结束地址
 	setLabel(ob, endLabel)
 }
 
@@ -317,7 +323,6 @@ type Elif struct {
 type ForStatement struct {
 	StatementImpl
 
-	label     string
 	init      Expression
 	condition Expression
 	post      Expression
@@ -347,14 +352,16 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var loop_label int
 
 	if stmt.init != nil {
 		stmt.generate(exe, currentBlock, ob)
 	}
-	loop_label = getLabel(ob)
 
-	setLabel(ob, loop_label)
+	// 获取循环地址
+	loopLabel := getLabel(ob)
+
+	// 设置循环地址
+	setLabel(ob, loopLabel)
 
 	if stmt.condition != nil {
 		stmt.condition.generate(exe, currentBlock, ob)
@@ -362,23 +369,28 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 
 	parent := stmt.block.parent.(*StatementBlockInfo)
 
+	// 获取break,continue地址
 	parent.breakLabel = getLabel(ob)
 	parent.continueLabel = getLabel(ob)
 
 	if stmt.condition != nil {
+		// 如果条件为否,跳转到break
 		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, parent.breakLabel)
 	}
 
 	generateStatementList(exe, stmt.block, stmt.block.statementList, ob)
 
+	// 如果有continue,直接跳过block,从这里执行
 	setLabel(ob, parent.continueLabel)
 
 	if stmt.post != nil {
 		stmt.post.generate(exe, currentBlock, ob)
 	}
 
-	generateCode(ob, stmt.Position(), vm.VM_JUMP, loop_label)
+	// 跳回到循环开头
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, loopLabel)
 
+	// 设置结束标签
 	setLabel(ob, parent.breakLabel)
 }
 
@@ -402,6 +414,7 @@ func (stmt *ReturnStatement) show(ident int) {
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	var returnValue Expression
+
 	stmt.returnValue.fix(currentBlock)
 
 	if stmt.returnValue != nil {
@@ -447,8 +460,6 @@ func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, o
 // BreakStatement break 语句
 type BreakStatement struct {
 	StatementImpl
-
-	label string
 }
 
 func (stmt *BreakStatement) show(ident int) {
@@ -458,36 +469,8 @@ func (stmt *BreakStatement) show(ident int) {
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
 func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var parent *StatementBlockInfo
-	var block *Block
 
-	for block = currentBlock; block != nil; block = block.outerBlock {
-		parent, ok := block.parent.(*StatementBlockInfo)
-		if !ok {
-			continue
-		}
-
-		if stmt.label == "" {
-			break
-		}
-
-		parentFor := parent.statement.(*ForStatement)
-
-		if parentFor.label == "" {
-			continue
-		}
-
-		if stmt.label != parentFor.label {
-			break
-		}
-	}
-
-	if block == nil {
-		compileError(stmt.Position(), LABEL_NOT_FOUND_ERR, "Label: %s\n", stmt.label)
-	}
-
-	generateCode(ob, stmt.Position(), vm.VM_JUMP, parent.breakLabel)
-
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, currentBlock.parent.(*StatementBlockInfo).breakLabel)
 }
 
 // ==============================
@@ -497,8 +480,6 @@ func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob
 // ContinueStatement continue 语句
 type ContinueStatement struct {
 	StatementImpl
-
-	label string
 }
 
 func (stmt *ContinueStatement) show(ident int) {
@@ -508,35 +489,8 @@ func (stmt *ContinueStatement) show(ident int) {
 func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
 func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	var block *Block
 
-	for block := currentBlock; block != nil; block = block.outerBlock {
-		parent, ok := block.parent.(*StatementBlockInfo)
-		if !ok {
-			continue
-		}
-
-		if stmt.label == "" {
-			break
-		}
-
-		parentFor := parent.statement.(*ForStatement)
-
-		if parentFor.label == "" {
-			continue
-		}
-
-		if stmt.label != parentFor.label {
-			break
-		}
-	}
-
-	if block == nil {
-		compileError(stmt.Position(), LABEL_NOT_FOUND_ERR, "Label: %s\n", stmt.label)
-	}
-
-	generateCode(ob, stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).continueLabel)
-
+	generateCode(ob, stmt.Position(), vm.VM_JUMP, currentBlock.parent.(*StatementBlockInfo).continueLabel)
 }
 
 // ==============================
@@ -565,7 +519,7 @@ func (stmt *Declaration) show(ident int) {
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
-	currentBlock.addDeclaration(stmt, fd, stmt.Position())
+	addDeclaration(currentBlock, stmt, fd, stmt.Position())
 
 	stmt.initializer.fix(currentBlock)
 
@@ -574,6 +528,7 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 		stmt.initializer = createAssignCast(stmt.initializer, stmt.typeSpecifier)
 	}
 }
+
 func (stmt *Declaration) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if stmt.initializer == nil {
 		return

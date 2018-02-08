@@ -303,8 +303,7 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 			// TODO
 			panic("TODO")
 		}
-
-		// 如栈
+		// 入栈
 		codeOffset := code + getOpcodeTypeOffset(expr.left.typeS().basicType)
 		generateCode(ob, expr.Position(), codeOffset)
 
@@ -749,7 +748,8 @@ func getOpcodeTypeOffset(basicType vm.BasicType) byte {
 
 func getLabel(ob *OpcodeBuf) int {
 	// 返回栈顶位置
-	return len(ob.labelTableList)
+	ob.labelTableList = append(ob.labelTableList, &LabelTable{})
+	return len(ob.labelTableList) - 1
 }
 
 func setLabel(ob *OpcodeBuf, label int) {

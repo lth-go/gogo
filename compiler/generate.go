@@ -15,10 +15,13 @@ type LabelTable struct {
 	labelAddress int
 }
 
-func iniCodeBuf(ob *OpcodeBuf) {
-	ob.codeList = []byte{}
-	ob.labelTableList = []*LabelTable{}
-	ob.lineNumberList = []*vm.VmLineNumber{}
+func iniCodeBuf() *OpcodeBuf {
+	ob := &OpcodeBuf{
+		codeList:       []byte{},
+		labelTableList: []*LabelTable{},
+		lineNumberList: []*vm.VmLineNumber{},
+	}
+	return ob
 }
 
 func addGlobalVariable(compiler *Compiler, exe *vm.Executable) {
@@ -35,13 +38,10 @@ func addGlobalVariable(compiler *Compiler, exe *vm.Executable) {
 
 // 为每个函数生成所需的信息
 func addFunctions(compiler *Compiler, exe *vm.Executable) {
-
-	var ob OpcodeBuf
-
-	var f *vm.VmFunction
+	exe.FunctionList = []*vm.VmFunction{}
 
 	for _, fd := range compiler.funcList {
-		f = &vm.VmFunction{}
+		f := &vm.VmFunction{}
 		exe.FunctionList = append(exe.FunctionList, f)
 
 		copyFunction(fd, f)
@@ -51,20 +51,18 @@ func addFunctions(compiler *Compiler, exe *vm.Executable) {
 			continue
 		}
 
-		iniCodeBuf(&ob)
-		generateStatementList(exe, fd.block, fd.block.statementList, &ob)
+		ob := iniCodeBuf()
+		generateStatementList(exe, fd.block, fd.block.statementList, ob)
 
 		f.IsImplemented = true
-		f.CodeList = fixOpcodeBuf(&ob)
+		f.CodeList = fixOpcodeBuf(ob)
 		f.LineNumberList = ob.lineNumberList
 	}
 }
 
 // 生成解释器所需的信息
 func addTopLevel(compiler *Compiler, exe *vm.Executable) {
-	var ob *OpcodeBuf
-
-	iniCodeBuf(ob)
+	ob := iniCodeBuf()
 	generateStatementList(exe, nil, compiler.statementList, ob)
 
 	exe.CodeList = fixOpcodeBuf(ob)
@@ -88,12 +86,12 @@ func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 		case 'b':
 			ob.codeList = append(ob.codeList, byte(value))
 		// short(2byte int)
-		case 's': 
+		case 's':
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
 		// constant pool index
-		case 'p': 
+		case 'p':
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
@@ -105,7 +103,7 @@ func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 }
 
 func addLineNumber(ob *OpcodeBuf, lineNumber int, start_pc int) {
-	if ob.lineNumberList == nil || (ob.lineNumberList[len(ob.lineNumberList)-1].LineNumber != lineNumber) {
+	if len(ob.lineNumberList) == 0 || (ob.lineNumberList[len(ob.lineNumberList)-1].LineNumber != lineNumber) {
 		l := &vm.VmLineNumber{
 			LineNumber: lineNumber,
 			StartPc:    start_pc,
@@ -121,7 +119,6 @@ func addLineNumber(ob *OpcodeBuf, lineNumber int, start_pc int) {
 // generateStatementList
 //
 func generateStatementList(exe *vm.Executable, currentBlock *Block, statementList []Statement, ob *OpcodeBuf) {
-
 	for _, stmt := range statementList {
 		stmt.generate(exe, currentBlock, ob)
 	}
@@ -143,7 +140,6 @@ func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
 			panic("derive error")
 		}
 	}
-
 	return dest
 }
 

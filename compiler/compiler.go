@@ -87,8 +87,11 @@ func (c *Compiler) fixTree() {
 
 func (c *Compiler) Generate(exe *vm.Executable){
 
+	// 添加全局变量声明
 	addGlobalVariable(c, exe)
+	// 添加函数信息
 	addFunctions(c, exe)
+	// 添加顶层代码
 	addTopLevel(c, exe)
 }
 

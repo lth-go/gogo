@@ -275,7 +275,9 @@ func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *O
 	ifFalseLabel := getLabel(ob)
 	generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
-	generateStatementList(exe, stmt.thenBlock, stmt.thenBlock.statementList, ob)
+	if stmt.thenBlock != nil {
+		generateStatementList(exe, stmt.thenBlock, stmt.thenBlock.statementList, ob)
+	}
 
 	// 获取结束跳转地址
 	endLabel := getLabel(ob)
@@ -354,7 +356,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	if stmt.init != nil {
-		stmt.generate(exe, currentBlock, ob)
+		stmt.init.generate(exe, currentBlock, ob)
 	}
 
 	// 获取循环地址
@@ -367,21 +369,27 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 		stmt.condition.generate(exe, currentBlock, ob)
 	}
 
-	parent := stmt.block.parent.(*StatementBlockInfo)
+	label := getLabel(ob)
 
-	// 获取break,continue地址
-	parent.breakLabel = getLabel(ob)
-	parent.continueLabel = getLabel(ob)
+	if stmt.block != nil {
+		parent := stmt.block.parent.(*StatementBlockInfo)
 
-	if stmt.condition != nil {
-		// 如果条件为否,跳转到break
-		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, parent.breakLabel)
+		// 获取break,continue地址
+		parent.breakLabel = label
+		parent.continueLabel = label
 	}
 
-	generateStatementList(exe, stmt.block, stmt.block.statementList, ob)
+	if stmt.condition != nil {
+		// 如果条件为否,跳转到break, label = parent.breakLabel
+		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, label)
+	}
 
-	// 如果有continue,直接跳过block,从这里执行
-	setLabel(ob, parent.continueLabel)
+	if stmt.block != nil {
+		generateStatementList(exe, stmt.block, stmt.block.statementList, ob)
+	}
+
+	// 如果有continue,直接跳过block,从这里执行, label = parent.continueLabel
+	setLabel(ob, label)
 
 	if stmt.post != nil {
 		stmt.post.generate(exe, currentBlock, ob)
@@ -390,8 +398,8 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 	// 跳回到循环开头
 	generateCode(ob, stmt.Position(), vm.VM_JUMP, loopLabel)
 
-	// 设置结束标签
-	setLabel(ob, parent.breakLabel)
+	// 设置结束标签, label = parent.breakLabel
+	setLabel(ob, label)
 }
 
 // ==============================

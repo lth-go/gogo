@@ -9,6 +9,7 @@ type Executable struct {
 	ConstantPool []Constant
 
 	// 全局变量
+	// 仅保存名称和类型
 	GlobalVariableList []*VmVariable
 
 	// 函数列表

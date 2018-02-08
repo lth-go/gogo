@@ -2,7 +2,7 @@ package vm
 
 type opcodeInfo struct {
 	// 注记符
-	mnemonic string
+	Mnemonic string
 
 	// 参数类型，
 	// `b` 一个字节整数
@@ -13,7 +13,6 @@ type opcodeInfo struct {
 }
 
 var OpcodeInfo []opcodeInfo = []opcodeInfo{
-	{"dummy", "", 0},
 	{"push_int_1byte", "b", 1},
 	{"push_int_2byte", "s", 1},
 	{"push_int", "p", 1},

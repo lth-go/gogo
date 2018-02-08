@@ -6,217 +6,6 @@ import (
 )
 
 //
-// Stack
-//
-type Stack struct {
-	stackPointer int
-	stack        []VmValue
-}
-
-//
-// VmValue
-//
-
-type VmValue interface {
-	getIntValue() int
-	setIntValue(int)
-
-	getDoubleValue() float64
-	setDoubleValue(float64)
-
-	getObjectValue() VmObject
-	setObjectValue(VmObject)
-
-	isPointer() bool
-	setPointer(bool)
-}
-
-// VmValueImpl
-
-type VmValueImpl struct {
-	// 是否是指针
-	pointerFlags bool
-}
-
-func (v *VmValueImpl) getIntValue() int {
-	panic("error")
-}
-
-func (v *VmValueImpl) setIntValue(value int) {
-	panic("error")
-}
-
-func (v *VmValueImpl) getDoubleValue() float64 {
-	panic("error")
-}
-
-func (v *VmValueImpl) setDoubleValue(value float64) {
-	panic("error")
-}
-
-func (v *VmValueImpl) getObjectValue() VmObject {
-	panic("error")
-}
-
-func (v *VmValueImpl) setObjectValue(value VmObject) {
-	panic("error")
-}
-
-func (v *VmValueImpl) isPointer() bool {
-	return v.pointerFlags
-}
-
-func (v *VmValueImpl) setPointer(b bool) {
-	v.pointerFlags = b
-}
-
-// CallInfo
-// 函数返回体
-type CallInfo struct {
-	VmValueImpl
-
-	caller         *GFunction
-	caller_address int
-	base           int
-}
-
-// VmIntValue
-type VmIntValue struct {
-	VmValueImpl
-	intValue int
-}
-
-func (v *VmIntValue) getIntValue() int {
-	return v.intValue
-}
-
-func (v *VmIntValue) setIntValue(value int) {
-	v.intValue = value
-}
-
-// VmDoubleValue
-
-type VmDoubleValue struct {
-	VmValueImpl
-	doubleValue float64
-}
-
-func (v *VmDoubleValue) getDoubleValue() float64 {
-	return v.doubleValue
-}
-
-func (v *VmDoubleValue) setDoubleValue(value float64) {
-	v.doubleValue = value
-}
-
-// VmObjectValue
-
-type VmObjectValue struct {
-	VmValueImpl
-
-	objectValue VmObject
-}
-
-func (v *VmObjectValue) getObjectValue() VmObject {
-	return v.objectValue
-}
-
-func (v *VmObjectValue) setObjectValue(value VmObject) {
-	v.objectValue = value
-}
-
-//
-// VmObject
-//
-type VmObject interface {
-	isMarked() bool
-	setMark(bool)
-
-	getString() string
-	setString(string)
-}
-
-type VmObjectImpl struct {
-	// gc用
-	marked bool
-}
-
-func (obj *VmObjectImpl) isMarked() bool {
-	return obj.marked
-}
-
-func (obj *VmObjectImpl) setMark(m bool) {
-	obj.marked = m
-}
-
-func (obj *VmObjectImpl) getString() string {
-	panic("TODO")
-}
-
-func (obj *VmObjectImpl) setString(v string) {
-	panic("TODO")
-}
-
-type VmObjectString struct {
-	VmObjectImpl
-
-	stringValue string
-	isLiteral   bool
-}
-
-func (obj *VmObjectString) getString() string {
-	return obj.stringValue
-}
-
-func (obj *VmObjectString) setString(v string) {
-	obj.stringValue = v
-}
-
-//
-// Heap
-//
-type Heap struct {
-	// TODO:阈值
-	currentThreshold int
-	objectList       []VmObject
-}
-
-//
-// Static
-//
-type Static struct {
-	variableList []VmValue
-}
-
-//
-// Function
-//
-type Function interface {
-	getName() string
-}
-
-// 原生函数
-type NativeFunction struct {
-	Name string
-
-	proc     VmNativeFunctionProc
-	argCount int
-}
-
-func (f *NativeFunction) getName() string { return f.Name }
-
-type VmNativeFunctionProc func(vm *VmVirtualMachine, argCount int, args VmValue) VmValue
-
-type GFunction struct {
-	Name string
-
-	Executable *Executable
-	Index      int
-}
-
-func (f *GFunction) getName() string { return f.Name }
-
-//
 // 虚拟机
 //
 type VmVirtualMachine struct {
@@ -234,10 +23,27 @@ type VmVirtualMachine struct {
 	pc int
 }
 
-func (vm *VmVirtualMachine) AddNativeFunctions() {
-	// TODO
-	//vm.addNativeFunction(vm, "print", nv_print_proc, 1)
+func NewVirtualMachine() *VmVirtualMachine {
+	vm := &VmVirtualMachine{}
+
+	vm.stack.stack = []VmValue{}
+	vm.stack.stackPointer = 0
+
+	vm.heap.objectList = []VmObject{}
+
+	//vm.heap.currentThreshold = HEAP_THRESHOLD_SIZE;
+	vm.function = []Function{}
+
+	vm.executable = nil
+
+	vm.AddNativeFunctions()
+
+	return vm
 }
+
+//
+// 一些初始化操作
+//
 
 // 虚拟机添加解释器
 func (vm *VmVirtualMachine) AddExecutable(exe *Executable) {
@@ -290,16 +96,21 @@ func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
 	}
 }
 
+func (vm *VmVirtualMachine) AddNativeFunctions() {
+	// TODO
+	//vm.addNativeFunction(vm, "print", nv_print_proc, 1)
+}
+
 //
 // 栈操作
 //
+
 func (vm *VmVirtualMachine) STI_GET(sp int) int {
 	return vm.stack.stack[vm.stack.stackPointer+sp].getIntValue()
 }
 func (vm *VmVirtualMachine) STI_SET(sp int, v int) {
 	vm.stack.stack[vm.stack.stackPointer+sp].setIntValue(v)
 }
-
 func (vm *VmVirtualMachine) STD_GET(sp int) float64 {
 	return vm.stack.stack[vm.stack.stackPointer+sp].getDoubleValue()
 }
@@ -313,21 +124,16 @@ func (vm *VmVirtualMachine) STO_SET(sp int, v VmObject) {
 	vm.stack.stack[vm.stack.stackPointer+sp].setObjectValue(v)
 }
 
-//
-
 func (vm *VmVirtualMachine) STI_I(sp int) int {
 	return vm.stack.stack[sp].getIntValue()
 }
-
 func (vm *VmVirtualMachine) STD_I(sp int) float64 {
 	return vm.stack.stack[sp].getDoubleValue()
 }
-
 func (vm *VmVirtualMachine) STO_I(sp int) VmObject {
 	return vm.stack.stack[sp].getObjectValue()
 }
 
-//
 func (vm *VmVirtualMachine) STI_WRITE(sp int, r int) {
 	v := vm.stack.stack[vm.stack.stackPointer+sp]
 	v.setIntValue(r)
@@ -338,33 +144,27 @@ func (vm *VmVirtualMachine) STD_WRITE(sp int, r float64) {
 	v.setDoubleValue(r)
 	v.setPointer(false)
 }
-
 func (vm *VmVirtualMachine) STO_WRITE(sp int, r VmObject) {
 	v := vm.stack.stack[vm.stack.stackPointer+sp]
 	v.setObjectValue(r)
 	v.setPointer(true)
 }
 
-//
 func (vm *VmVirtualMachine) STI_WRITE_I(sp int, r int) {
 	v := vm.stack.stack[sp]
 	v.setIntValue(r)
 	v.setPointer(false)
 }
-
 func (vm *VmVirtualMachine) STD_WRITE_I(sp int, r float64) {
 	v := vm.stack.stack[sp]
 	v.setDoubleValue(r)
 	v.setPointer(false)
 }
-
 func (vm *VmVirtualMachine) STO_WRITE_I(sp int, r VmObject) {
 	v := vm.stack.stack[sp]
 	v.setObjectValue(r)
 	v.setPointer(true)
 }
-
-//
 
 func GET_2BYTE_INT(b []byte) int {
 	return int(binary.BigEndian.Uint16(b))
@@ -642,19 +442,25 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			func_idx := vm.STI_GET(-1)
 			switch f := vm.function[func_idx].(type) {
 			case *NativeFunction:
-				invoke_native_function(vm, f, &vm.stack.stackPointer)
+				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GFunction:
-				invoke_g_function(vm, gFunc, f, codeList, &pc, &vm.stack.stackPointer, &base, exe)
+				vm.invokeGFunction(gFunc, f, codeList, &pc, &vm.stack.stackPointer, &base, exe)
 			default:
 				panic("TODO")
 			}
 		case VM_RETURN:
-			return_function(vm, gFunc, codeList, &pc, &vm.stack.stackPointer, &base, exe)
+			vm.returnFunction(gFunc, codeList, &pc, &vm.stack.stackPointer, &base, exe)
 		default:
 			panic("TODO")
 		}
 	}
+}
+
+func (vm *VmVirtualMachine) chainString(str1 VmObject, str2 VmObject) VmObject {
+	str := str1.getString() + str2.getString()
+	ret := vm.create_vm_string_i(str)
+	return ret
 }
 
 func (vm *VmVirtualMachine) initializeValue(basicType BasicType) VmValue {
@@ -674,6 +480,25 @@ func (vm *VmVirtualMachine) initializeValue(basicType BasicType) VmValue {
 	return value
 }
 
+func (vm *VmVirtualMachine) initializeLocalVariables(f *VmFunction, from_sp int) {
+	var i, sp_idx int
+
+	for i = 0; i < len(f.LocalVariableList); i++ {
+		vm.stack.stack[i].setPointer(false)
+	}
+
+	sp_idx = from_sp
+	for i = 0; i < len(f.LocalVariableList); i++ {
+		vm.stack.stack[sp_idx] = vm.initializeValue(f.LocalVariableList[i].TypeSpecifier.BasicType)
+
+		if f.LocalVariableList[i].TypeSpecifier.BasicType == StringType {
+			vm.stack.stack[i].setPointer(true)
+		}
+		sp_idx++
+	}
+}
+
+// 修正转换code
 func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmFunction) {
 	var dest_idx int
 
@@ -720,12 +545,7 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 	}
 }
 
-func (vm *VmVirtualMachine) chainString(str1 VmObject, str2 VmObject) VmObject {
-	str := str1.getString() + str2.getString()
-	ret := vm.create_vm_string_i(str)
-	return ret
-}
-
+// 查找函数
 func (vm *VmVirtualMachine) SearchFunction(name string) int {
 
 	for i, f := range vm.function {
@@ -736,25 +556,11 @@ func (vm *VmVirtualMachine) SearchFunction(name string) int {
 	panic("TODO")
 }
 
-func NewVirtualMachine() *VmVirtualMachine {
-	vm := &VmVirtualMachine{}
-
-	vm.stack.stack = []VmValue{}
-	vm.stack.stackPointer = 0
-
-	vm.heap.objectList = []VmObject{}
-
-	//vm.heap.currentThreshold = HEAP_THRESHOLD_SIZE;
-	vm.function = []Function{}
-
-	vm.executable = nil
-
-	vm.AddNativeFunctions()
-
-	return vm
-}
-
-func invoke_native_function(vm *VmVirtualMachine, f *NativeFunction, sp_p *int) {
+//
+// 函数相关
+//
+// 函数执行
+func (vm *VmVirtualMachine) invokeNativeFunction(f *NativeFunction, sp_p *int) {
 
 	stack := vm.stack.stack
 	sp := *sp_p
@@ -766,7 +572,8 @@ func invoke_native_function(vm *VmVirtualMachine, f *NativeFunction, sp_p *int) 
 	*sp_p = sp - f.argCount
 }
 
-func invoke_g_function(vm *VmVirtualMachine, caller_p *GFunction, callee *GFunction,
+// 执行原生函数
+func (vm *VmVirtualMachine) invokeGFunction(caller_p *GFunction, callee *GFunction,
 	code_p []byte, pc_p *int, sp_p *int, base_p *int,
 	exe_p *Executable) {
 
@@ -784,7 +591,7 @@ func invoke_g_function(vm *VmVirtualMachine, caller_p *GFunction, callee *GFunct
 	*base_p = *sp_p - len(callee_p.ParameterList) - 1
 	caller_p = callee
 
-	vm.initialize_local_variables(callee_p, *sp_p)
+	vm.initializeLocalVariables(callee_p, *sp_p)
 
 	*sp_p += len(callee_p.LocalVariableList)
 	*pc_p = 0
@@ -792,25 +599,7 @@ func invoke_g_function(vm *VmVirtualMachine, caller_p *GFunction, callee *GFunct
 	code_p = exe_p.FunctionList[callee.Index].CodeList
 }
 
-func (vm *VmVirtualMachine) initialize_local_variables(f *VmFunction, from_sp int) {
-	var i, sp_idx int
-
-	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.stack[i].setPointer(false)
-	}
-
-	sp_idx = from_sp
-	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.stack[sp_idx] = vm.initializeValue(f.LocalVariableList[i].TypeSpecifier.BasicType)
-
-		if f.LocalVariableList[i].TypeSpecifier.BasicType == StringType {
-			vm.stack.stack[i].setPointer(true)
-		}
-		sp_idx++
-	}
-}
-
-func return_function(vm *VmVirtualMachine, func_p *GFunction, code_p []byte, pc_p *int, sp_p *int, base_p *int, exe_p *Executable) {
+func (vm *VmVirtualMachine) returnFunction(func_p *GFunction, code_p []byte, pc_p *int, sp_p *int, base_p *int, exe_p *Executable) {
 
 	return_value := vm.stack.stack[(*sp_p)-1]
 

@@ -7,3 +7,10 @@ package vm
 type Static struct {
 	variableList []VmValue
 }
+
+func NewStatic() Static {
+	s := Static{
+		variableList: []VmValue{},
+	}
+	return s
+}

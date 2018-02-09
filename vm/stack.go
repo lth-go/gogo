@@ -8,3 +8,11 @@ type Stack struct {
 	stackPointer int
 	stack        []VmValue
 }
+
+func NewStack() Stack {
+	s := Stack{
+		stack: []VmValue{},
+		stackPointer: 0,
+	}
+	return s
+}

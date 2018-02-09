@@ -24,18 +24,13 @@ type VmVirtualMachine struct {
 }
 
 func NewVirtualMachine() *VmVirtualMachine {
-	vm := &VmVirtualMachine{}
-
-	vm.stack.stack = []VmValue{}
-	vm.stack.stackPointer = 0
-
-	vm.heap.objectList = []VmObject{}
-
-	//vm.heap.currentThreshold = HEAP_THRESHOLD_SIZE;
-	vm.function = []Function{}
-
-	vm.executable = nil
-
+	vm := &VmVirtualMachine{
+		stack:      NewStack(),
+		heap:       NewHeap(),
+		static:     NewStatic(),
+		function:   []Function{},
+		executable: nil,
+	}
 	vm.AddNativeFunctions()
 
 	return vm
@@ -63,8 +58,6 @@ func (vm *VmVirtualMachine) AddExecutable(exe *Executable) {
 
 func (vm *VmVirtualMachine) addStaticVariables(exe *Executable) {
 
-	vm.static.variableList = []VmValue{}
-
 	for _, exeValue := range exe.GlobalVariableList {
 		newVmValue := vm.initializeValue(exeValue.typeSpecifier.BasicType)
 		vm.static.variableList = append(vm.static.variableList, newVmValue)
@@ -72,14 +65,13 @@ func (vm *VmVirtualMachine) addStaticVariables(exe *Executable) {
 }
 
 func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
-	var exeFunc *VmFunction
-	var vmFunc, newVmFunc Function
 
-	for _, exeFunc = range exe.FunctionList {
+	for _, exeFunc := range exe.FunctionList {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-		for _, vmFunc = range vm.function {
+		// 不能添加重名函数
+		for _, vmFunc := range vm.function {
 			if vmFunc.getName() == exeFunc.Name {
 				panic("TODO")
 			}
@@ -90,8 +82,7 @@ func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-
-		newVmFunc = &GFunction{Name: exeFunc.Name, Executable: exe, Index: srcIdex}
+		newVmFunc := &GFunction{Name: exeFunc.Name, Executable: exe, Index: srcIdex}
 		vm.function = append(vm.function, newVmFunc)
 	}
 }
@@ -166,13 +157,16 @@ func (vm *VmVirtualMachine) STO_WRITE_I(sp int, r VmObject) {
 	v.setPointer(true)
 }
 
-func GET_2BYTE_INT(b []byte) int {
+func get2ByteInt(b []byte) int {
 	return int(binary.BigEndian.Uint16(b))
 }
-func SET_2BYTE_INT(b []byte, value int) {
+func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
 
+//
+// 虚拟机执行入口
+//
 func (vm *VmVirtualMachine) Execute() {
 	vm.pc = 0
 
@@ -193,11 +187,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer++
 			pc += 2
 		case VM_PUSH_INT_2BYTE:
-			vm.STI_WRITE(0, GET_2BYTE_INT(codeList[pc+1:]))
+			vm.STI_WRITE(0, get2ByteInt(codeList[pc+1:]))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_INT:
-			vm.STI_WRITE(0, exe.ConstantPool[GET_2BYTE_INT(codeList[pc+1:])].getInt())
+			vm.STI_WRITE(0, exe.ConstantPool[get2ByteInt(codeList[pc+1:])].getInt())
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_DOUBLE_0:
@@ -209,59 +203,59 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE:
-			vm.STD_WRITE(0, exe.ConstantPool[GET_2BYTE_INT(codeList[pc+1:])].getDouble())
+			vm.STD_WRITE(0, exe.ConstantPool[get2ByteInt(codeList[pc+1:])].getDouble())
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STRING:
-			vm.STO_WRITE(0, vm.literal_to_vm_string_i(exe.ConstantPool[GET_2BYTE_INT(codeList[pc+1:])].getString()))
+			vm.STO_WRITE(0, vm.literal_to_vm_string_i(exe.ConstantPool[get2ByteInt(codeList[pc+1:])].getString()))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_INT:
-			vm.STI_WRITE(0, vm.STI_I(base+GET_2BYTE_INT(codeList[pc+1:])))
+			vm.STI_WRITE(0, vm.STI_I(base+get2ByteInt(codeList[pc+1:])))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_DOUBLE:
-			vm.STD_WRITE(0, vm.STD_I(base+GET_2BYTE_INT(codeList[pc+1:])))
+			vm.STD_WRITE(0, vm.STD_I(base+get2ByteInt(codeList[pc+1:])))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_STRING:
-			vm.STO_WRITE(0, vm.STO_I(base+GET_2BYTE_INT(codeList[pc+1:])))
+			vm.STO_WRITE(0, vm.STO_I(base+get2ByteInt(codeList[pc+1:])))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STACK_INT:
-			vm.STI_WRITE_I(base+GET_2BYTE_INT(codeList[pc+1:]), vm.STI_GET(-1))
+			vm.STI_WRITE_I(base+get2ByteInt(codeList[pc+1:]), vm.STI_GET(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_DOUBLE:
-			vm.STD_WRITE_I(base+GET_2BYTE_INT(codeList[pc+1:]), vm.STD_GET(-1))
+			vm.STD_WRITE_I(base+get2ByteInt(codeList[pc+1:]), vm.STD_GET(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_STRING:
-			vm.STO_WRITE_I(base+GET_2BYTE_INT(codeList[pc+1:]), vm.STO_GET(-1))
+			vm.STO_WRITE_I(base+get2ByteInt(codeList[pc+1:]), vm.STO_GET(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_PUSH_STATIC_INT:
-			vm.STI_WRITE(0, vm.static.variableList[GET_2BYTE_INT(codeList[pc+1:])].getIntValue())
+			vm.STI_WRITE(0, vm.static.variableList[get2ByteInt(codeList[pc+1:])].getIntValue())
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_DOUBLE:
-			vm.STD_WRITE(0, vm.static.variableList[GET_2BYTE_INT(codeList[pc+1:])].getDoubleValue())
+			vm.STD_WRITE(0, vm.static.variableList[get2ByteInt(codeList[pc+1:])].getDoubleValue())
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_STRING:
-			vm.STO_WRITE(0, vm.static.variableList[GET_2BYTE_INT(codeList[pc+1:])].getObjectValue())
+			vm.STO_WRITE(0, vm.static.variableList[get2ByteInt(codeList[pc+1:])].getObjectValue())
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STATIC_INT:
-			vm.static.variableList[GET_2BYTE_INT(codeList[pc+1:])].setIntValue(vm.STI_GET(-1))
+			vm.static.variableList[get2ByteInt(codeList[pc+1:])].setIntValue(vm.STI_GET(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STATIC_DOUBLE:
-			vm.static.variableList[GET_2BYTE_INT(codeList[pc+1:])].setDoubleValue(vm.STD_GET(-1))
+			vm.static.variableList[get2ByteInt(codeList[pc+1:])].setDoubleValue(vm.STD_GET(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STATIC_STRING:
-			vm.static.variableList[GET_2BYTE_INT(codeList[pc+1:])].setObjectValue(vm.STO_GET(-1))
+			vm.static.variableList[get2ByteInt(codeList[pc+1:])].setObjectValue(vm.STO_GET(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_ADD_INT:
@@ -419,23 +413,23 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer++
 			pc++
 		case VM_JUMP:
-			pc = GET_2BYTE_INT(codeList[pc+1:])
+			pc = get2ByteInt(codeList[pc+1:])
 		case VM_JUMP_IF_TRUE:
 			if intToBool(vm.STI_GET(-1)) {
-				pc = GET_2BYTE_INT(codeList[pc+1:])
+				pc = get2ByteInt(codeList[pc+1:])
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_JUMP_IF_FALSE:
 			if !intToBool(vm.STI_GET(-1)) {
-				pc = GET_2BYTE_INT(codeList[pc+1:])
+				pc = get2ByteInt(codeList[pc+1:])
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_PUSH_FUNCTION:
-			vm.STI_WRITE(0, GET_2BYTE_INT(codeList[pc+1:]))
+			vm.STI_WRITE(0, get2ByteInt(codeList[pc+1:]))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_INVOKE:
@@ -513,19 +507,19 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 			}
 
 			// 增加返回值的位置
-			src_idx := GET_2BYTE_INT(codeList[i+1:])
+			src_idx := get2ByteInt(codeList[i+1:])
 			if src_idx >= len(f.ParameterList) {
 				dest_idx = src_idx + 1
 			} else {
 				dest_idx = src_idx
 			}
-			SET_2BYTE_INT(codeList[i+1:], dest_idx)
+			set2ByteInt(codeList[i+1:], dest_idx)
 
 		case VM_PUSH_FUNCTION:
 
-			idx_in_exe := GET_2BYTE_INT(codeList[i+1:])
+			idx_in_exe := get2ByteInt(codeList[i+1:])
 			func_idx := vm.SearchFunction(exe.FunctionList[idx_in_exe].Name)
-			SET_2BYTE_INT(codeList[i+1:], func_idx)
+			set2ByteInt(codeList[i+1:], func_idx)
 		}
 
 		info := &OpcodeInfo[code]

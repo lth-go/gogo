@@ -25,12 +25,8 @@ func iniCodeBuf() *OpcodeBuf {
 }
 
 func addGlobalVariable(compiler *Compiler, exe *vm.Executable) {
-	var v *vm.VmVariable
-
-	exe.GlobalVariableList = []*vm.VmVariable{}
-
 	for _, dl := range compiler.declarationList {
-		v = vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
+		v := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
 
 		exe.GlobalVariableList = append(exe.GlobalVariableList, v)
 	}
@@ -38,25 +34,24 @@ func addGlobalVariable(compiler *Compiler, exe *vm.Executable) {
 
 // 为每个函数生成所需的信息
 func addFunctions(compiler *Compiler, exe *vm.Executable) {
-	exe.FunctionList = []*vm.VmFunction{}
+	for _, srcFd := range compiler.funcList {
+		destFd := &vm.VmFunction{}
+		copyFunction(srcFd, destFd)
 
-	for _, fd := range compiler.funcList {
-		f := &vm.VmFunction{}
-		exe.FunctionList = append(exe.FunctionList, f)
+		exe.FunctionList = append(exe.FunctionList, destFd)
 
-		copyFunction(fd, f)
-		if fd.block == nil {
+		if srcFd.block == nil {
 			// 原生函数
-			f.IsImplemented = false
+			destFd.IsImplemented = false
 			continue
 		}
 
 		ob := iniCodeBuf()
-		generateStatementList(exe, fd.block, fd.block.statementList, ob)
+		generateStatementList(exe, srcFd.block, srcFd.block.statementList, ob)
 
-		f.IsImplemented = true
-		f.CodeList = fixOpcodeBuf(ob)
-		f.LineNumberList = ob.lineNumberList
+		destFd.IsImplemented = true
+		destFd.CodeList = fixOpcodeBuf(ob)
+		destFd.LineNumberList = ob.lineNumberList
 	}
 }
 
@@ -85,12 +80,12 @@ func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 		// byte
 		case 'b':
 			ob.codeList = append(ob.codeList, byte(value))
-		// short(2byte int)
+			// short(2byte int)
 		case 's':
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
 			ob.codeList = append(ob.codeList, b...)
-		// constant pool index
+			// constant pool index
 		case 'p':
 			b := make([]byte, 2)
 			binary.BigEndian.PutUint16(b, uint16(value))
@@ -129,7 +124,10 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 //
 func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
 
-	dest := &vm.VmTypeSpecifier{BasicType: src.basicType}
+	dest := &vm.VmTypeSpecifier{
+		BasicType:  src.basicType,
+		DeriveList: []vm.VmTypeDerive{},
+	}
 
 	for _, derive := range src.deriveList {
 		switch f := derive.(type) {

@@ -23,6 +23,17 @@ type Executable struct {
 	LineNumberList []*VmLineNumber
 }
 
+func NewExecutable() *Executable {
+	exe := &Executable{
+		ConstantPool: []Constant{},
+		GlobalVariableList: []*VmVariable{},
+		FunctionList: []*VmFunction{},
+		CodeList: []byte{},
+		LineNumberList: []*VmLineNumber{},
+	}
+	return exe
+}
+
 // ==============================
 // 常量池
 // ==============================
@@ -95,8 +106,8 @@ type VmFunctionDerive struct {
 	ParameterList []*VmLocalVariable
 }
 type VmTypeSpecifier struct {
-	BasicType BasicType
-	DeriveList    []VmTypeDerive
+	BasicType  BasicType
+	DeriveList []VmTypeDerive
 }
 
 // ==============================
@@ -108,9 +119,9 @@ type VmVariable struct {
 	typeSpecifier *VmTypeSpecifier
 }
 
-func NewVmVariable(name string, typeSpecifier *VmTypeSpecifier) *VmVariable{
+func NewVmVariable(name string, typeSpecifier *VmTypeSpecifier) *VmVariable {
 	return &VmVariable{
-		name: name,
+		name:          name,
 		typeSpecifier: typeSpecifier,
 	}
 }
@@ -155,9 +166,4 @@ type VmLineNumber struct {
 
 	// 接下来有多少字节码对应相同的行号
 	PcCount int
-}
-
-func NewExecutable() *Executable {
-	exe := &Executable{}
-	return exe
 }

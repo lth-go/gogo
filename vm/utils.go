@@ -1,5 +1,9 @@
 package vm
 
+import (
+	"encoding/binary"
+)
+
 func boolToInt(b bool) int {
 	if b {
 		return 1
@@ -12,4 +16,11 @@ func intToBool(i int) bool {
 		return false
 	}
 	return true
+}
+
+func get2ByteInt(b []byte) int {
+	return int(binary.BigEndian.Uint16(b))
+}
+func set2ByteInt(b []byte, value int) {
+	binary.BigEndian.PutUint16(b, uint16(value))
 }

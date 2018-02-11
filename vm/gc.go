@@ -2,12 +2,18 @@ package vm
 
 var HeapThresholdSize = 1024 * 256
 
+type objectType int
+
+const (
+	stringObjectType objectType = iota 
+)
+
 //
 // 判断是否下需要gc
 //
-func (vm *VmVirtualMachine) check_gc() {
+func (vm *VmVirtualMachine) checkGC() {
 	if len(vm.heap.objectList) > vm.heap.currentThreshold {
-		vm.garbage_collect()
+		vm.garbageCollect()
 
 		vm.heap.currentThreshold += HeapThresholdSize
 	}
@@ -16,45 +22,30 @@ func (vm *VmVirtualMachine) check_gc() {
 //
 // 创建对象
 //
-func (vm *VmVirtualMachine) alloc_object() VmObject {
+func (vm *VmVirtualMachine) newStringObject() *VmObjectString {
+
+	vm.checkGC()
 	ret := &VmObjectString{}
 
-	vm.check_gc()
+	ret.setMark(false)
 
-	ret.marked = false
-
-	vm.heap.objectList = append(vm.heap.objectList, ret)
+	vm.heap.append(ret)
 
 	return ret
 }
 
-func (vm *VmVirtualMachine) alloc_object_string() *VmObjectString {
-
-	//check_gc(vm)
-	ret := &VmObjectString{}
-
-	ret.marked = false
-
-	vm.heap.objectList = append(vm.heap.objectList, ret)
-
-	return ret
-}
-
-func (vm *VmVirtualMachine) literal_to_vm_string_i(value string) VmObject {
-	// TODO
-	ret := vm.alloc_object_string()
-
-	ret.stringValue = value
-	ret.isLiteral = true
-
-	return ret
-}
-
-func (vm *VmVirtualMachine) create_vm_string_i(str string) *VmObjectString {
-	ret := vm.alloc_object_string()
+// 新建字符对象
+func (vm *VmVirtualMachine) createStringObject(str string) VmObject {
+	ret := vm.newStringObject()
 	ret.stringValue = str
-	ret.isLiteral = false
 
+	return ret
+}
+
+// 连接字符对象
+func (vm *VmVirtualMachine) chainStringObject(str1 VmObject, str2 VmObject) VmObject {
+	str := str1.getString() + str2.getString()
+	ret := vm.createStringObject(str)
 	return ret
 }
 
@@ -63,15 +54,15 @@ func (vm *VmVirtualMachine) create_vm_string_i(str string) *VmObjectString {
 //
 func mark(obj VmObject) { obj.setMark(true) }
 
-func reset_mark(obj VmObject) { obj.setMark(false) }
+func resetMark(obj VmObject) { obj.setMark(false) }
 
 //
 // 标记
 //
 // TODO
-func (vm *VmVirtualMachine) mark_objects() {
+func (vm *VmVirtualMachine) markObjects() {
 	for _, obj := range vm.heap.objectList {
-		reset_mark(obj)
+		resetMark(obj)
 	}
 
 	for _, v := range vm.static.variableList {
@@ -91,24 +82,24 @@ func (vm *VmVirtualMachine) mark_objects() {
 //
 // 删除对象
 //
-func (vm *VmVirtualMachine) dispose_object(obj VmObject) {
-	switch o := obj.(type) {
-	case *VmObjectString:
-		if !o.isLiteral {
-			//
-		}
-	}
+func (vm *VmVirtualMachine) disposeObject(obj VmObject) {
+	//switch o := obj.(type) {
+	//case *VmObjectString:
+	//    //
+	//default:
+	//    panic("TODO")
+	//}
 	obj = nil
 }
 
 //
 // 清理
 //
-func (vm *VmVirtualMachine) sweep_objects() {
+func (vm *VmVirtualMachine) sweepObjects() {
 	newObjectList := []VmObject{}
 	for _, obj := range vm.heap.objectList {
 		if !obj.isMarked() {
-			vm.dispose_object(obj)
+			vm.disposeObject(obj)
 		} else {
 			newObjectList = append(newObjectList, obj)
 		}
@@ -116,7 +107,7 @@ func (vm *VmVirtualMachine) sweep_objects() {
 	vm.heap.objectList = newObjectList
 }
 
-func (vm *VmVirtualMachine) garbage_collect() {
-	vm.mark_objects()
-	vm.sweep_objects()
+func (vm *VmVirtualMachine) garbageCollect() {
+	vm.markObjects()
+	vm.sweepObjects()
 }

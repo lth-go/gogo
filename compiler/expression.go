@@ -758,9 +758,7 @@ func setLabel(ob *OpcodeBuf, label int) {
 }
 
 func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
-	ret := len(exe.ConstantPool)
+	exe.ConstantPool.Append(cp)
 
-	exe.ConstantPool = append(exe.ConstantPool, cp)
-
-	return ret
+	return exe.ConstantPool.Length() - 1
 }

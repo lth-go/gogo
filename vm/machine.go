@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"encoding/binary"
 	"fmt"
 )
 
@@ -60,7 +59,7 @@ func (vm *VmVirtualMachine) addStaticVariables(exe *Executable) {
 
 	for _, exeValue := range exe.GlobalVariableList {
 		newVmValue := vm.initializeValue(exeValue.typeSpecifier.BasicType)
-		vm.static.variableList = append(vm.static.variableList, newVmValue)
+		vm.static.append(newVmValue)
 	}
 }
 
@@ -93,78 +92,6 @@ func (vm *VmVirtualMachine) AddNativeFunctions() {
 }
 
 //
-// 栈操作
-//
-
-func (vm *VmVirtualMachine) STI_GET(sp int) int {
-	return vm.stack.stack[vm.stack.stackPointer+sp].getIntValue()
-}
-func (vm *VmVirtualMachine) STI_SET(sp int, v int) {
-	vm.stack.stack[vm.stack.stackPointer+sp].setIntValue(v)
-}
-func (vm *VmVirtualMachine) STD_GET(sp int) float64 {
-	return vm.stack.stack[vm.stack.stackPointer+sp].getDoubleValue()
-}
-func (vm *VmVirtualMachine) STD_SET(sp int, v float64) {
-	vm.stack.stack[vm.stack.stackPointer+sp].setDoubleValue(v)
-}
-func (vm *VmVirtualMachine) STO_GET(sp int) VmObject {
-	return vm.stack.stack[vm.stack.stackPointer+sp].getObjectValue()
-}
-func (vm *VmVirtualMachine) STO_SET(sp int, v VmObject) {
-	vm.stack.stack[vm.stack.stackPointer+sp].setObjectValue(v)
-}
-
-func (vm *VmVirtualMachine) STI_I(sp int) int {
-	return vm.stack.stack[sp].getIntValue()
-}
-func (vm *VmVirtualMachine) STD_I(sp int) float64 {
-	return vm.stack.stack[sp].getDoubleValue()
-}
-func (vm *VmVirtualMachine) STO_I(sp int) VmObject {
-	return vm.stack.stack[sp].getObjectValue()
-}
-
-func (vm *VmVirtualMachine) STI_WRITE(sp int, r int) {
-	v := vm.stack.stack[vm.stack.stackPointer+sp]
-	v.setIntValue(r)
-	v.setPointer(false)
-}
-func (vm *VmVirtualMachine) STD_WRITE(sp int, r float64) {
-	v := vm.stack.stack[vm.stack.stackPointer+sp]
-	v.setDoubleValue(r)
-	v.setPointer(false)
-}
-func (vm *VmVirtualMachine) STO_WRITE(sp int, r VmObject) {
-	v := vm.stack.stack[vm.stack.stackPointer+sp]
-	v.setObjectValue(r)
-	v.setPointer(true)
-}
-
-func (vm *VmVirtualMachine) STI_WRITE_I(sp int, r int) {
-	v := vm.stack.stack[sp]
-	v.setIntValue(r)
-	v.setPointer(false)
-}
-func (vm *VmVirtualMachine) STD_WRITE_I(sp int, r float64) {
-	v := vm.stack.stack[sp]
-	v.setDoubleValue(r)
-	v.setPointer(false)
-}
-func (vm *VmVirtualMachine) STO_WRITE_I(sp int, r VmObject) {
-	v := vm.stack.stack[sp]
-	v.setObjectValue(r)
-	v.setPointer(true)
-}
-
-func get2ByteInt(b []byte) int {
-	return int(binary.BigEndian.Uint16(b))
-}
-func set2ByteInt(b []byte, value int) {
-	binary.BigEndian.PutUint16(b, uint16(value))
-}
-
-//
 // 虚拟机执行入口
 //
 func (vm *VmVirtualMachine) Execute() {
@@ -176,264 +103,285 @@ func (vm *VmVirtualMachine) Execute() {
 func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 	var base int
 
-	stack := vm.stack.stack
+	stack := vm.stack
+	static := vm.stack
 	exe := vm.executable
 
 	for pc := vm.pc; pc < len(codeList); {
 
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:
-			vm.STI_WRITE(0, int(codeList[pc+1]))
+			stack.writeInt(0, int(codeList[pc+1]))
 			vm.stack.stackPointer++
 			pc += 2
 		case VM_PUSH_INT_2BYTE:
-			vm.STI_WRITE(0, get2ByteInt(codeList[pc+1:]))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeInt(0, index)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_INT:
-			vm.STI_WRITE(0, exe.ConstantPool[get2ByteInt(codeList[pc+1:])].getInt())
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeInt(0, exe.ConstantPool.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_DOUBLE_0:
-			vm.STD_WRITE(0, 0.0)
+			stack.writeDouble(0, 0.0)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE_1:
-			vm.STD_WRITE(0, 1.0)
+			stack.writeDouble(0, 1.0)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE:
-			vm.STD_WRITE(0, exe.ConstantPool[get2ByteInt(codeList[pc+1:])].getDouble())
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeDouble(0, exe.ConstantPool.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STRING:
-			vm.STO_WRITE(0, vm.literal_to_vm_string_i(exe.ConstantPool[get2ByteInt(codeList[pc+1:])].getString()))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeObject(0, vm.createStringObject(exe.ConstantPool.getString(index)))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_INT:
-			vm.STI_WRITE(0, vm.STI_I(base+get2ByteInt(codeList[pc+1:])))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeInt(0, stack.getIntI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_DOUBLE:
-			vm.STD_WRITE(0, vm.STD_I(base+get2ByteInt(codeList[pc+1:])))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeDouble(0, stack.getDoubleI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_STRING:
-			vm.STO_WRITE(0, vm.STO_I(base+get2ByteInt(codeList[pc+1:])))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeObject(0, stack.getObjectI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STACK_INT:
-			vm.STI_WRITE_I(base+get2ByteInt(codeList[pc+1:]), vm.STI_GET(-1))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeIntI(base+index, stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_DOUBLE:
-			vm.STD_WRITE_I(base+get2ByteInt(codeList[pc+1:]), vm.STD_GET(-1))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeDoubleI(base+index, stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_STRING:
-			vm.STO_WRITE_I(base+get2ByteInt(codeList[pc+1:]), vm.STO_GET(-1))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeObjectI(base+index, stack.getObject(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_PUSH_STATIC_INT:
-			vm.STI_WRITE(0, vm.static.variableList[get2ByteInt(codeList[pc+1:])].getIntValue())
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeInt(0, static.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_DOUBLE:
-			vm.STD_WRITE(0, vm.static.variableList[get2ByteInt(codeList[pc+1:])].getDoubleValue())
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeDouble(0, static.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_STRING:
-			vm.STO_WRITE(0, vm.static.variableList[get2ByteInt(codeList[pc+1:])].getObjectValue())
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeObject(0, static.getObject(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STATIC_INT:
-			vm.static.variableList[get2ByteInt(codeList[pc+1:])].setIntValue(vm.STI_GET(-1))
+			index := get2ByteInt(codeList[pc+1:])
+			static.setInt(index, stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STATIC_DOUBLE:
-			vm.static.variableList[get2ByteInt(codeList[pc+1:])].setDoubleValue(vm.STD_GET(-1))
+			index := get2ByteInt(codeList[pc+1:])
+			static.setDouble(index, stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STATIC_STRING:
-			vm.static.variableList[get2ByteInt(codeList[pc+1:])].setObjectValue(vm.STO_GET(-1))
+			index := get2ByteInt(codeList[pc+1:])
+			static.setObject(index, stack.getObject(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_ADD_INT:
-			vm.STI_SET(-2, vm.STI_GET(-2)+vm.STI_GET(-1))
+			stack.setInt(-2, stack.getInt(-2)+stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_DOUBLE:
-			vm.STD_SET(-2, vm.STD_GET(-2)+vm.STD_GET(-1))
+			stack.setDouble(-2, stack.getDouble(-2)+stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_STRING:
-			vm.STO_SET(-2, vm.chainString(vm.STO_GET(-2), vm.STO_GET(-1)))
+			stack.setObject(-2, vm.chainStringObject(stack.getObject(-2), stack.getObject(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_INT:
-			vm.STI_SET(-2, vm.STI_GET(-2)-vm.STI_GET(-1))
+			stack.setInt(-2, stack.getInt(-2)-stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_DOUBLE:
-			vm.STD_SET(-2, vm.STD_GET(-2)-vm.STD_GET(-1))
+			stack.setDouble(-2, stack.getDouble(-2)-stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_INT:
-			vm.STI_SET(-2, vm.STI_GET(-2)*vm.STI_GET(-1))
+			stack.setInt(-2, stack.getInt(-2)*stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_DOUBLE:
-			vm.STD_SET(-2, vm.STD_GET(-2)*vm.STD_GET(-1))
+			stack.setDouble(-2, stack.getDouble(-2)*stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_INT:
-			vm.STI_SET(-2, vm.STI_GET(-2)/vm.STI_GET(-1))
+			stack.setInt(-2, stack.getInt(-2)/stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_DOUBLE:
-			vm.STD_SET(-2, vm.STD_GET(-2)/vm.STD_GET(-1))
+			stack.setDouble(-2, stack.getDouble(-2)/stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MINUS_INT:
-			vm.STI_SET(-1, -vm.STI_GET(-1))
+			stack.setInt(-1, -stack.getInt(-1))
 			pc++
 		case VM_MINUS_DOUBLE:
-			vm.STD_SET(-1, -vm.STD_GET(-1))
+			stack.setDouble(-1, -stack.getDouble(-1))
 			pc++
 		case VM_CAST_INT_TO_DOUBLE:
-			vm.STD_SET(-1, float64(vm.STI_GET(-1)))
+			stack.setDouble(-1, float64(stack.getInt(-1)))
 			pc++
 		case VM_CAST_DOUBLE_TO_INT:
-			vm.STI_SET(-1, int(vm.STD_GET(-1)))
+			stack.setInt(-1, int(stack.getDouble(-1)))
 			pc++
 		case VM_CAST_BOOLEAN_TO_STRING:
-			if vm.STI_GET(-1) != 0 {
-				vm.STO_WRITE(-1, vm.literal_to_vm_string_i("true"))
+			if stack.getInt(-1) != 0 {
+				stack.writeObject(-1, vm.createStringObject("true"))
 			} else {
-				vm.STO_WRITE(-1, vm.literal_to_vm_string_i("false"))
+				stack.writeObject(-1, vm.createStringObject("false"))
 			}
 			pc++
 		case VM_CAST_INT_TO_STRING:
-
-			buf := fmt.Sprintf("%d", vm.STI_GET(-1))
-			vm.STO_WRITE(-1, vm.create_vm_string_i(buf))
+			buf := fmt.Sprintf("%d", stack.getInt(-1))
+			stack.writeObject(-1, vm.createStringObject(buf))
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
-			buf := fmt.Sprintf("%f", vm.STD_GET(-1))
-			vm.STO_WRITE(-1, vm.create_vm_string_i(buf))
+			buf := fmt.Sprintf("%f", stack.getDouble(-1))
+			stack.writeObject(-1, vm.createStringObject(buf))
 			pc++
 		case VM_EQ_INT:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) == vm.STI_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) == stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_DOUBLE:
-			vm.STI_SET(-2, boolToInt(vm.STD_GET(-2) == vm.STD_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) == stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
-			vm.STI_WRITE(-2, boolToInt(!(vm.STO_GET(-2).getString() == vm.STO_GET(-1).getString())))
+			stack.writeInt(-2, boolToInt(!(stack.getObject(-2).getString() == stack.getObject(-1).getString())))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) > vm.STI_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) > stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_DOUBLE:
-			vm.STI_SET(-2, boolToInt(vm.STD_GET(-2) > vm.STD_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) > stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
-			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() > vm.STO_GET(-1).getString()))
+			stack.writeInt(-2, boolToInt(stack.getObject(-2).getString() > stack.getObject(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) >= vm.STI_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) >= stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_DOUBLE:
-			vm.STI_SET(-2, boolToInt(vm.STD_GET(-2) >= vm.STD_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) >= stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
-			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() >= vm.STO_GET(-1).getString()))
+			stack.writeInt(-2, boolToInt(stack.getObject(-2).getString() >= stack.getObject(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) < vm.STI_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) < stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_DOUBLE:
-			vm.STI_SET(-2, boolToInt(vm.STD_GET(-2) < vm.STD_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) < stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
-			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() < vm.STO_GET(-1).getString()))
+			stack.writeInt(-2, boolToInt(stack.getObject(-2).getString() < stack.getObject(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) <= vm.STI_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) <= stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_DOUBLE:
-			vm.STI_SET(-2, boolToInt(vm.STD_GET(-2) <= vm.STD_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) <= stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
-			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() <= vm.STO_GET(-1).getString()))
+			stack.writeInt(-2, boolToInt(stack.getObject(-2).getString() <= stack.getObject(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
-			vm.STI_SET(-2, boolToInt(vm.STI_GET(-2) != vm.STI_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) != stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_DOUBLE:
-			vm.STI_SET(-2, boolToInt(vm.STD_GET(-2) != vm.STD_GET(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) != stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
-			vm.STI_WRITE(-2, boolToInt(vm.STO_GET(-2).getString() != vm.STO_GET(-1).getString()))
+			stack.writeInt(-2, boolToInt(stack.getObject(-2).getString() != stack.getObject(-1).getString()))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:
-			vm.STI_SET(-2, boolToInt(intToBool(vm.STI_GET(-2)) && intToBool(vm.STI_GET(-1))))
+			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) && intToBool(stack.getInt(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_OR:
-			vm.STI_SET(-2, boolToInt(intToBool(vm.STI_GET(-2)) || intToBool(vm.STI_GET(-1))))
+			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) || intToBool(stack.getInt(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_NOT:
-			vm.STI_SET(-1, boolToInt(!intToBool(vm.STI_GET(-1))))
+			stack.setInt(-1, boolToInt(!intToBool(stack.getInt(-1))))
 			pc++
 		case VM_POP:
 			vm.stack.stackPointer--
 			pc++
 		case VM_DUPLICATE:
-			stack[vm.stack.stackPointer] = stack[vm.stack.stackPointer-1]
+			// TODO
+			stack.stack[vm.stack.stackPointer] = stack.stack[vm.stack.stackPointer-1]
 			vm.stack.stackPointer++
 			pc++
 		case VM_JUMP:
-			pc = get2ByteInt(codeList[pc+1:])
+			index := get2ByteInt(codeList[pc+1:])
+			pc = index
 		case VM_JUMP_IF_TRUE:
-			if intToBool(vm.STI_GET(-1)) {
-				pc = get2ByteInt(codeList[pc+1:])
+			if intToBool(stack.getInt(-1)) {
+				index := get2ByteInt(codeList[pc+1:])
+				pc = index
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_JUMP_IF_FALSE:
-			if !intToBool(vm.STI_GET(-1)) {
-				pc = get2ByteInt(codeList[pc+1:])
+			if !intToBool(stack.getInt(-1)) {
+				index := get2ByteInt(codeList[pc+1:])
+				pc = index
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_PUSH_FUNCTION:
-			vm.STI_WRITE(0, get2ByteInt(codeList[pc+1:]))
+			index := get2ByteInt(codeList[pc+1:])
+			stack.writeInt(0, index)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_INVOKE:
-			func_idx := vm.STI_GET(-1)
+			func_idx := stack.getInt(-1)
 			switch f := vm.function[func_idx].(type) {
 			case *NativeFunction:
 				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
@@ -451,12 +399,6 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 	}
 }
 
-func (vm *VmVirtualMachine) chainString(str1 VmObject, str2 VmObject) VmObject {
-	str := str1.getString() + str2.getString()
-	ret := vm.create_vm_string_i(str)
-	return ret
-}
-
 func (vm *VmVirtualMachine) initializeValue(basicType BasicType) VmValue {
 	var value VmValue
 	switch basicType {
@@ -467,7 +409,7 @@ func (vm *VmVirtualMachine) initializeValue(basicType BasicType) VmValue {
 	case DoubleType:
 		value = &VmDoubleValue{doubleValue: 0.0}
 	case StringType:
-		value = &VmObjectValue{objectValue: vm.literal_to_vm_string_i("")}
+		value = &VmObjectValue{objectValue: vm.createStringObject("")}
 	default:
 		panic("TODO")
 	}

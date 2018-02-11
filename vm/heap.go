@@ -20,3 +20,8 @@ func NewHeap() Heap {
 	}
 	return h
 }
+
+func (h *Heap) append(value VmObject) {
+	h.objectList = append(h.objectList, value)
+	h.currentThreshold += 1
+}

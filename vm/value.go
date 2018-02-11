@@ -149,7 +149,6 @@ type VmObjectString struct {
 	VmObjectImpl
 
 	stringValue string
-	isLiteral   bool
 }
 
 func (obj *VmObjectString) getString() string {

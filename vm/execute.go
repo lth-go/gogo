@@ -6,7 +6,7 @@ package vm
 
 type Executable struct {
 	// 常量池
-	ConstantPool []Constant
+	ConstantPool ConstantPool
 
 	// 全局变量
 	// 仅保存名称和类型
@@ -25,7 +25,7 @@ type Executable struct {
 
 func NewExecutable() *Executable {
 	exe := &Executable{
-		ConstantPool: []Constant{},
+		ConstantPool: NewConstantPool(),
 		GlobalVariableList: []*VmVariable{},
 		FunctionList: []*VmFunction{},
 		CodeList: []byte{},

@@ -3,15 +3,15 @@
 
 int print(string str);
 
-print("Hello, World!");
+#print("Hello, World!");
 
 ## if stmt
 
-#if true {
-#    print("true");
-#} else {
-#    print("false");
-#}
+if true {
+    print("true");
+} else {
+    print("false");
+}
 
 ## for stmt
 

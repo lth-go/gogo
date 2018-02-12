@@ -63,9 +63,8 @@ definition_or_statement
         : function_definition
         | statement
         {
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.statementList = append(l.compiler.statementList, $1)
-            }
+            l := yylex.(*Lexer)
+            l.compiler.statementList = append(l.compiler.statementList, $1)
         }
         ;
 type_specifier
@@ -92,27 +91,23 @@ type_specifier
 function_definition
         : type_specifier IDENTIFIER LP parameter_list RP block
         {
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.functionDefine($1, $2.Lit, $4, $6);
-            }
+            l := yylex.(*Lexer)
+            l.compiler.functionDefine($1, $2.Lit, $4, $6);
         }
         | type_specifier IDENTIFIER LP RP block
         {
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, $5);
-            }
+            l := yylex.(*Lexer)
+            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, $5);
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
         {
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.functionDefine($1, $2.Lit, $4, nil);
-            }
+            l := yylex.(*Lexer)
+            l.compiler.functionDefine($1, $2.Lit, $4, nil);
         }
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, nil);
-            }
+            l := yylex.(*Lexer)
+            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, nil);
         }
         ;
 parameter_list
@@ -400,26 +395,23 @@ declaration_statement
 block
         : LC
         {
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.currentBlock = &Block{outerBlock: l.compiler.currentBlock}
-                $<block>$ = l.compiler.currentBlock
-            }
+            l := yylex.(*Lexer)
+            l.compiler.currentBlock = &Block{outerBlock: l.compiler.currentBlock}
+            $<block>$ = l.compiler.currentBlock
         }
           statement_list RC
         {
-
             currentBlock := $<block>2
             currentBlock.statementList = $3
-            if l, ok := yylex.(*Lexer); ok {
-                l.compiler.currentBlock = currentBlock.outerBlock
-                $<block>$ = l.compiler.currentBlock
-            }
+            l := yylex.(*Lexer)
+
+            $<block>$ = l.compiler.currentBlock
+            l.compiler.currentBlock = currentBlock.outerBlock
         }
         | LC RC
         {
-            if l, ok := yylex.(*Lexer); ok {
-                $<block>$ = &Block{outerBlock: l.compiler.currentBlock}
-            }
+            l := yylex.(*Lexer)
+            $<block>$ = &Block{outerBlock: l.compiler.currentBlock}
         }
         ;
 %%

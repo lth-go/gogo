@@ -42,7 +42,7 @@ func (v *VmValueImpl) setDoubleValue(value float64) {
 }
 
 func (v *VmValueImpl) getObjectValue() VmObject {
-	panic("error")
+	panic("VmValue: 数据类型错误, 无法获取VmObject")
 }
 
 func (v *VmValueImpl) setObjectValue(value VmObject) {

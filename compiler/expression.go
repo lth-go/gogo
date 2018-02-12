@@ -754,7 +754,7 @@ func getLabel(ob *OpcodeBuf) int {
 
 func setLabel(ob *OpcodeBuf, label int) {
 	// 设置跳转
-	ob.labelTableList[label].labelAddress = len(ob.labelTableList)
+	ob.labelTableList[label].labelAddress = len(ob.codeList)
 }
 
 func addConstantPool(exe *vm.Executable, cp vm.Constant) int {

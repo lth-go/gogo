@@ -59,6 +59,16 @@ func newCompiler() *Compiler {
 	return c
 }
 
+func (c *Compiler) Show() {
+	fmt.Println("==========")
+	fmt.Println("stmt list start\n")
+	for _, stmt := range c.statementList {
+		stmt.show(0)
+	}
+	fmt.Println("\nstmt list end")
+	fmt.Println("==========\n")
+}
+
 // 修正树
 func (c *Compiler) fixTree() {
 	// 修正表达式列表

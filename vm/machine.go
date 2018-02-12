@@ -9,11 +9,11 @@ import (
 //
 type VmVirtualMachine struct {
 	// 栈
-	stack Stack
+	stack *Stack
 	// 堆
-	heap Heap
+	heap *Heap
 	// 全局变量
-	static Static
+	static *Static
 	// 全局函数列表
 	function []Function
 	// 解释器
@@ -86,16 +86,13 @@ func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
 	}
 }
 
-func (vm *VmVirtualMachine) AddNativeFunctions() {
-	// TODO
-	//vm.addNativeFunction(vm, "print", nv_print_proc, 1)
-}
-
 //
 // 虚拟机执行入口
 //
 func (vm *VmVirtualMachine) Execute() {
 	vm.pc = 0
+
+    vm.stack.expand(vm.executable.CodeList)
 
 	vm.execute(nil, vm.executable.CodeList)
 }
@@ -376,13 +373,13 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			}
 			vm.stack.stackPointer--
 		case VM_PUSH_FUNCTION:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.writeInt(0, index)
+			value := get2ByteInt(codeList[pc+1:])
+			stack.writeInt(0, value)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_INVOKE:
-			func_idx := stack.getInt(-1)
-			switch f := vm.function[func_idx].(type) {
+			funcIdx := stack.getInt(-1)
+			switch f := vm.function[funcIdx].(type) {
 			case *NativeFunction:
 				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
@@ -460,8 +457,8 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 		case VM_PUSH_FUNCTION:
 
 			idx_in_exe := get2ByteInt(codeList[i+1:])
-			func_idx := vm.SearchFunction(exe.FunctionList[idx_in_exe].Name)
-			set2ByteInt(codeList[i+1:], func_idx)
+			funcIdx := vm.SearchFunction(exe.FunctionList[idx_in_exe].Name)
+			set2ByteInt(codeList[i+1:], funcIdx)
 		}
 
 		info := &OpcodeInfo[code]
@@ -501,7 +498,7 @@ func (vm *VmVirtualMachine) invokeNativeFunction(f *NativeFunction, sp_p *int) {
 	stack := vm.stack.stack
 	sp := *sp_p
 
-	ret := f.proc(vm, f.argCount, stack[sp-f.argCount-1])
+	ret := f.proc(vm, f.argCount, stack[sp-f.argCount-1:])
 
 	stack[sp-f.argCount-1] = ret
 

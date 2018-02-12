@@ -13,8 +13,8 @@ type Heap struct {
 	objectList       []VmObject
 }
 
-func NewHeap() Heap {
-	h := Heap{
+func NewHeap() *Heap {
+	h := &Heap{
 		currentThreshold: HEAP_THRESHOLD_SIZE,
 		objectList: []VmObject{},
 	}

@@ -1,10 +1,10 @@
-package compiler
+package debug
 
 import (
 	"fmt"
 )
 
-func debug(format string, a ...interface{}) {
+func Printf(format string, a ...interface{}) {
 	fmt.Println("=========")
 	fmt.Printf(format, a)
 	fmt.Println("\n=========")

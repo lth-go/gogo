@@ -9,7 +9,7 @@ type opcodeInfo struct {
 	// `s` 两个字节整数
 	// `p` 常量池索引值
 	Parameter       string
-	stack_increment int
+	stackIncrement int
 }
 
 var OpcodeInfo []opcodeInfo = []opcodeInfo{

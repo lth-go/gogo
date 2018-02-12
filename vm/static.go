@@ -8,8 +8,8 @@ type Static struct {
 	variableList []VmValue
 }
 
-func NewStatic() Static {
-	s := Static{
+func NewStatic() *Static {
+	s := &Static{
 		variableList: []VmValue{},
 	}
 	return s

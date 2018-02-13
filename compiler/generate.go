@@ -193,7 +193,7 @@ func fixOpcodeBuf(ob *OpcodeBuf) []byte {
 	return ob.codeList
 }
 
-// TODO 这是啥
+// 修正label, 将正确的跳转地址填入
 func fixLabels(ob *OpcodeBuf) {
 
 	for i := 0; i < len(ob.codeList); i++ {
@@ -211,8 +211,7 @@ func fixLabels(ob *OpcodeBuf) {
 			switch p {
 			case 'b':
 				i++
-			case 's': /* FALLTHRU */
-				// TODO 这不是报错了么
+			case 's':
 				fallthrough
 			case 'p':
 				i += 2

@@ -371,7 +371,7 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 
 	label := getLabel(ob)
 
-	if stmt.block != nil {
+	if stmt.block != nil && stmt.block.parent != nil {
 		parent := stmt.block.parent.(*StatementBlockInfo)
 
 		// 获取break,continue地址
@@ -523,16 +523,17 @@ func (stmt *Declaration) show(ident int) {
 	printWithIdent("DeclStmt", ident)
 
 	subIdent := ident + 2
-	stmt.initializer.show(subIdent)
+	if stmt.initializer != nil {
+		stmt.initializer.show(subIdent)
+	}
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	addDeclaration(currentBlock, stmt, fd, stmt.Position())
 
-	stmt.initializer.fix(currentBlock)
-
 	// 类型转换
 	if stmt.initializer != nil {
+		stmt.initializer.fix(currentBlock)
 		stmt.initializer = createAssignCast(stmt.initializer, stmt.typeSpecifier)
 	}
 }

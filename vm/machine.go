@@ -101,7 +101,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 	var base int
 
 	stack := vm.stack
-	static := vm.stack
+	static := vm.static
 	exe := vm.executable
 
 	for pc := vm.pc; pc < len(codeList); {

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
-	"fmt"
 
 	"./compiler"
 	"./vm"
@@ -28,9 +28,9 @@ func TestNativeFunc(t *testing.T) {
 
 	// 打印字节码
 	print("=====\n", "code list start\n=====\n")
-	for i:=0; i<len(exe.CodeList); {
+	for i := 0; i < len(exe.CodeList); {
 		code := exe.CodeList[i]
-		info :=vm.OpcodeInfo[int(code)]
+		info := vm.OpcodeInfo[int(code)]
 		paramList := []byte(info.Parameter)
 
 		fmt.Println(info.Mnemonic)
@@ -38,7 +38,9 @@ func TestNativeFunc(t *testing.T) {
 			switch param {
 			case 'b':
 				i += 1
-			case 's', 'p':
+			case 's':
+				fallthrough
+			case 'p':
 				i += 2
 			default:
 				panic("TODO")

@@ -30,7 +30,8 @@ type Error struct {
 
 // Error returns the error message.
 func (e *Error) Error() string {
-	return e.Message
+	msg := fmt.Sprintf("\nLine: %d\nMessage:%s\n", e.Pos.Line, e.Message)
+	return msg
 }
 
 // ==============================
@@ -42,8 +43,7 @@ type Lexer struct {
 	s   *Scanner
 	lit string
 	pos Position
-	e   error
-
+	e   error 
 	compiler *Compiler
 }
 
@@ -62,6 +62,7 @@ func (l *Lexer) Lex(lval *yySymType) int {
 }
 
 // Error sets parse error.
+// parse的错误
 func (l *Lexer) Error(msg string) {
 	l.e = &Error{Message: msg, Pos: l.pos, Fatal: false}
 }

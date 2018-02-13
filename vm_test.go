@@ -17,7 +17,7 @@ func TestNativeFunc(t *testing.T) {
 
 	compiler, err := compiler.ParseSrc(string(code))
 	if err != nil {
-		panic(nil)
+		panic(err)
 	}
 
 	compiler.Show()

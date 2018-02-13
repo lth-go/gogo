@@ -34,10 +34,7 @@ func createAssignCast(src Expression, dest *TypeSpecifier) Expression {
 
 func castBinaryExpression(expr Expression) Expression {
 
-	binaryExpr, ok := expr.(*BinaryExpression)
-	if !ok {
-		compileError(expr.Position(), 0, "")
-	}
+	binaryExpr := expr.(*BinaryExpression)
 
 	leftType := binaryExpr.left.typeS()
 	rightType := binaryExpr.right.typeS()

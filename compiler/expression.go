@@ -710,14 +710,22 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 }
 
 func allocCastExpression(castType CastType, expr Expression) Expression {
+	var typ *TypeSpecifier
 
 	castExpr := &CastExpression{castType: castType, operand: expr}
 	castExpr.SetPosition(expr.Position())
 
 	switch castType {
-	case BooleanToStringCast, DoubleToStringCast:
-		castExpr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
+	case IntToDoubleCast:
+		typ = &TypeSpecifier{basicType: vm.DoubleType}
+	case DoubleToIntCast:
+		typ = &TypeSpecifier{basicType: vm.IntType}
+	case BooleanToStringCast, IntToStringCast, DoubleToStringCast:
+		typ = &TypeSpecifier{basicType: vm.StringType}
+	default:
+		panic("TODO")
 	}
+	castExpr.typeSpecifier = typ
 
 	return castExpr
 }

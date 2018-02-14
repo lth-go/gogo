@@ -60,7 +60,7 @@ func calcNeedStackSize(codeList []byte) int {
 	return stackSize
 }
 
-// 根据sp返回栈中的位置
+// 根据sp以及stackPointer返回栈的位置
 func (s *Stack) getIndexOverSp(sp int) int {
 	index := s.stackPointer + sp
 	if index == -1 {
@@ -68,35 +68,24 @@ func (s *Stack) getIndexOverSp(sp int) int {
 	}
 	return index
 }
-// int
-// 获取栈中元素
+
+// 根据sp以及stackPointer返回栈中元素
 func (s *Stack) getInt(sp int) int {
 	index := s.getIndexOverSp(sp)
-	return s.stack[index].getIntValue()
-}
-func (s *Stack) setInt(sp int, value int) {
-	s.stack[s.stackPointer+sp] = NewIntValue(value)
+	return s.getIntI(index)
 }
 
-// double
 func (s *Stack) getDouble(sp int) float64 {
 	index := s.getIndexOverSp(sp)
-	return s.stack[index].getDoubleValue()
-}
-func (s *Stack) setDouble(sp int, value float64) {
-	s.stack[s.stackPointer+sp] = NewDoubleValue(value)
+	return s.getDoubleI(index)
 }
 
-// object
 func (s *Stack) getObject(sp int) VmObject {
 	index := s.getIndexOverSp(sp)
-	return s.stack[index].getObjectValue()
-}
-func (s *Stack) setObject(sp int, value VmObject) {
-	s.stack[s.stackPointer+sp] = NewObjectValue(value)
+	return s.getObjectI(index)
 }
 
-// 直接根据sp返回栈中元素
+// 直据sp返回栈中元素
 func (s *Stack) getIntI(sp int) int {
 	return s.stack[sp].getIntValue()
 }
@@ -107,27 +96,21 @@ func (s *Stack) getObjectI(sp int) VmObject {
 	return s.stack[sp].getObjectValue()
 }
 
-// write
+// 根据sp以及stackPointer向栈中写入元素
 func (s *Stack) writeInt(sp int, value int) {
-	v := NewIntValue(value)
-	v.setPointer(false)
-
-	s.stack[s.stackPointer+sp] = v
+	index := s.getIndexOverSp(sp)
+	s.writeIntI(index, value)
 }
 func (s *Stack) writeDouble(sp int, value float64) {
-	v := NewDoubleValue(value)
-	v.setPointer(false)
-
-	s.stack[s.stackPointer+sp] = v
+	index := s.getIndexOverSp(sp)
+	s.writeDoubleI(index, value)
 }
 func (s *Stack) writeObject(sp int, value VmObject) {
-	v := NewObjectValue(value)
-	v.setPointer(true)
-
-	s.stack[s.stackPointer+sp] = v
+	index := s.getIndexOverSp(sp)
+	s.writeObjectI(index, value)
 }
 
-// 直接写到sp位置的栈
+// 根据sp向栈中写入元素
 func (s *Stack) writeIntI(sp int, value int) {
 	v := NewIntValue(value)
 	v.setPointer(false)

@@ -200,52 +200,52 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_ADD_INT:
-			stack.setInt(-2, stack.getInt(-2)+stack.getInt(-1))
+			stack.writeInt(-2, stack.getInt(-2)+stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)+stack.getDouble(-1))
+			stack.writeDouble(-2, stack.getDouble(-2)+stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_STRING:
-			stack.setObject(-2, vm.chainStringObject(stack.getObject(-2), stack.getObject(-1)))
+			stack.writeObject(-2, vm.chainStringObject(stack.getObject(-2), stack.getObject(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_INT:
-			stack.setInt(-2, stack.getInt(-2)-stack.getInt(-1))
+			stack.writeInt(-2, stack.getInt(-2)-stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)-stack.getDouble(-1))
+			stack.writeDouble(-2, stack.getDouble(-2)-stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_INT:
-			stack.setInt(-2, stack.getInt(-2)*stack.getInt(-1))
+			stack.writeInt(-2, stack.getInt(-2)*stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)*stack.getDouble(-1))
+			stack.writeDouble(-2, stack.getDouble(-2)*stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_INT:
-			stack.setInt(-2, stack.getInt(-2)/stack.getInt(-1))
+			stack.writeInt(-2, stack.getInt(-2)/stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)/stack.getDouble(-1))
+			stack.writeDouble(-2, stack.getDouble(-2)/stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MINUS_INT:
-			stack.setInt(-1, -stack.getInt(-1))
+			stack.writeInt(-1, -stack.getInt(-1))
 			pc++
 		case VM_MINUS_DOUBLE:
-			stack.setDouble(-1, -stack.getDouble(-1))
+			stack.writeDouble(-1, -stack.getDouble(-1))
 			pc++
 		case VM_CAST_INT_TO_DOUBLE:
-			stack.setDouble(-1, float64(stack.getInt(-1)))
+			stack.writeDouble(-1, float64(stack.getInt(-1)))
 			pc++
 		case VM_CAST_DOUBLE_TO_INT:
-			stack.setInt(-1, int(stack.getDouble(-1)))
+			stack.writeInt(-1, int(stack.getDouble(-1)))
 			pc++
 		case VM_CAST_BOOLEAN_TO_STRING:
 			if stack.getInt(-1) != 0 {
@@ -263,11 +263,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			stack.writeObject(-1, vm.createStringObject(buf))
 			pc++
 		case VM_EQ_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) == stack.getInt(-1)))
+			stack.writeInt(-2, boolToInt(stack.getInt(-2) == stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) == stack.getDouble(-1)))
+			stack.writeInt(-2, boolToInt(stack.getDouble(-2) == stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
@@ -275,11 +275,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) > stack.getInt(-1)))
+			stack.writeInt(-2, boolToInt(stack.getInt(-2) > stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) > stack.getDouble(-1)))
+			stack.writeInt(-2, boolToInt(stack.getDouble(-2) > stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
@@ -287,11 +287,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) >= stack.getInt(-1)))
+			stack.writeInt(-2, boolToInt(stack.getInt(-2) >= stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) >= stack.getDouble(-1)))
+			stack.writeInt(-2, boolToInt(stack.getDouble(-2) >= stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
@@ -299,11 +299,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) < stack.getInt(-1)))
+			stack.writeInt(-2, boolToInt(stack.getInt(-2) < stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) < stack.getDouble(-1)))
+			stack.writeInt(-2, boolToInt(stack.getDouble(-2) < stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
@@ -311,11 +311,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) <= stack.getInt(-1)))
+			stack.writeInt(-2, boolToInt(stack.getInt(-2) <= stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) <= stack.getDouble(-1)))
+			stack.writeInt(-2, boolToInt(stack.getDouble(-2) <= stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
@@ -323,11 +323,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) != stack.getInt(-1)))
+			stack.writeInt(-2, boolToInt(stack.getInt(-2) != stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) != stack.getDouble(-1)))
+			stack.writeInt(-2, boolToInt(stack.getDouble(-2) != stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
@@ -335,15 +335,15 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:
-			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) && intToBool(stack.getInt(-1))))
+			stack.writeInt(-2, boolToInt(intToBool(stack.getInt(-2)) && intToBool(stack.getInt(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_OR:
-			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) || intToBool(stack.getInt(-1))))
+			stack.writeInt(-2, boolToInt(intToBool(stack.getInt(-2)) || intToBool(stack.getInt(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_NOT:
-			stack.setInt(-1, boolToInt(!intToBool(stack.getInt(-1))))
+			stack.writeInt(-1, boolToInt(!intToBool(stack.getInt(-1))))
 			pc++
 		case VM_POP:
 			vm.stack.stackPointer--

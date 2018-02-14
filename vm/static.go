@@ -19,6 +19,7 @@ func (s *Static) append(value VmValue) {
 	s.variableList = append(s.variableList, value)
 }
 
+// get
 func (s *Static) getInt(index int) int {
 	return s.variableList[index].getIntValue()
 }
@@ -31,6 +32,7 @@ func (s *Static) getObject(index int) VmObject {
 	return s.variableList[index].getObjectValue()
 }
 
+// set
 func (s *Static) setInt(index int, value int) {
 	s.variableList[index].setIntValue(value)
 }

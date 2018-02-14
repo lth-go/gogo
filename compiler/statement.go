@@ -59,12 +59,12 @@ func (b *Block) show(ident int) {
 	printWithIdent("Block", ident)
 	subIdent := ident + 2
 
-	for _, stmt := range b.statementList {
-		stmt.show(subIdent)
-	}
-
 	for _, decl := range b.declarationList {
 		decl.show(subIdent)
+	}
+
+	for _, stmt := range b.statementList {
+		stmt.show(subIdent)
 	}
 }
 
@@ -161,7 +161,7 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression
 
 	length := len(ParameterList)
 	if len(argumentList) != length {
-		compileError(expr.Position(), ARGUMENT_COUNT_MISMATCH_ERR, "Need: %d, Give: %d\n", length, len(argumentList))
+		compileError(expr.Position(), ARGUMENT_COUNT_MISMATCH_ERR, length, len(argumentList))
 	}
 
 	for i := 0; i < length; i++ {
@@ -335,9 +335,15 @@ func (stmt *ForStatement) show(ident int) {
 	printWithIdent("ForStmt", ident)
 	subIdent := ident + 2
 
-	stmt.init.show(subIdent)
-	stmt.condition.show(subIdent)
-	stmt.post.show(subIdent)
+	if stmt.init != nil {
+		stmt.init.show(subIdent)
+	}
+	if stmt.condition != nil {
+		stmt.condition.show(subIdent)
+	}
+	if stmt.post != nil {
+		stmt.post.show(subIdent)
+	}
 
 	if stmt.block != nil {
 		stmt.block.show(subIdent)
@@ -345,9 +351,15 @@ func (stmt *ForStatement) show(ident int) {
 }
 
 func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	stmt.init.fix(currentBlock)
-	stmt.condition.fix(currentBlock)
-	stmt.post.fix(currentBlock)
+	if stmt.init != nil {
+		stmt.init.fix(currentBlock)
+	}
+	if stmt.condition != nil {
+		stmt.condition.fix(currentBlock)
+	}
+	if stmt.post != nil {
+		stmt.post.fix(currentBlock)
+	}
 
 	if stmt.block != nil {
 		fixStatementList(stmt.block, stmt.block.statementList, fd)
@@ -423,9 +435,8 @@ func (stmt *ReturnStatement) show(ident int) {
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	var returnValue Expression
 
-	stmt.returnValue.fix(currentBlock)
-
 	if stmt.returnValue != nil {
+		stmt.returnValue.fix(currentBlock)
 		// 类型转换
 		returnValue = createAssignCast(stmt.returnValue, fd.typeSpecifier)
 		stmt.returnValue = returnValue

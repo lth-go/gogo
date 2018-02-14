@@ -451,6 +451,7 @@ for i = 0; i < 10; i = i + 1 {
 }
 println("\ni.." + i);
 
+int j;
 for i = 0; i < 5; i = i+1 {
     print("*** i.." + i + "***\n");
     if (i == 0) {

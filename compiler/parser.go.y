@@ -92,22 +92,22 @@ function_definition
         : type_specifier IDENTIFIER LP parameter_list RP block
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, $4, $6);
+            l.compiler.functionDefine($1, $2.Lit, $4, $6)
         }
         | type_specifier IDENTIFIER LP RP block
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, $5);
+            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, $5)
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, $4, nil);
+            l.compiler.functionDefine($1, $2.Lit, $4, nil)
         }
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, nil);
+            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, nil)
         }
         ;
 parameter_list
@@ -119,7 +119,7 @@ parameter_list
         }
         | parameter_list COMMA type_specifier IDENTIFIER
         {
-            $$ = append([]*Parameter{&Parameter{typeSpecifier: $3, name: $4.Lit}}, $1...)
+            $$ = append($1, &Parameter{typeSpecifier: $3, name: $4.Lit})
         }
         ;
 argument_list
@@ -129,7 +129,7 @@ argument_list
         }
         | argument_list COMMA assignment_expression
         {
-            $$ = append([]Expression{$3}, $1...)
+            $$ = append($1, $3)
         }
         ;
 statement_list
@@ -139,7 +139,7 @@ statement_list
         }
         | statement_list statement
         {
-            $$ = append([]Statement{$2}, $1...)
+            $$ = append($1, $2)
         }
         ;
 expression
@@ -342,7 +342,7 @@ elif_list
         }
         | elif_list ELIF expression block
         {
-            $$ = append([]*Elif{&Elif{condition: $3, block: $4}}, $1...)
+            $$ = append($1, &Elif{condition: $3, block: $4})
         }
         ;
 for_statement
@@ -403,6 +403,7 @@ block
         {
             currentBlock := $<block>2
             currentBlock.statementList = $3
+
             l := yylex.(*Lexer)
 
             $<block>$ = l.compiler.currentBlock

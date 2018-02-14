@@ -62,8 +62,11 @@ func (v *VmValueImpl) setPointer(b bool) {
 type CallInfo struct {
 	VmValueImpl
 
+	// 调用的函数
 	caller         *GFunction
-	caller_address int
+	// 保存执行函数前的pc
+	callerAddress int
+	// TODO
 	base           int
 }
 

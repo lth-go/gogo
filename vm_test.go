@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestNativeFunc(t *testing.T) {
-	code, err := ioutil.ReadFile("test.4g")
+	code, err := ioutil.ReadFile("test_single.4g")
 	if err != nil {
 		panic(err)
 	}
@@ -27,28 +26,7 @@ func TestNativeFunc(t *testing.T) {
 	compiler.Generate(exe)
 
 	// 打印字节码
-	print("=====\n", "code list start\n=====\n")
-	for i := 0; i < len(exe.CodeList); {
-		code := exe.CodeList[i]
-		info := vm.OpcodeInfo[int(code)]
-		paramList := []byte(info.Parameter)
-
-		fmt.Println(info.Mnemonic)
-		for _, param := range paramList {
-			switch param {
-			case 'b':
-				i += 1
-			case 's':
-				fallthrough
-			case 'p':
-				i += 2
-			default:
-				panic("TODO")
-			}
-		}
-		i += 1
-	}
-	print("=====\n", "code list end\n=====\n")
+	vm.PrintCode(exe.CodeList)
 
 	// 创建虚拟机
 	VM := vm.NewVirtualMachine()

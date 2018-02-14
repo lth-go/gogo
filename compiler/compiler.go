@@ -43,7 +43,7 @@ func (c *Compiler) functionDefine(typeSpecifier *TypeSpecifier, identifier strin
 	}
 
 	if block != nil {
-		block.parent = FunctionBlockInfo{function: fd}
+		block.parent = &FunctionBlockInfo{function: fd}
 	}
 
 	c.funcList = append(c.funcList, fd)
@@ -74,11 +74,11 @@ func (c *Compiler) fixTree() {
 	// 修正表达式列表
 	fixStatementList(nil, c.statementList, nil)
 
+	// 修正函数
 	for _, fd := range c.funcList {
 		if fd.block == nil {
 			continue
 		}
-
 		// 添加形参声明
 		fd.addParameterAsDeclaration()
 
@@ -89,6 +89,7 @@ func (c *Compiler) fixTree() {
 		fd.addReturnFunction()
 	}
 
+	// 修正全局声明
 	for varCount, decl := range c.declarationList {
 		decl.variableIndex = varCount
 	}
@@ -147,11 +148,11 @@ func SearchFunction(name string) *FunctionDefinition {
 	return nil
 }
 
-func compileError(pos Position, errorNumber int, format string, a ...interface{}) {
+func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误")
-	fmt.Printf("Line: %d-%d\n", pos.Line, pos.Column)
-	fmt.Println(errMessageMap[errorNumber])
-	fmt.Printf(format, a)
+	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
+	fmt.Printf(errMessageMap[errorNumber], a...)
+	fmt.Println("\n")
 	panic("打印栈，看看哪里出错了")
 	//os.Exit(1)
 }

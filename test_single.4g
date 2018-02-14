@@ -1,0 +1,14 @@
+int print(string str);
+int func_with_local_variable(double a) {
+    int b;
+    double c;
+
+    b = 3;
+    c = 4.0;
+
+    print("a + b + c.." + (a + b + c) + "\n");
+}
+
+double foo;
+foo = 2.0;
+func_with_local_variable(foo);

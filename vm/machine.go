@@ -384,12 +384,12 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GFunction:
-				vm.invokeGFunction(gFunc, f, codeList, &pc, &vm.stack.stackPointer, &base, exe)
+				vm.invokeGFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, exe)
 			default:
 				panic("TODO")
 			}
 		case VM_RETURN:
-			vm.returnFunction(gFunc, codeList, &pc, &vm.stack.stackPointer, &base, exe)
+			vm.returnFunction(&gFunc, &codeList, &pc, &vm.stack.stackPointer, &base, exe)
 		default:
 			panic("TODO")
 		}
@@ -492,7 +492,7 @@ func (vm *VmVirtualMachine) SearchFunction(name string) int {
 //
 // 函数相关
 //
-// 函数执行
+// 执行原生函数
 func (vm *VmVirtualMachine) invokeNativeFunction(f *NativeFunction, sp_p *int) {
 
 	stack := vm.stack.stack
@@ -505,55 +505,70 @@ func (vm *VmVirtualMachine) invokeNativeFunction(f *NativeFunction, sp_p *int) {
 	*sp_p = sp - f.argCount
 }
 
-// 执行原生函数
-func (vm *VmVirtualMachine) invokeGFunction(caller_p *GFunction, callee *GFunction,
-	code_p []byte, pc_p *int, sp_p *int, base_p *int,
-	exe_p *Executable) {
+// 函数执行
+func (vm *VmVirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction,
+	code_p *[]byte, pc_p *int, sp_p *int, base_p *int,
+	exe *Executable) {
+	// caller 调用者, 当前所属的函数调用域
 
-	// callee 函数指针
+	// callee 要调用的函数的基本信息
 
-	exe_p = callee.Executable
-	callee_p := exe_p.FunctionList[callee.Index]
+	exe = callee.Executable
+	// 包含调用函数的全部信息
+	callee_p := exe.FunctionList[callee.Index]
 
-	callInfo := &CallInfo{}
+	// 拓展栈大小
+	vm.stack.expand(callee_p.CodeList)
+
+	// 设置返回值信息
+	callInfo := &CallInfo{
+		caller: *caller,
+		callerAddress: *pc_p,
+		base: *base_p,
+	}
+
+	// 栈上保存返回信息
 	vm.stack.stack[*sp_p-1] = callInfo
-	callInfo.caller = caller_p
-	callInfo.caller_address = *pc_p
-	callInfo.base = *base_p
 
+	// 设置base
 	*base_p = *sp_p - len(callee_p.ParameterList) - 1
-	caller_p = callee
 
+	// 设置调用者
+	*caller = callee
+
+	// 初始化参数
 	vm.initializeLocalVariables(callee_p, *sp_p)
 
+	// 设置栈位置
 	*sp_p += len(callee_p.LocalVariableList)
 	*pc_p = 0
 
-	code_p = exe_p.FunctionList[callee.Index].CodeList
+	// 设置字节码为函数的字节码
+	*code_p = callee_p.CodeList
 }
 
-func (vm *VmVirtualMachine) returnFunction(func_p *GFunction, code_p []byte, pc_p *int, sp_p *int, base_p *int, exe_p *Executable) {
+func (vm *VmVirtualMachine) returnFunction(func_p **GFunction, code_p *[]byte, pc_p *int, sp_p *int, base_p *int, exe *Executable) {
 
-	return_value := vm.stack.stack[(*sp_p)-1]
+	returnValue := vm.stack.stack[(*sp_p)-1]
 
-	callee_p := exe_p.FunctionList[(*func_p).Index]
-	callInfo := &CallInfo{}
-	vm.stack.stack[*sp_p-1-len(callee_p.LocalVariableList)-1] = callInfo
+	callee_p := exe.FunctionList[(*func_p).Index]
+	callInfo := vm.stack.stack[*sp_p-1-len(callee_p.LocalVariableList)-1].(*CallInfo)
 
 	if callInfo.caller != nil {
-		exe_p = callInfo.caller.Executable
-		caller_p := exe_p.FunctionList[callInfo.caller.Index]
-		code_p = caller_p.CodeList
+		exe = callInfo.caller.Executable
+		caller_p := exe.FunctionList[callInfo.caller.Index]
+		*code_p = caller_p.CodeList
 	} else {
-		exe_p = vm.executable
-		code_p = vm.executable.CodeList
+		// TODO为什么没有返回值
+		exe = vm.executable
+		*code_p = vm.executable.CodeList
 	}
-	func_p = callInfo.caller
+	*func_p = callInfo.caller
 
-	*pc_p = callInfo.caller_address + 1
+	*pc_p = callInfo.callerAddress + 1
 	*base_p = callInfo.base
 
-	*sp_p -= len(callee_p.LocalVariableList) + 1 + len(callee_p.ParameterList)
+	*sp_p -= (len(callee_p.LocalVariableList) + 1 + len(callee_p.ParameterList))
 
-	vm.stack.stack[*sp_p-1] = return_value
+	vm.stack.stack[*sp_p-1] = returnValue
 }

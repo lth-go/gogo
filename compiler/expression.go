@@ -640,7 +640,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// 都不是,报错
-	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, "Identifier name: %s\n", expr.name)
+	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, expr.name)
 	return nil
 }
 

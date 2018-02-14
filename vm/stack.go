@@ -1,7 +1,7 @@
 package vm
 
 const (
-	stackAllocSize int = 4096 
+	stackAllocSize int = 4096
 )
 
 //
@@ -15,7 +15,7 @@ type Stack struct {
 
 func NewStack() *Stack {
 	s := &Stack{
-		stack:        make([]VmValue, stackAllocSize, (stackAllocSize +1)*2),
+		stack:        make([]VmValue, stackAllocSize, (stackAllocSize+1)*2),
 		stackPointer: 0,
 	}
 	return s
@@ -127,17 +127,26 @@ func (s *Stack) writeObject(sp int, r VmObject) {
 }
 
 func (s *Stack) writeIntI(sp int, r int) {
-	v := s.stack[sp]
-	v.setIntValue(r)
+	v := &VmIntValue{
+		intValue: r,
+	}
 	v.setPointer(false)
+
+	s.stack[sp] = v
 }
 func (s *Stack) writeDoubleI(sp int, r float64) {
-	v := s.stack[sp]
-	v.setDoubleValue(r)
+	v := &VmDoubleValue{
+		doubleValue: r,
+	}
 	v.setPointer(false)
+
+	s.stack[sp] = v
 }
 func (s *Stack) writeObjectI(sp int, r VmObject) {
-	v := s.stack[sp]
-	v.setObjectValue(r)
+	v := &VmObjectValue{
+		objectValue: r,
+	}
 	v.setPointer(true)
+
+	s.stack[sp] = v
 }

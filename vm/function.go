@@ -20,6 +20,7 @@ func (f *NativeFunction) getName() string { return f.Name }
 
 type VmNativeFunctionProc func(vm *VmVirtualMachine, argCount int, args []VmValue) VmValue
 
+// 保存调用函数的索引
 type GFunction struct {
 	Name string
 

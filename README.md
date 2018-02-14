@@ -1,14 +1,10 @@
+# Gogogogo
+
 # TODO
 
-# Lex
++ complete error prompts
 
-# Parse
-
-# Generate
-
-# Execute
-
-+ decl
-+ native func
-+ if stmt
-
++ list support
++ package support
++ OO support
++ Exception support

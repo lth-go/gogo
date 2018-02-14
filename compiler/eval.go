@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"strconv"
+
 	"../vm"
 )
 
@@ -55,11 +56,12 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 	case DivOperator:
 		value = left / right
 	default:
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
 
 	newExpr := &IntExpression{intValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+
 	return newExpr
 }
 func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64) Expression {
@@ -75,10 +77,11 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 	case DivOperator:
 		value = left / right
 	default:
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
 	newExpr := &DoubleExpression{doubleValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.DoubleType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+
 	return newExpr
 }
 
@@ -89,15 +92,12 @@ func chainString(binaryExpr *BinaryExpression) Expression {
 		return binaryExpr
 	}
 
-	leftStringExpr, ok := binaryExpr.left.(*StringExpression)
-	if !ok {
-		compileError(binaryExpr.Position(), 0, "")
-	}
+	leftStringExpr := binaryExpr.left.(*StringExpression)
 
 	newStr := leftStringExpr.stringValue + rightStr
 
 	newExpr := &StringExpression{stringValue: newStr}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.StringType})
 
 	return newExpr
 }
@@ -107,7 +107,7 @@ func expressionToString(expr Expression) string {
 
 	switch e := expr.(type) {
 	case *BooleanExpression:
-		if e.booleanValue == true {
+		if e.booleanValue {
 			newStr = "true"
 		} else {
 			newStr = "false"
@@ -128,12 +128,14 @@ func expressionToString(expr Expression) string {
 func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 
 	switch leftExpr := binaryExpr.left.(type) {
+
 	case *BooleanExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *BooleanExpression:
 			newExpr := evalCompareExpressionBoolean(binaryExpr, leftExpr.booleanValue, rightExpr.booleanValue)
 			return newExpr
 		}
+
 	case *IntExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *IntExpression:
@@ -143,6 +145,7 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 			newExpr := evalCompareExpressionDouble(binaryExpr, float64(leftExpr.intValue), rightExpr.doubleValue)
 			return newExpr
 		}
+
 	case *DoubleExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *IntExpression:
@@ -152,6 +155,7 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
 			return newExpr
 		}
+
 	case *StringExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *StringExpression:
@@ -159,6 +163,7 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 			return newExpr
 		}
 	}
+
 	return binaryExpr
 }
 
@@ -171,11 +176,12 @@ func evalCompareExpressionBoolean(binaryExpr *BinaryExpression, left, right bool
 	case NeOperator:
 		value = (left != right)
 	default:
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+
 	return newExpr
 }
 
@@ -196,11 +202,11 @@ func evalCompareExpressionInt(binaryExpr *BinaryExpression, left, right int) Exp
 	case LeOperator:
 		value = (left <= right)
 	default:
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 	return newExpr
 }
 
@@ -221,11 +227,11 @@ func evalCompareExpressionDouble(binaryExpr *BinaryExpression, left, right float
 	case LeOperator:
 		value = (left <= right)
 	default:
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 	return newExpr
 }
 
@@ -246,11 +252,11 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 	case LeOperator:
 		value = (left <= right)
 	default:
-		compileError(binaryExpr.Position(), 0, "")
+		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 
 	return newExpr
 }

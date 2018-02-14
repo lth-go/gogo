@@ -2,33 +2,33 @@ package compiler
 
 import (
 	"../vm"
+	"fmt"
 )
 
-//
-// cast func
-//
-
 // 声明类型转换
-func createAssignCast(src Expression, dest *TypeSpecifier) Expression {
+func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 	var castExpr Expression
-	if src.typeS().deriveList != nil || dest.deriveList != nil {
-		compileError(src.Position(), 0, "")
+
+	srcTye := src.typeS()
+
+	if srcTye.deriveList != nil || destTye.deriveList != nil {
+		compileError(src.Position(), DERIVE_TYPE_CAST_ERR)
 	}
 
-	if src.typeS().basicType == dest.basicType {
+	if srcTye.basicType == destTye.basicType {
 		return src
 	}
 
-	if src.typeS().basicType == vm.IntType && dest.basicType == vm.DoubleType {
+	if isInt(srcTye) && isDouble(destTye) {
 		castExpr = allocCastExpression(IntToDoubleCast, src)
 		return castExpr
 
-	} else if src.typeS().basicType == vm.DoubleType && dest.basicType == vm.IntType {
+	} else if isDouble(srcTye) && isInt(destTye) {
 		castExpr = allocCastExpression(DoubleToIntCast, src)
 		return castExpr
 	}
 
-	compileError(src.Position(), 0, "")
+	castMismatchError(src.Position(), srcTye.basicType, destTye.basicType)
 	return nil
 }
 
@@ -56,4 +56,26 @@ func castBinaryExpression(expr Expression) Expression {
 
 	}
 	return binaryExpr
+}
+
+func castMismatchError(pos Position, src, dest vm.BasicType) {
+	src_name := getBasicTypeName(src)
+	dest_name := getBasicTypeName(dest)
+
+	compileError(pos, CAST_MISMATCH_ERR, src_name, dest_name)
+}
+
+func getBasicTypeName(typ vm.BasicType) string {
+	switch typ {
+	case vm.BooleanType:
+		return "boolean"
+	case vm.IntType:
+		return "int"
+	case vm.DoubleType:
+		return "double"
+	case vm.StringType:
+		return "string"
+	default:
+		panic(fmt.Sprintf("bad case. type..%d\n", typ))
+	}
 }

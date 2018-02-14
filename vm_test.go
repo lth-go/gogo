@@ -9,7 +9,7 @@ import (
 )
 
 func TestNativeFunc(t *testing.T) {
-	code, err := ioutil.ReadFile("test_single.4g")
+	code, err := ioutil.ReadFile("test.4g")
 	if err != nil {
 		panic(err)
 	}

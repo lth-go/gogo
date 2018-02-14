@@ -1,9 +1,10 @@
 package compiler
 
 import (
-	//"os"
-	"../vm"
 	"fmt"
+	"os"
+
+	"../vm"
 )
 
 // Compiler 编译器
@@ -20,33 +21,8 @@ type Compiler struct {
 	// 声明列表
 	declarationList []*Declaration
 
-	// 当前行数
-	currentLineNumber int
-
 	// 当前块
 	currentBlock *Block
-}
-
-func (c *Compiler) functionDefine(typeSpecifier *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
-	// 定义重复
-	if SearchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {
-		panic("TODO")
-	}
-
-	fd := &FunctionDefinition{
-		typeSpecifier:    typeSpecifier,
-		name:             identifier,
-		parameterList:     parameterList,
-		block:         block,
-		index:         len(c.funcList),
-		localVariableList: nil,
-	}
-
-	if block != nil {
-		block.parent = &FunctionBlockInfo{function: fd}
-	}
-
-	c.funcList = append(c.funcList, fd)
 }
 
 func newCompiler() *Compiler {
@@ -79,6 +55,7 @@ func (c *Compiler) fixTree() {
 		if fd.block == nil {
 			continue
 		}
+
 		// 添加形参声明
 		fd.addParameterAsDeclaration()
 
@@ -96,7 +73,7 @@ func (c *Compiler) fixTree() {
 
 }
 
-func (c *Compiler) Generate(exe *vm.Executable){
+func (c *Compiler) Generate(exe *vm.Executable) {
 
 	// 添加全局变量声明
 	addGlobalVariable(c, exe)
@@ -112,25 +89,48 @@ func fixStatementList(currentBlock *Block, statementList []Statement, fd *Functi
 	}
 }
 
+func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
+	// 定义重复
+	if SearchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {
+		compileError(typ.Position(), FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
+	}
+
+	fd := &FunctionDefinition{
+		typeSpecifier:     typ,
+		name:              identifier,
+		parameterList:     parameterList,
+		block:             block,
+		index:             len(c.funcList),
+		localVariableList: nil,
+	}
+
+	if block != nil {
+		block.parent = &FunctionBlockInfo{function: fd}
+	}
+
+	c.funcList = append(c.funcList, fd)
+}
+
 // ==============================
 // utils
 // ==============================
 
 func searchDeclaration(name string, currentBlock *Block) *Declaration {
 
+	// 从局部作用域查找
 	for b := currentBlock; b != nil; b = b.outerBlock {
-		for _, d := range b.declarationList {
-			if d.name == name {
-				return d
+		for _, decl := range b.declarationList {
+			if decl.name == name {
+				return decl
 			}
 		}
 	}
 
+	// 从全局作用域查找
 	compiler := getCurrentCompiler()
-
-	for _, d := range compiler.declarationList {
-		if d.name == name {
-			return d
+	for _, decl := range compiler.declarationList {
+		if decl.name == name {
+			return decl
 		}
 	}
 
@@ -153,10 +153,10 @@ func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	fmt.Printf(errMessageMap[errorNumber], a...)
 	fmt.Println("\n")
-	panic("打印栈，看看哪里出错了")
-	//os.Exit(1)
+	os.Exit(1)
 }
 
+// 设置全局compiler
 var stCurrentCompiler *Compiler
 
 func getCurrentCompiler() *Compiler {

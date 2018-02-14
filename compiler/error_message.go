@@ -25,16 +25,16 @@ const (
 )
 
 var errMessageMap = map[int]string{
-	PARSE_ERR:                             "在($(token))附近发生语法错误",
+	PARSE_ERR:                             "在(%s)附近发生语法错误",
 	CHARACTER_INVALID_ERR:                 "不正确的字符($(bad_char))",
-	FUNCTION_MULTIPLE_DEFINE_ERR:          "函数名重复($(name))",
+	FUNCTION_MULTIPLE_DEFINE_ERR:          "函数名重复(%s)",
 	BAD_MULTIBYTE_CHARACTER_ERR:           "不正确的多字节字符。",
 	UNEXPECTED_WIDE_STRING_IN_COMPILE_ERR: "预期外的宽字符串。",
 	PARAMETER_MULTIPLE_DEFINE_ERR:         "函数的参数名重复($(name))。",
 	VARIABLE_MULTIPLE_DEFINE_ERR:          "变量名$(name)重复。",
 	IDENTIFIER_NOT_FOUND_ERR:              "找不到变量或函数%s。",
 	DERIVE_TYPE_CAST_ERR:                  "不能强制转型为派生类型。",
-	CAST_MISMATCH_ERR:                     "不能将$(src)转型为$(dest)。",
+	CAST_MISMATCH_ERR:                     "不能将(%s)转型为(%s)。",
 	MATH_TYPE_MISMATCH_ERR:                "算数运算符的操作数类型不正确。",
 	COMPARE_TYPE_MISMATCH_ERR:             "比较运算符的操作数类型不正确。",
 	LOGICAL_TYPE_MISMATCH_ERR:             "逻辑and/or运算符的操作数类型不正确。",

@@ -85,7 +85,7 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 func chainString(binaryExpr *BinaryExpression) Expression {
 
 	rightStr := expressionToString(binaryExpr.right)
-	if rightStr != "" {
+	if rightStr == "" {
 		return binaryExpr
 	}
 

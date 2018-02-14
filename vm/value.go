@@ -63,17 +63,23 @@ type CallInfo struct {
 	VmValueImpl
 
 	// 调用的函数
-	caller         *GFunction
+	caller *GFunction
 	// 保存执行函数前的pc
 	callerAddress int
 	// TODO
-	base           int
+	base int
 }
 
 // VmIntValue
 type VmIntValue struct {
 	VmValueImpl
 	intValue int
+}
+
+func NewIntValue(value int) *VmIntValue {
+	return &VmIntValue{
+		intValue: value,
+	}
 }
 
 func (v *VmIntValue) getIntValue() int {
@@ -91,6 +97,12 @@ type VmDoubleValue struct {
 	doubleValue float64
 }
 
+func NewDoubleValue(value float64) *VmDoubleValue {
+	return &VmDoubleValue{
+		doubleValue: value,
+	}
+}
+
 func (v *VmDoubleValue) getDoubleValue() float64 {
 	return v.doubleValue
 }
@@ -105,6 +117,12 @@ type VmObjectValue struct {
 	VmValueImpl
 
 	objectValue VmObject
+}
+
+func NewObjectValue(value VmObject) *VmObjectValue {
+	return &VmObjectValue{
+		objectValue: value,
+	}
 }
 
 func (v *VmObjectValue) getObjectValue() VmObject {

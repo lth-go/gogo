@@ -350,6 +350,7 @@ for_statement
         {
             $$ = &ForStatement{init: $2, condition: $4, post: $6, block: $7}
             $$.SetPosition($1.Position())
+            $7.parent = &StatementBlockInfo{statement: $$}
         }
         ;
 expression_opt

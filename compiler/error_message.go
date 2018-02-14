@@ -45,5 +45,5 @@ var errMessageMap = map[int]string{
 	FUNCTION_NOT_FOUND_ERR:                "找不到函数$(name)。",
 	ARGUMENT_COUNT_MISMATCH_ERR:           "函数的参数数量错误。Need: %d, Give: %d",
 	NOT_LVALUE_ERR:                        "赋值运算符的左边不是一个左值。",
-	LABEL_NOT_FOUND_ERR:                   "标签$(label)不存在。",
+	LABEL_NOT_FOUND_ERR:                   "标签不存在。",
 }

@@ -92,7 +92,7 @@ func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
 func (vm *VmVirtualMachine) Execute() {
 	vm.pc = 0
 
-    vm.stack.expand(vm.executable.CodeList)
+	vm.stack.expand(vm.executable.CodeList)
 
 	vm.execute(nil, vm.executable.CodeList)
 }
@@ -435,14 +435,22 @@ func (vm *VmVirtualMachine) initializeLocalVariables(f *VmFunction, from_sp int)
 func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmFunction) {
 	var dest_idx int
 
-	for i, code := range codeList {
+	for i := 0; i < len(codeList); i++ {
+		code := codeList[i]
 		switch code {
+		// 函数内的本地声明
 		case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
 			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
 			VM_PUSH_STACK_STRING, VM_POP_STACK_STRING:
 
+			// TODO
 			if f == nil {
-				panic("f == nil")
+				for _, lineNumber := range exe.LineNumberList {
+					if lineNumber.StartPc == i {
+						panic(fmt.Sprintf("Line: %d, func == nil", lineNumber.LineNumber))
+					}
+				}
+				panic("can't find line, need debug!!!")
 			}
 
 			// 增加返回值的位置
@@ -466,11 +474,10 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 			switch p {
 			case 'b':
 				i++
-			case 's': /* FALLTHRU */
+			case 's':
 				fallthrough
 			case 'p':
 				i += 2
-				break
 			default:
 				panic("TODO")
 			}
@@ -522,9 +529,9 @@ func (vm *VmVirtualMachine) invokeGFunction(caller **GFunction, callee *GFunctio
 
 	// 设置返回值信息
 	callInfo := &CallInfo{
-		caller: *caller,
+		caller:        *caller,
 		callerAddress: *pc_p,
-		base: *base_p,
+		base:          *base_p,
 	}
 
 	// 栈上保存返回信息

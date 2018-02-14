@@ -383,20 +383,17 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 
 	label := getLabel(ob)
 
-	if stmt.block != nil && stmt.block.parent != nil {
-		parent := stmt.block.parent.(*StatementBlockInfo)
-
-		// 获取break,continue地址
-		parent.breakLabel = label
-		parent.continueLabel = label
-	}
-
 	if stmt.condition != nil {
 		// 如果条件为否,跳转到break, label = parent.breakLabel
 		generateCode(ob, stmt.Position(), vm.VM_JUMP_IF_FALSE, label)
 	}
 
 	if stmt.block != nil {
+		parent := stmt.block.parent.(*StatementBlockInfo)
+		// 获取break,continue地址
+		parent.breakLabel = label
+		parent.continueLabel = label
+
 		generateStatementList(exe, stmt.block, stmt.block.statementList, ob)
 	}
 
@@ -488,8 +485,17 @@ func (stmt *BreakStatement) show(ident int) {
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
 func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-
-	generateCode(ob, stmt.Position(), vm.VM_JUMP, currentBlock.parent.(*StatementBlockInfo).breakLabel)
+	// 向外寻找,直到找到for的block
+	for block := currentBlock; block != nil; block = block.outerBlock {
+		switch block.parent.(type) {
+		case *StatementBlockInfo:
+			generateCode(ob, stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).breakLabel)
+			return
+		default:
+			continue
+		}
+	}
+	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
 }
 
 // ==============================
@@ -508,8 +514,18 @@ func (stmt *ContinueStatement) show(ident int) {
 func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
 func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	// 向外寻找,直到找到for的block
+	for block := currentBlock; block != nil; block = block.outerBlock {
+		switch block.parent.(type) {
+		case *StatementBlockInfo:
+			generateCode(ob, stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).continueLabel)
+			return
+		default:
+			continue
+		}
+	}
+	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
 
-	generateCode(ob, stmt.Position(), vm.VM_JUMP, currentBlock.parent.(*StatementBlockInfo).continueLabel)
 }
 
 // ==============================

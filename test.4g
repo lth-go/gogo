@@ -135,51 +135,51 @@ print("1.0 > 3.." + (1.0 > int_val) + "\n");
 #
 # Check string comparing
 #
-if ("abc" == "abc") {
+if "abc" == "abc" {
     print("== good.\n");
 }
 
-if ("abc" == "cde") {
+if "abc" == "cde" {
     print("== bad.\n");
 }
 
-if ("abc" != "abc") {
+if "abc" != "abc" {
     print("!= bad.\n");
 }
 
-if ("abc" != "cde") {
+if "abc" != "cde" {
     print("!= good.\n");
 }
 
-if ("abc" < "abd") {
+if "abc" < "abd" {
     print("< good.\n");
 }
 
-if ("abc" < "abb") {
+if "abc" < "abb" {
     print("< bad.\n");
 }
 
-if ("abc" <= "abc") {
+if "abc" <= "abc" {
     print("<= good.\n");
 }
 
-if ("abc" <= "abd") {
+if "abc" <= "abd" {
     print("<= good.\n");
 }
 
-if ("abc" <= "abb") {
+if "abc" <= "abb" {
     print("<= bad.\n");
 }
 
-if ("abc" >= "abc") {
+if "abc" >= "abc" {
     print(">= good.\n");
 }
 
-if ("abc" >= "abb") {
+if "abc" >= "abb" {
     print(">= good.\n");
 }
 
-if ("abc" >= "abd") {
+if "abc" >= "abd" {
     print(">= bad.\n");
 }
 
@@ -187,51 +187,51 @@ string str_val;
 
 str_val = "abc";
 
-if (str_val == "abc") {
+if str_val == "abc" {
     print("== good.\n");
 }
 
-if (str_val == "cde") {
+if str_val == "cde" {
     print("== bad.\n");
 }
 
-if (str_val != "abc") {
+if str_val != "abc" {
     print("!= bad.\n");
 }
 
-if (str_val != "cde") {
+if str_val != "cde" {
     print("!= good.\n");
 }
 
-if (str_val < "abd") {
+if str_val < "abd" {
     print("< good.\n");
 }
 
-if (str_val < "abb") {
+if str_val < "abb" {
     print("< bad.\n");
 }
 
-if (str_val <= "abc") {
+if str_val <= "abc" {
     print("<= good.\n");
 }
 
-if (str_val <= "abd") {
+if str_val <= "abd" {
     print("<= good.\n");
 }
 
-if (str_val <= "abb") {
+if str_val <= "abb" {
     print("<= bad.\n");
 }
 
-if (str_val >= "abc") {
+if str_val >= "abc" {
     print(">= good.\n");
 }
 
-if (str_val >= "abb") {
+if str_val >= "abb" {
     print(">= good.\n");
 }
 
-if (str_val >= "abd") {
+if str_val >= "abd" {
     print(">= bad.\n");
 }
 
@@ -315,7 +315,7 @@ int recursive(int count) {
     a = count;
 
     print(" a.." + a);
-    if (count > 0) {
+    if count > 0 {
 	recursive(count-1);
     } else {
 	print("\n");
@@ -332,80 +332,80 @@ boolean boolean_value;
 boolean_value = true;
 print("boolean_value.." + boolean_value + "\n");
 print("!boolean_value.." + !boolean_value + "\n");
-if (boolean_value) {
+if boolean_value {
     print("true\n");
 } else {
     print("false\n");
 }
-if (boolean_value || false) {
+if boolean_value || false {
     print("boolean_value || false\n");
 }
-if (boolean_value && false) {
+if boolean_value && false {
     print("boolean_value && false\n");
 }
 
-if (true == true) {
+if true == true {
     print("true == true good\n");
 }
-if (true == false) {
+if true == false {
     print("true == false bad\n");
 }
-if (true != true) {
+if true != true {
     print("true != true bad\n");
 }
-if (true != false) {
+if true != false {
     print("true != false good\n");
 }
-if (!true) {
+if !true {
     print("! operator bad.\n");
 }
-if (!false) {
+if !false {
     print("! operator good.\n");
 }
 
 boolean true_value;
 true_value = true;
 
-if (true_value == true) {
+if true_value == true {
     print("true_value == true good\n");
 }
-if (true_value == false) {
+if true_value == false {
     print("true_value == false bad\n");
 }
-if (true_value != true) {
+if true_value != true {
     print("true_value != true bad\n");
 }
-if (true_value != false) {
+if true_value != false {
     print("true_value != false good\n");
 }
-if (!true_value) {
+if !true_value {
     print("! operator bad.\n");
 }
 boolean false_value;
 false_value = false;
 
-if (!false_value) {
+if !false_value {
     print("! operator good.\n");
 }
 
 #
 # Check flow control
 #
-if (true) {
+if true {
     print("true\n");
 }
 
-if (false) {
+if false {
     print("false\n");
 }
 
-if (false) {
+if false {
     print("bad\n");
 } else {
     print("good\n");
 }
 
-if (false) {
+if false {
     print("bad\n");
 } elif (true) {
     print("good\n");
@@ -413,7 +413,7 @@ if (false) {
     print("bad\n");
 }
 
-if (false) {
+if false {
     print("bad\n");
 } elif (false) {
     print("bad\n");
@@ -429,7 +429,7 @@ println("********** for statement **********");
 i = 0;
 for ;; {
     print(" i.." + i);
-    if (i > 5) {
+    if i > 5 {
 	break;
     }
     i = i + 1;
@@ -444,7 +444,7 @@ print("\n");
 
 println("********** continue in for **********");
 for i = 0; i < 10; i = i + 1 {
-    if (i < 5) {
+    if i < 5 {
         continue;
     }
     print(" i.." + i);
@@ -454,7 +454,7 @@ println("\ni.." + i);
 int j;
 for i = 0; i < 5; i = i+1 {
     print("*** i.." + i + "***\n");
-    if (i == 0) {
+    if i == 0 {
 	print("i == 0\n");
     } elif (i == 1) {
 	print("i == 1\n");
@@ -463,16 +463,16 @@ for i = 0; i < 5; i = i+1 {
     } else {
 	print("i == else\n");
     }
-    if (i != 3) {
+    if i != 3 {
 	print("i != 3\n");
     }
-    if (i == 2 || i == 3) {
+    if i == 2 || i == 3 {
 	print("i == 2 || i == 3\n");
     } else {
 	print("i != 2 && i != 3\n");
     }
     for j = 0; j < 5; j = j + 1 {
-	if (i == 2 && j == 3) {
+	if i == 2 && j == 3 {
 	    print("i == 2 && j == " + j + "\n");
 	}
     }

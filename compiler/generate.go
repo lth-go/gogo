@@ -11,11 +11,12 @@ type OpcodeBuf struct {
 	labelTableList []*LabelTable
 	lineNumberList []*vm.VmLineNumber
 }
+
 type LabelTable struct {
 	labelAddress int
 }
 
-func iniCodeBuf() *OpcodeBuf {
+func newCodeBuf() *OpcodeBuf {
 	ob := &OpcodeBuf{
 		codeList:       []byte{},
 		labelTableList: []*LabelTable{},
@@ -24,50 +25,21 @@ func iniCodeBuf() *OpcodeBuf {
 	return ob
 }
 
-func addGlobalVariable(compiler *Compiler, exe *vm.Executable) {
-	for _, dl := range compiler.declarationList {
-		v := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
-
-		exe.GlobalVariableList = append(exe.GlobalVariableList, v)
-	}
+func (ob *OpcodeBuf) getLabel() int {
+	// 返回栈顶位置
+	ob.labelTableList = append(ob.labelTableList, &LabelTable{})
+	return len(ob.labelTableList) - 1
 }
 
-// 为每个函数生成所需的信息
-func addFunctions(compiler *Compiler, exe *vm.Executable) {
-	for _, srcFd := range compiler.funcList {
-		destFd := &vm.VmFunction{}
-		copyFunction(srcFd, destFd)
-
-		exe.FunctionList = append(exe.FunctionList, destFd)
-
-		if srcFd.block == nil {
-			// 原生函数
-			destFd.IsImplemented = false
-			continue
-		}
-
-		ob := iniCodeBuf()
-		generateStatementList(exe, srcFd.block, srcFd.block.statementList, ob)
-
-		destFd.IsImplemented = true
-		destFd.CodeList = fixOpcodeBuf(ob)
-		destFd.LineNumberList = ob.lineNumberList
-	}
-}
-
-// 生成解释器所需的信息
-func addTopLevel(compiler *Compiler, exe *vm.Executable) {
-	ob := iniCodeBuf()
-	generateStatementList(exe, nil, compiler.statementList, ob)
-
-	exe.CodeList = fixOpcodeBuf(ob)
-	exe.LineNumberList = ob.lineNumberList
+func (ob *OpcodeBuf) setLabel(label int) {
+	// 设置跳转
+	ob.labelTableList[label].labelAddress = len(ob.codeList)
 }
 
 //
 // generateCode
 //
-func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
+func (ob *OpcodeBuf) generateCode(pos Position, code byte, rest ...int) {
 	// 获取参数类型
 	paramList := []byte(vm.OpcodeInfo[int(code)].Parameter)
 
@@ -94,19 +66,61 @@ func generateCode(ob *OpcodeBuf, pos Position, code byte, rest ...int) {
 			panic("TODO")
 		}
 	}
-	addLineNumber(ob, pos.Line, startPc)
+	ob.addLineNumber(pos.Line, startPc)
 }
 
-func addLineNumber(ob *OpcodeBuf, lineNumber int, start_pc int) {
-	if len(ob.lineNumberList) == 0 || (ob.lineNumberList[len(ob.lineNumberList)-1].LineNumber != lineNumber) {
-		l := &vm.VmLineNumber{
+func (ob *OpcodeBuf) addLineNumber(lineNumber int, startPc int) {
+
+	if len(ob.lineNumberList) == 0 || ob.lineNumberList[len(ob.lineNumberList)-1].LineNumber != lineNumber {
+		newLineNumber := &vm.VmLineNumber{
 			LineNumber: lineNumber,
-			StartPc:    start_pc,
-			PcCount:    len(ob.codeList) - start_pc,
+			StartPc:    startPc,
+			PcCount:    len(ob.codeList) - startPc,
 		}
-		ob.lineNumberList = append(ob.lineNumberList, l)
+		ob.lineNumberList = append(ob.lineNumberList, newLineNumber)
 	} else {
-		ob.lineNumberList[len(ob.lineNumberList)-1].PcCount += len(ob.codeList) - start_pc
+		// 源代码中相同的一行
+		topLineNumber := ob.lineNumberList[len(ob.lineNumberList)-1]
+		topLineNumber.PcCount += len(ob.codeList) - startPc
+	}
+}
+
+//
+// FIX
+//
+func (ob *OpcodeBuf) fixOpcodeBuf() []byte {
+
+	ob.fixLabels()
+	ob.labelTableList = nil
+
+	return ob.codeList
+}
+
+// 修正label, 将正确的跳转地址填入
+func (ob *OpcodeBuf) fixLabels() {
+
+	for i := 0; i < len(ob.codeList); i++ {
+		if ob.codeList[i] == vm.VM_JUMP ||
+			ob.codeList[i] == vm.VM_JUMP_IF_TRUE ||
+			ob.codeList[i] == vm.VM_JUMP_IF_FALSE {
+
+			label := get2ByteInt(ob.codeList[i+1:])
+			address := ob.labelTableList[label].labelAddress
+			set2ByteInt(ob.codeList[i+1:], address)
+		}
+		info := &vm.OpcodeInfo[ob.codeList[i]]
+		for _, p := range []byte(info.Parameter) {
+			switch p {
+			case 'b':
+				i++
+			case 's':
+				fallthrough
+			case 'p':
+				i += 2
+			default:
+				panic("param error")
+			}
+		}
 	}
 }
 
@@ -159,13 +173,13 @@ func copyFunction(src *FunctionDefinition, dest *vm.VmFunction) {
 	dest.Name = src.name
 	dest.ParameterList = copyParameterList(src.parameterList)
 	if src.block != nil {
-		dest.LocalVariableList = copy_local_variables(src)
+		dest.LocalVariableList = copyLocalVariables(src)
 	} else {
 		dest.LocalVariableList = nil
 	}
 }
 
-func copy_local_variables(fd *FunctionDefinition) []*vm.VmLocalVariable {
+func copyLocalVariables(fd *FunctionDefinition) []*vm.VmLocalVariable {
 	// TODO 形参占用位置
 	var dest []*vm.VmLocalVariable = []*vm.VmLocalVariable{}
 
@@ -180,44 +194,4 @@ func copy_local_variables(fd *FunctionDefinition) []*vm.VmLocalVariable {
 	}
 
 	return dest
-}
-
-//
-// FIX
-//
-func fixOpcodeBuf(ob *OpcodeBuf) []byte {
-
-	fixLabels(ob)
-	ob.labelTableList = nil
-
-	return ob.codeList
-}
-
-// 修正label, 将正确的跳转地址填入
-func fixLabels(ob *OpcodeBuf) {
-
-	for i := 0; i < len(ob.codeList); i++ {
-		if ob.codeList[i] == vm.VM_JUMP ||
-			ob.codeList[i] == vm.VM_JUMP_IF_TRUE ||
-			ob.codeList[i] == vm.VM_JUMP_IF_FALSE {
-
-			label := int((ob.codeList[i+1] << 8) + ob.codeList[i+2])
-			address := ob.labelTableList[label].labelAddress
-			ob.codeList[i+1] = (byte)(address >> 8)
-			ob.codeList[i+2] = (byte)(address & 0xff)
-		}
-		info := &vm.OpcodeInfo[ob.codeList[i]]
-		for _, p := range []byte(info.Parameter) {
-			switch p {
-			case 'b':
-				i++
-			case 's':
-				fallthrough
-			case 'p':
-				i += 2
-			default:
-				panic("param error")
-			}
-		}
-	}
 }

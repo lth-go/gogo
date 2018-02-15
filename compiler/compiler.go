@@ -76,11 +76,51 @@ func (c *Compiler) fixTree() {
 func (c *Compiler) Generate(exe *vm.Executable) {
 
 	// 添加全局变量声明
-	addGlobalVariable(c, exe)
+	c.addGlobalVariable(exe)
 	// 添加函数信息
-	addFunctions(c, exe)
+	c.addFunctions(exe)
 	// 添加顶层代码
-	addTopLevel(c, exe)
+	c.addTopLevel(exe)
+}
+
+func (compiler *Compiler) addGlobalVariable(exe *vm.Executable) {
+	for _, dl := range compiler.declarationList {
+		v := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
+
+		exe.GlobalVariableList = append(exe.GlobalVariableList, v)
+	}
+}
+
+// 为每个函数生成所需的信息
+func (compiler *Compiler) addFunctions(exe *vm.Executable) {
+	for _, srcFd := range compiler.funcList {
+		destFd := &vm.VmFunction{}
+		copyFunction(srcFd, destFd)
+
+		exe.FunctionList = append(exe.FunctionList, destFd)
+
+		if srcFd.block == nil {
+			// 原生函数
+			destFd.IsImplemented = false
+			continue
+		}
+
+		ob := newCodeBuf()
+		generateStatementList(exe, srcFd.block, srcFd.block.statementList, ob)
+
+		destFd.IsImplemented = true
+		destFd.CodeList = ob.fixOpcodeBuf()
+		destFd.LineNumberList = ob.lineNumberList
+	}
+}
+
+// 生成解释器所需的信息
+func (compiler *Compiler) addTopLevel(exe *vm.Executable) {
+	ob := newCodeBuf()
+	generateStatementList(exe, nil, compiler.statementList, ob)
+
+	exe.CodeList = ob.fixOpcodeBuf()
+	exe.LineNumberList = ob.lineNumberList
 }
 
 func fixStatementList(currentBlock *Block, statementList []Statement, fd *FunctionDefinition) {

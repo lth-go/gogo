@@ -63,12 +63,12 @@ type ConstantInt struct {
 	intValue int
 }
 
-func (c *ConstantInt) getInt() int {
-	return c.intValue
+func NewConstantInt(value int) *ConstantInt {
+	return &ConstantInt{intValue: value}
 }
 
-func (c *ConstantInt) SetInt(i int) {
-	c.intValue = i
+func (c *ConstantInt) getInt() int {
+	return c.intValue
 }
 
 type ConstantDouble struct {
@@ -76,12 +76,12 @@ type ConstantDouble struct {
 	doubleValue float64
 }
 
-func (c *ConstantDouble) getDouble() float64 {
-	return c.doubleValue
+func NewConstantDouble(value float64) *ConstantDouble {
+	return &ConstantDouble{doubleValue: value}
 }
 
-func (c *ConstantDouble) SetDouble(value float64) {
-	c.doubleValue = value
+func (c *ConstantDouble) getDouble() float64 {
+	return c.doubleValue
 }
 
 type ConstantString struct {
@@ -89,12 +89,12 @@ type ConstantString struct {
 	stringValue string
 }
 
-func (c *ConstantString) getString() string {
-	return c.stringValue
+func NewConstantString(value string) *ConstantString {
+	return &ConstantString{stringValue: value}
 }
 
-func (c *ConstantString) SetString(value string) {
-	c.stringValue = value
+func (c *ConstantString) getString() string {
+	return c.stringValue
 }
 
 //

@@ -1,9 +1,29 @@
 package compiler
 
 import (
-	"../vm"
 	"fmt"
+
+	"../vm"
 )
+
+func allocCastExpression(castType CastType, expr Expression) Expression {
+	var typ *TypeSpecifier
+
+	castExpr := &CastExpression{castType: castType, operand: expr}
+	castExpr.SetPosition(expr.Position())
+
+	switch castType {
+	case IntToDoubleCast:
+		typ = &TypeSpecifier{basicType: vm.DoubleType}
+	case DoubleToIntCast:
+		typ = &TypeSpecifier{basicType: vm.IntType}
+	case BooleanToStringCast, IntToStringCast, DoubleToStringCast:
+		typ = &TypeSpecifier{basicType: vm.StringType}
+	}
+	castExpr.setType(typ)
+
+	return castExpr
+}
 
 // 声明类型转换
 func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {

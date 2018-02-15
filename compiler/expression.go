@@ -46,7 +46,8 @@ type Expression interface {
 // Expression impl
 //
 type ExpressionImpl struct {
-	PosImpl // ExprImpl provide Pos() function.
+	// ExprImpl provide Pos() function
+	PosImpl
 
 	// 类型
 	typeSpecifier *TypeSpecifier
@@ -86,7 +87,9 @@ func (expr *CommaExpression) fix(currentBlock *Block) Expression {
 
 	expr.left = expr.left.fix(currentBlock)
 	expr.right = expr.right.fix(currentBlock)
-	expr.typeSpecifier = expr.right.typeS()
+
+	expr.setType(expr.right.typeS())
+
 	return expr
 }
 
@@ -127,7 +130,8 @@ func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	expr.left = expr.left.fix(currentBlock)
 	expr.operand.fix(currentBlock)
 	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
-	expr.typeSpecifier = expr.left.typeS()
+
+	expr.setType(expr.left.typeS())
 
 	return expr
 }
@@ -136,8 +140,7 @@ func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, 
 	expr.operand.generate(exe, currentBlock, ob)
 
 	// 与generateEx的区别
-	// 拷贝
-	generateCode(ob, expr.Position(), vm.VM_DUPLICATE)
+	ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
 
 	identifierExpr := expr.left.(*IdentifierExpression)
 
@@ -161,12 +164,13 @@ func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block
 func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
 	var code byte
 
+	offset := getOpcodeTypeOffset(decl.typeSpecifier.basicType)
 	if decl.isLocal {
-		code = vm.VM_POP_STACK_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
+		code = vm.VM_POP_STACK_INT
 	} else {
-		code = vm.VM_POP_STATIC_INT + getOpcodeTypeOffset(decl.typeSpecifier.basicType)
+		code = vm.VM_POP_STATIC_INT
 	}
-	generateCode(ob, pos, code, decl.variableIndex)
+	ob.generateCode(pos, code+offset, decl.variableIndex)
 }
 
 // ==============================
@@ -226,7 +230,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-		// 比较
+	// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -244,8 +248,8 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
 		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) ||
-			newBinaryExprLeftType.deriveList != nil ||
-			newBinaryExprRightType.deriveList != nil {
+			newBinaryExprLeftType.deriveList != nil || newBinaryExprRightType.deriveList != nil {
+
 			compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
 		}
 
@@ -253,7 +257,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-		// && ||
+	// && ||
 	case LogicalAndOperator, LogicalOrOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -305,7 +309,7 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		}
 		// 入栈
 		codeOffset := code + getOpcodeTypeOffset(expr.left.typeS().basicType)
-		generateCode(ob, expr.Position(), codeOffset)
+		ob.generateCode(expr.Position(), codeOffset)
 
 	case LogicalAndOperator, LogicalOrOperator:
 		var jumpCode, logicalCode byte
@@ -318,18 +322,18 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 			logicalCode = vm.VM_LOGICAL_OR
 		}
 
-		label := getLabel(ob)
+		label := ob.getLabel()
 
 		expr.left.generate(exe, currentBlock, ob)
-		generateCode(ob, expr.Position(), vm.VM_DUPLICATE)
-		generateCode(ob, expr.Position(), jumpCode, label)
+		ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
+		ob.generateCode(expr.Position(), jumpCode, label)
 
 		expr.right.generate(exe, currentBlock, ob)
 
 		// 判断结果
-		generateCode(ob, expr.Position(), logicalCode)
+		ob.generateCode(expr.Position(), logicalCode)
 
-		setLabel(ob, label)
+		ob.setLabel(label)
 	}
 }
 
@@ -375,7 +379,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.typeS().basicType)
-	generateCode(ob, expr.Position(), code)
+	ob.generateCode(expr.Position(), code)
 }
 
 // ==============================
@@ -417,7 +421,7 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 
 func (expr *LogicalNotExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
-	generateCode(ob, expr.Position(), vm.VM_LOGICAL_NOT)
+	ob.generateCode(expr.Position(), vm.VM_LOGICAL_NOT)
 }
 
 // ==============================
@@ -461,8 +465,10 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	fd.checkArgument(currentBlock, expr)
 
-	expr.typeSpecifier = &TypeSpecifier{basicType: fd.typeS().basicType}
+	expr.setType(&TypeSpecifier{basicType: fd.typeS().basicType})
+
 	expr.typeSpecifier.deriveList = fd.typeS().deriveList
+
 	return expr
 }
 func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -473,7 +479,7 @@ func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *B
 
 	expr.function.generate(exe, currentBlock, ob)
 
-	generateCode(ob, expr.Position(), vm.VM_INVOKE)
+	ob.generateCode(expr.Position(), vm.VM_INVOKE)
 }
 
 // ==============================
@@ -492,15 +498,15 @@ func (expr *BooleanExpression) show(ident int) {
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+	expr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 	return expr
 }
 
 func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	if expr.booleanValue {
-		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
 	} else {
-		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_1BYTE, 0)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 0)
 	}
 
 }
@@ -521,21 +527,20 @@ func (expr *IntExpression) show(ident int) {
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: vm.IntType}
+	expr.setType(&TypeSpecifier{basicType: vm.IntType})
 	return expr
 }
 func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	if expr.intValue >= 0 && expr.intValue < 256 {
-		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
 	} else if expr.intValue >= 0 && expr.intValue < 65536 {
-		generateCode(ob, expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
 	} else {
-		cp := &vm.ConstantInt{}
-		cp.SetInt(expr.intValue)
-		cpIdx := addConstantPool(exe, cp)
+		c := vm.NewConstantInt(expr.intValue)
+		cpIdx := addConstantPool(exe, c)
 
-		generateCode(ob, expr.Position(), vm.VM_PUSH_INT, cpIdx)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
 	}
 }
 
@@ -555,23 +560,22 @@ func (expr *DoubleExpression) show(ident int) {
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: vm.DoubleType}
+	expr.setType(&TypeSpecifier{basicType: vm.DoubleType})
 	return expr
 }
 func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	if expr.doubleValue == 0.0 {
-		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE_0)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_0)
 
 	} else if expr.doubleValue == 1.0 {
-		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE_1)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_1)
 
 	} else {
-		cp := &vm.ConstantDouble{}
-		cp.SetDouble(expr.doubleValue)
-		cpIdx := addConstantPool(exe, cp)
+		c := vm.NewConstantDouble(expr.doubleValue)
+		cpIdx := addConstantPool(exe, c)
 
-		generateCode(ob, expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
 	}
 }
 
@@ -590,17 +594,16 @@ func (expr *StringExpression) show(ident int) {
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
-	expr.typeSpecifier = &TypeSpecifier{basicType: vm.StringType}
+	expr.setType(&TypeSpecifier{basicType: vm.StringType})
 	return expr
 }
 
 func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
-	cp := &vm.ConstantString{}
-	cp.SetString(expr.stringValue)
-	cpIdx := addConstantPool(exe, cp)
+	c := vm.NewConstantString(expr.stringValue)
+	cpIdx := addConstantPool(exe, c)
 
-	generateCode(ob, expr.Position(), vm.VM_PUSH_STRING, cpIdx)
+	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }
 
 // ==============================
@@ -626,7 +629,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	// 判断是否是变量
 	decl := searchDeclaration(expr.name, currentBlock)
 	if decl != nil {
-		expr.typeSpecifier = decl.typeSpecifier
+		expr.setType(decl.typeSpecifier)
 		expr.inner = decl
 		return expr
 	}
@@ -634,7 +637,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	// 判断是否是函数
 	fd := SearchFunction(expr.name)
 	if fd != nil {
-		expr.typeSpecifier = fd.typeSpecifier
+		expr.setType(fd.typeSpecifier)
 		expr.inner = fd
 		return expr
 	}
@@ -648,17 +651,18 @@ func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Blo
 	switch inner := expr.inner.(type) {
 	// 函数
 	case *FunctionDefinition:
-		generateCode(ob, expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
 	// 变量
 	case *Declaration:
 		var code byte
 
+		offset := getOpcodeTypeOffset(inner.typeSpecifier.basicType)
 		if inner.isLocal {
-			code = vm.VM_PUSH_STACK_INT + getOpcodeTypeOffset(inner.typeSpecifier.basicType)
+			code = vm.VM_PUSH_STACK_INT
 		} else {
-			code = vm.VM_PUSH_STATIC_INT + getOpcodeTypeOffset(inner.typeSpecifier.basicType)
+			code = vm.VM_PUSH_STATIC_INT
 		}
-		generateCode(ob, expr.Position(), code, inner.variableIndex)
+		ob.generateCode(expr.Position(), code+offset, inner.variableIndex)
 	}
 }
 
@@ -688,82 +692,30 @@ func (expr *CastExpression) show(ident int) {
 	printWithIdent("CastExpr", ident)
 }
 
-func (expr *CastExpression) fix(currentBlock *Block) Expression { return nil }
+func (expr *CastExpression) fix(currentBlock *Block) Expression { return expr }
 
 func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
 	switch expr.castType {
 	case IntToDoubleCast:
-		generateCode(ob, expr.Position(), vm.VM_CAST_INT_TO_DOUBLE)
+		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_DOUBLE)
 	case DoubleToIntCast:
-		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_INT)
+		ob.generateCode(expr.Position(), vm.VM_CAST_DOUBLE_TO_INT)
 	case BooleanToStringCast:
-		generateCode(ob, expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
+		ob.generateCode(expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
 	case IntToStringCast:
-		generateCode(ob, expr.Position(), vm.VM_CAST_INT_TO_STRING)
+		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_STRING)
 	case DoubleToStringCast:
-		generateCode(ob, expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
+		ob.generateCode(expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
 	default:
 		panic("TODO")
 	}
-}
-
-func allocCastExpression(castType CastType, expr Expression) Expression {
-	var typ *TypeSpecifier
-
-	castExpr := &CastExpression{castType: castType, operand: expr}
-	castExpr.SetPosition(expr.Position())
-
-	switch castType {
-	case IntToDoubleCast:
-		typ = &TypeSpecifier{basicType: vm.DoubleType}
-	case DoubleToIntCast:
-		typ = &TypeSpecifier{basicType: vm.IntType}
-	case BooleanToStringCast, IntToStringCast, DoubleToStringCast:
-		typ = &TypeSpecifier{basicType: vm.StringType}
-	default:
-		panic("TODO")
-	}
-	castExpr.typeSpecifier = typ
-
-	return castExpr
 }
 
 // ==============================
 // utils
 // ==============================
-
-func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
-func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
-func isBoolean(t *TypeSpecifier) bool { return t.basicType == vm.BooleanType }
-func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
-
-func getOpcodeTypeOffset(basicType vm.BasicType) byte {
-	switch basicType {
-	case vm.BooleanType:
-		return byte(0)
-	case vm.IntType:
-		return byte(0)
-	case vm.DoubleType:
-		return byte(1)
-	case vm.StringType:
-		return byte(2)
-	default:
-		panic("basic type")
-	}
-}
-
-func getLabel(ob *OpcodeBuf) int {
-	// 返回栈顶位置
-	ob.labelTableList = append(ob.labelTableList, &LabelTable{})
-	return len(ob.labelTableList) - 1
-}
-
-func setLabel(ob *OpcodeBuf, label int) {
-	// 设置跳转
-	ob.labelTableList[label].labelAddress = len(ob.codeList)
-}
 
 func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
 	exe.ConstantPool.Append(cp)

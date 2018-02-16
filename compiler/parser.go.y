@@ -8,39 +8,48 @@ import (
 %}
 
 %union{
-    parameter_list      []*Parameter
-    argument_list       []Expression
+    parameter_list       []*Parameter
+    argument_list        []Expression
 
-    statement_list      []Statement
-    expression          Expression
-    statement           Statement
+    statement            Statement
+    statement_list       []Statement
 
-    block               *Block
-    elif_list           []*Elif
+    expression           Expression
+    expression_list      []Expression
 
-    type_specifier      *TypeSpecifier
+    block                *Block
+    elif_list            []*Elif
 
-    tok                 Token
+    basic_type_specifier *TypeSpecifier
+    type_specifier       *TypeSpecifier
+
+    array_dimension      *ArrayDimension
+    array_dimension_list []*ArrayDimension
+
+    tok                  Token
 }
 
 %token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
-        LP RP LC RC
+        LP RP LC RC LB RB
         SEMICOLON COMMA
         ASSIGN_T
         LOGICAL_AND LOGICAL_OR
         EQ NE GT GE LT LE
         ADD SUB MUL DIV
         INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRUE_T FALSE_T
+        NULL_T
         IDENTIFIER
         EXCLAMATION DOT
-        BOOLEAN_T INT_T DOUBLE_T STRING_T
+        BOOLEAN_T INT_T DOUBLE_T STRING_T NEW
 
 %type <expression> expression expression_opt
       assignment_expression
       logical_and_expression logical_or_expression
       equality_expression relational_expression
       additive_expression multiplicative_expression
-      unary_expression postfix_expression primary_expression
+      unary_expression primary_expression primary_no_new_array
+      array_literal array_creation
+%type   <expression_list> expression_list
 
 %type <statement> statement
       if_statement for_statement
@@ -51,7 +60,9 @@ import (
 %type <argument_list> argument_list
 %type <block> block
 %type <elif_list> elif_list
-%type <type_specifier> type_specifier
+%type <type_specifier> type_specifier basic_type_specifier
+%type <array_dimension> dimension_expression
+%type <array_dimension_list> dimension_expression_list dimension_list
 
 %%
 
@@ -67,7 +78,7 @@ definition_or_statement
             l.compiler.statementList = append(l.compiler.statementList, $1)
         }
         ;
-type_specifier
+basic_type_specifier
         : BOOLEAN_T
         {
             $$ = &TypeSpecifier{basicType: vm.BooleanType}
@@ -76,6 +87,7 @@ type_specifier
         | INT_T
         {
             $$ = &TypeSpecifier{basicType: vm.IntType}
+            $$.SetPosition($1.Position())
         }
         | DOUBLE_T
         {
@@ -86,6 +98,17 @@ type_specifier
         {
             $$ = &TypeSpecifier{basicType: vm.StringType}
             $$.SetPosition($1.Position())
+        }
+        ;
+type_specifier
+        : basic_type_specifier
+        {
+            $$ = $1
+        }
+        | type_specifier LB RB
+        {
+            $1.appendDerive(ArrayDerive{})
+            $$ = $1
         }
         ;
 function_definition
@@ -152,7 +175,7 @@ expression
         ;
 assignment_expression
         : logical_or_expression
-        | postfix_expression ASSIGN_T assignment_expression
+        | primary_expression ASSIGN_T assignment_expression
         {
             $$ = &AssignExpression{left: $1, operand: $3}
             $$.SetPosition($1.Position())
@@ -237,7 +260,7 @@ multiplicative_expression
         }
         ;
 unary_expression
-        : postfix_expression
+        : primary_expression
         | SUB unary_expression
         {
             $$ = &MinusExpression{operand: $2}
@@ -249,21 +272,32 @@ unary_expression
             $$.SetPosition($1.Position())
         }
         ;
-postfix_expression
-        : primary_expression
-        | postfix_expression LP argument_list RP
+primary_expression
+        : primary_no_new_array
+        | array_creation
+        ;
+primary_no_new_array
+        : primary_no_new_array LB expression RB
+        {
+            $$ = &IndexExpression{array: $1, index: $3}
+            $$.SetPosition($1.Position())
+        }
+        | primary_expression DOT IDENTIFIER
+        {
+            $$ = &MemberExpression{expression: $1, memberName: $3.Lit}
+            $$.SetPosition($1.Position())
+        }
+        | primary_expression LP argument_list RP
         {
             $$ = &FunctionCallExpression{function: $1, argumentList: $3}
             $$.SetPosition($1.Position())
         }
-        | postfix_expression LP RP
+        | primary_expression LP RP
         {
             $$ = &FunctionCallExpression{function: $1, argumentList: []Expression{}}
             $$.SetPosition($1.Position())
         }
-        ;
-primary_expression
-        : LP expression RP
+        | LP expression RP
         {
             $$ = $2
         }
@@ -298,6 +332,78 @@ primary_expression
         {
             $$ = &BooleanExpression{booleanValue: false}
             $$.SetPosition($1.Position())
+        }
+        | NULL_T
+        {
+            $$ = &NullExpression{}
+            $$.SetPosition($1.Position())
+        }
+        | array_literal
+        ;
+array_literal
+        : LC expression_list RC
+        {
+            $$ = &ArrayLiteralExpression{arrayLiteral: $2}
+            $$.SetPosition($1.Position())
+        }
+        | LC expression_list COMMA RC
+        {
+            $$ = &ArrayLiteralExpression{arrayLiteral: $2}
+            $$.SetPosition($1.Position())
+        }
+        ;
+array_creation
+        : NEW basic_type_specifier dimension_expression_list
+        {
+            $$ = &ArrayCreation{dimensionList: $3}
+            $$.setType($2)
+            $$.SetPosition($1.Position())
+        }
+        | NEW basic_type_specifier dimension_expression_list dimension_list
+        {
+            $$ = &ArrayCreation{dimensionList: append($3, $4...)}
+            $$.setType($2)
+            $$.SetPosition($1.Position())
+        }
+        ;
+dimension_expression_list
+        : dimension_expression
+        {
+            $$ = []*ArrayDimension{$1}
+        }
+        | dimension_expression_list dimension_expression
+        {
+            $$ = append($1, $2)
+        }
+        ;
+dimension_expression
+        : LB expression RB
+        {
+            $$ = &ArrayDimension{expression: $2}
+        }
+        ;
+dimension_list
+        : LB RB
+        {
+            $$ = []*ArrayDimension{&ArrayDimension{}}
+        }
+        | dimension_list LB RB
+        {
+            $$ = append($1, &ArrayDimension{})
+        }
+        ;
+expression_list
+        :
+        {
+            $$ = nil
+        }
+        | assignment_expression
+        {
+            $$ = []Expression{$1}
+        }
+        | expression_list COMMA assignment_expression
+        {
+            $$ = append($1, $3)
         }
         ;
 statement
@@ -346,17 +452,17 @@ elif_list
         }
         ;
 for_statement
-        : FOR expression_opt SEMICOLON expression_opt SEMICOLON expression_opt block
+        : FOR LP expression_opt SEMICOLON expression_opt SEMICOLON expression_opt RP block
         {
-            $$ = &ForStatement{init: $2, condition: $4, post: $6, block: $7}
+            $$ = &ForStatement{init: $3, condition: $5, post: $7, block: $9}
             $$.SetPosition($1.Position())
-            $7.parent = &StatementBlockInfo{statement: $$}
+            $9.parent = &StatementBlockInfo{statement: $$}
         }
         ;
 expression_opt
-        : /* empty */
+        :
         {
-            $$ = nil;
+            $$ = nil
         }
         | expression
         ;

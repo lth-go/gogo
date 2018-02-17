@@ -31,13 +31,17 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 
 	srcTye := src.typeS()
 
-	if srcTye.deriveList != nil || destTye.deriveList != nil {
-		compileError(src.Position(), DERIVE_TYPE_CAST_ERR)
-	}
-
-	if srcTye.basicType == destTye.basicType {
+	if compareType(src.typeS(), destTye) {
 		return src
 	}
+
+	if isObject(destTye) && src.typeS().basicType == vm.NullType {
+		if src.typeS().deriveList != nil {
+			panic("derive != NULL")
+		}
+		return src
+	}
+
 
 	if isInt(srcTye) && isDouble(destTye) {
 		castExpr = allocCastExpression(IntToDoubleCast, src)
@@ -48,7 +52,7 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 		return castExpr
 	}
 
-	castMismatchError(src.Position(), srcTye.basicType, destTye.basicType)
+	castMismatchError(src.Position(), srcTye, destTye)
 	return nil
 }
 
@@ -78,11 +82,12 @@ func castBinaryExpression(expr Expression) Expression {
 	return binaryExpr
 }
 
-func castMismatchError(pos Position, src, dest vm.BasicType) {
-	src_name := getBasicTypeName(src)
-	dest_name := getBasicTypeName(dest)
+func castMismatchError(pos Position, src, dest *TypeSpecifier) {
+	// TODO v2
+	srcName := getTypeName(src)
+	destName := getTypeName(dest)
 
-	compileError(pos, CAST_MISMATCH_ERR, src_name, dest_name)
+	compileError(pos, CAST_MISMATCH_ERR, srcName, destName)
 }
 
 func getBasicTypeName(typ vm.BasicType) string {
@@ -98,4 +103,21 @@ func getBasicTypeName(typ vm.BasicType) string {
 	default:
 		panic(fmt.Sprintf("bad case. type..%d\n", typ))
 	}
+}
+
+func getTypeName(typ *TypeSpecifier )string {
+	typeName := getBasicTypeName(typ.basicType)
+
+	for _, derive := range typ.deriveList {
+        switch derive.(type) {
+        case *FunctionDerive:
+			panic("TODO:derive_tag")
+        case *ArrayDerive:
+			typeName = typeName + "[]"
+        default:
+			panic("TODO:derive_tag")
+        }
+    }
+
+    return typeName
 }

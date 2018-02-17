@@ -15,6 +15,9 @@ type FunctionDerive struct {
 	parameterList []*Parameter
 }
 
+type ArrayDerive struct {
+}
+
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
 	PosImpl
@@ -22,6 +25,13 @@ type TypeSpecifier struct {
 	basicType vm.BasicType
 	// 派生类型
 	deriveList []TypeDerive
+}
+
+func (t *TypeSpecifier) appendDerive(derive TypeDerive) {
+	if t.deriveList == nil {
+		t.deriveList = []TypeDerive{}
+	}
+	t.deriveList = append(t.deriveList, derive)
 }
 
 // ==============================
@@ -144,6 +154,10 @@ func (fd *FunctionDefinition) addReturnFunction() {
 	}
 
 	ret := &ReturnStatement{returnValue: nil}
+    ret.SetPosition(fd.typeSpecifier.Position())
+    if ret.returnValue != nil {
+		ret.returnValue.SetPosition(fd.typeSpecifier.Position())
+    }
 	ret.fix(fd.block, fd)
 	fd.block.statementList = append(fd.block.statementList, ret)
 }
@@ -442,7 +456,13 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	if fd.typeSpecifier.deriveList != nil {
-		panic("TODO")
+		_, ok := fd.typeSpecifier.deriveList[0].(*ArrayDerive)
+		if !ok {
+			panic("TODO")
+		}
+		returnValue = &NullExpression{}
+		stmt.returnValue = returnValue
+		return
 	}
 
 	switch fd.typeSpecifier.basicType {
@@ -454,6 +474,10 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		stmt.returnValue = &DoubleExpression{doubleValue: 0.0}
 	case vm.StringType:
 		stmt.returnValue = &StringExpression{stringValue: ""}
+	case vm.NullType:
+		fallthrough
+	default:
+		panic("TODO")
 	}
 
 	returnValue.SetPosition(stmt.Position())

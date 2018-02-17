@@ -53,6 +53,10 @@ type ExpressionImpl struct {
 	typeSpecifier *TypeSpecifier
 }
 
+func (expr *ExpressionImpl) fix(currentBlock *Block) Expression { return nil }
+
+func (expr *ExpressionImpl) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
+
 func (expr *ExpressionImpl) show(ident int) {}
 
 func (expr *ExpressionImpl) typeS() *TypeSpecifier {
@@ -122,8 +126,10 @@ func (expr *AssignExpression) show(ident int) {
 }
 
 func (expr *AssignExpression) fix(currentBlock *Block) Expression {
-	_, ok := expr.left.(*IdentifierExpression)
-	if !ok {
+	switch expr.left.(type) {
+	case *IdentifierExpression, *IndexExpression:
+		// pass
+	default:
 		compileError(expr.left.Position(), NOT_LVALUE_ERR, "")
 	}
 
@@ -199,7 +205,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 
 	switch expr.operator {
-	// 数学计算
+		// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -222,7 +228,9 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 			newExpr.setType(&TypeSpecifier{basicType: vm.IntType})
 		} else if isDouble(newBinaryExprLeftType) && isDouble(newBinaryExprRightType) {
 			newExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
-		} else if isString(newBinaryExprLeftType) && isString(newBinaryExprRightType) {
+		} else if (expr.operator == AddOperator) &&
+		((isString(newBinaryExprLeftType) && isString(newBinaryExprRightType)) ||
+		(isString(newBinaryExprLeftType) && isNull(newBinaryExpr.left))) {
 			newExpr.setType(&TypeSpecifier{basicType: vm.StringType})
 		} else {
 			compileError(expr.Position(), MATH_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
@@ -230,7 +238,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-	// 比较
+		// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -247,8 +255,9 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
-		if (newBinaryExprLeftType.basicType != newBinaryExprRightType.basicType) ||
-			newBinaryExprLeftType.deriveList != nil || newBinaryExprRightType.deriveList != nil {
+		if !compareType(newBinaryExprLeftType, newBinaryExprRightType) ||
+		(isObject(newBinaryExprLeftType) && isNull(newBinaryExpr.right) ||
+		(isObject(newBinaryExprRightType) && isNull(newBinaryExpr.left))) {
 
 			compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
 		}
@@ -257,7 +266,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 
 		return newExpr
 
-	// && ||
+		// && ||
 	case LogicalAndOperator, LogicalOrOperator:
 		expr.left = expr.left.fix(currentBlock)
 		expr.right = expr.right.fix(currentBlock)
@@ -290,7 +299,7 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	switch operator := expr.operator; operator {
-	case GtOperator, GeOperator, LtOperator, LeOperator,
+		case GtOperator, GeOperator, LtOperator, LeOperator,
 		AddOperator, SubOperator, MulOperator, DivOperator,
 		EqOperator, NeOperator:
 
@@ -649,10 +658,10 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 
 func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 	switch inner := expr.inner.(type) {
-	// 函数
+		// 函数
 	case *FunctionDefinition:
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
-	// 变量
+		// 变量
 	case *Declaration:
 		var code byte
 
@@ -711,6 +720,133 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 	default:
 		panic("TODO")
 	}
+}
+
+// ==============================
+// IndexExpression
+// ==============================
+type IndexExpression struct {
+	ExpressionImpl
+
+	array Expression
+	index Expression
+}
+
+func (expr *IndexExpression) fix(currentBlock *Block) Expression {
+
+	expr.array = expr.array.fix(currentBlock)
+	expr.index = expr.index.fix(currentBlock)
+
+	if expr.array.typeS().deriveList == nil {
+		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
+	}
+
+	_, ok := expr.array.typeS().deriveList[0].(*ArrayDerive)
+	if !ok {
+		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
+	}
+
+	if !isInt(expr.index.typeS()) {
+		compileError(expr.Position(), INDEX_NOT_INT_ERR)
+	}
+
+	expr.setType(&TypeSpecifier{basicType: expr.array.typeS().basicType})
+
+	expr.typeS().deriveList = expr.array.typeS().deriveList[1:]
+
+	return expr
+}
+
+// ==============================
+// MemberExpression
+// ==============================
+type MemberExpression struct {
+	ExpressionImpl
+
+	expression Expression
+	memberName string
+}
+
+func (expr *MemberExpression) fix(currentBlock *Block) Expression { return expr }
+
+// ==============================
+// ArrayLiteralExpression
+// ==============================
+type ArrayLiteralExpression struct {
+	ExpressionImpl
+
+	arrayLiteral []Expression
+}
+
+func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
+	if expr.arrayLiteral == nil {
+		compileError(expr.Position(), ARRAY_LITERAL_EMPTY_ERR)
+	}
+
+	firstElem := expr.arrayLiteral[0]
+	firstElem = firstElem.fix(currentBlock)
+
+	elemType := firstElem.typeS()
+
+	for _, elem := range expr.arrayLiteral[1:] {
+		elem = elem.fix(currentBlock)
+		elem = createAssignCast(elem, elemType)
+	}
+
+	expr.setType(&TypeSpecifier{basicType: elemType.basicType})
+	expr.typeS().deriveList = []TypeDerive{&ArrayDerive{}}
+	expr.typeS().deriveList = append(expr.typeS().deriveList, elemType.deriveList...)
+
+	return expr
+}
+
+// ==============================
+// ArrayCreation
+// ==============================
+type ArrayCreation struct {
+	ExpressionImpl
+
+	dimensionList []*ArrayDimension
+}
+
+func (expr *ArrayCreation) fix(currentBlock *Block) Expression {
+
+	deriveList := []TypeDerive{}
+
+	for _, dim := range expr.dimensionList {
+		if dim.expression != nil {
+			dim.expression = dim.expression.fix(currentBlock)
+
+			if !isInt(dim.expression.typeS()) {
+				compileError(expr.Position(), ARRAY_SIZE_NOT_INT_ERR)
+			}
+		}
+
+		deriveList = append(deriveList, &ArrayDerive{})
+	}
+	expr.setType(&TypeSpecifier{basicType: expr.typeSpecifier.basicType})
+	expr.typeS().deriveList = deriveList
+
+	return expr
+}
+
+// ==============================
+// ArrayDimension
+// ==============================
+type ArrayDimension struct {
+	expression Expression
+}
+
+// ==============================
+// NullDimension
+// ==============================
+type NullExpression struct {
+	ExpressionImpl
+}
+
+func (expr *NullExpression) fix(currentBlock *Block) Expression {
+	expr.setType(&TypeSpecifier{basicType: vm.NullType})
+	return expr
 }
 
 // ==============================

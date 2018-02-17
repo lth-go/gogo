@@ -54,6 +54,9 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 	case MulOperator:
 		value = left * right
 	case DivOperator:
+		if right == 0 {
+			compileError(binaryExpr.Position(), DIVISION_BY_ZERO_IN_COMPILE_ERR)
+		}
 		value = left / right
 	default:
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
@@ -75,6 +78,9 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 	case MulOperator:
 		value = left * right
 	case DivOperator:
+		if right == 0.0 {
+			compileError(binaryExpr.Position(), DIVISION_BY_ZERO_IN_COMPILE_ERR)
+		}
 		value = left / right
 	default:
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
@@ -161,6 +167,12 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 		case *StringExpression:
 			newExpr := evalCompareExpressionString(binaryExpr, leftExpr.stringValue, rightExpr.stringValue)
 			return newExpr
+		}
+	case *NullExpression:
+		switch binaryExpr.right.(type) {
+		case *NullExpression:
+			newExpr := &BooleanExpression{booleanValue: true}
+			newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 		}
 	}
 

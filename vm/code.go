@@ -16,6 +16,8 @@ const (
 	DoubleType
 	// StringType 字符串类型
 	StringType
+	// Null
+	NullType
 )
 
 // ==============================

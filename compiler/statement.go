@@ -34,6 +34,10 @@ func (t *TypeSpecifier) appendDerive(derive TypeDerive) {
 	t.deriveList = append(t.deriveList, derive)
 }
 
+func (t *TypeSpecifier) isArrayDerive() bool {
+	return isArray(t)
+}
+
 // ==============================
 // Statement 接口
 // ==============================

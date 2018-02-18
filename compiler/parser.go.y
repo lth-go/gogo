@@ -107,7 +107,7 @@ type_specifier
         }
         | type_specifier LB RB
         {
-            $1.appendDerive(ArrayDerive{})
+            $1.appendDerive(&ArrayDerive{})
             $$ = $1
         }
         ;

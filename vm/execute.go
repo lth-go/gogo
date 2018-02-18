@@ -21,6 +21,8 @@ type Executable struct {
 	// 行号对应表
 	// 保存字节码和与之对应的源代码的行号
 	LineNumberList []*VmLineNumber
+
+	TypeSpecifierList []*VmTypeSpecifier
 }
 
 func NewExecutable() *Executable {
@@ -30,6 +32,7 @@ func NewExecutable() *Executable {
 		FunctionList: []*VmFunction{},
 		CodeList: []byte{},
 		LineNumberList: []*VmLineNumber{},
+		TypeSpecifierList: []*VmTypeSpecifier{},
 	}
 	return exe
 }
@@ -105,9 +108,20 @@ type VmTypeDerive interface{}
 type VmFunctionDerive struct {
 	ParameterList []*VmLocalVariable
 }
+
+type VmArrayDerive struct {
+}
+
 type VmTypeSpecifier struct {
 	BasicType  BasicType
 	DeriveList []VmTypeDerive
+}
+
+func (t *VmTypeSpecifier) AppendDerive(derive VmTypeDerive) {
+	if t.DeriveList == nil {
+		t.DeriveList = []VmTypeDerive{}
+	}
+	t.DeriveList = append(t.DeriveList, derive)
 }
 
 // ==============================

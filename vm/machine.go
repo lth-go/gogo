@@ -149,7 +149,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			stack.writeDouble(0, stack.getDoubleI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_STACK_STRING:
+		case VM_PUSH_STACK_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.writeObject(0, stack.getObjectI(base+index))
 			vm.stack.stackPointer++
@@ -164,7 +164,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			stack.writeDoubleI(base+index, stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_STACK_STRING:
+		case VM_POP_STACK_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.writeObjectI(base+index, stack.getObject(-1))
 			vm.stack.stackPointer--
@@ -179,7 +179,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			stack.writeDouble(0, static.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_STATIC_STRING:
+		case VM_PUSH_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.writeObject(0, static.getObject(index))
 			vm.stack.stackPointer++
@@ -194,7 +194,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			static.setDouble(index, stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_STATIC_STRING:
+		case VM_POP_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
 			static.setObject(index, stack.getObject(-1))
 			vm.stack.stackPointer--
@@ -441,7 +441,7 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 		// 函数内的本地声明
 		case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
 			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
-			VM_PUSH_STACK_STRING, VM_POP_STACK_STRING:
+			VM_PUSH_STACK_OBJECT, VM_POP_STACK_OBJECT:
 
 			// TODO
 			if f == nil {

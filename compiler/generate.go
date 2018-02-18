@@ -136,22 +136,30 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 //
 // COPY
 //
-func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
+func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.VmTypeSpecifier) {
 
-	dest := &vm.VmTypeSpecifier{
-		BasicType:  src.basicType,
-		DeriveList: []vm.VmTypeDerive{},
-	}
+	dest.BasicType = src.basicType
+	dest.DeriveList = []vm.VmTypeDerive{}
 
 	for _, derive := range src.deriveList {
-		switch f := derive.(type) {
+		switch realDerive := derive.(type) {
 		case *FunctionDerive:
-			newDerive := &vm.VmFunctionDerive{ParameterList: copyParameterList(f.parameterList)}
-			dest.DeriveList = append(dest.DeriveList, newDerive)
+			newDerive := &vm.VmFunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
+			dest.AppendDerive(newDerive)
+		case *ArrayDerive:
+			dest.AppendDerive(&vm.VmArrayDerive{})
 		default:
-			panic("derive error")
+			panic("TODO")
 		}
 	}
+}
+
+func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
+
+	dest := &vm.VmTypeSpecifier{}
+
+	copyTypeSpecifierNoAlloc(src, dest)
+
 	return dest
 }
 
@@ -194,4 +202,31 @@ func copyLocalVariables(fd *FunctionDefinition) []*vm.VmLocalVariable {
 	}
 
 	return dest
+}
+
+// TODO 作为exe的方法
+func AddTypeSpecifier(src *TypeSpecifier, exe *vm.Executable) int {
+	ret := len(exe.TypeSpecifierList)
+
+	newType := &vm.VmTypeSpecifier{}
+	copyTypeSpecifierNoAlloc(src, newType)
+	exe.TypeSpecifierList = append(exe.TypeSpecifierList, newType)
+
+	return ret
+}
+
+func generate_pop_to_lvalue(exe *vm.Executable, block *Block , expr Expression , ob *OpcodeBuf) {
+	identifierExpr, ok := expr.(*IdentifierExpression)
+	if ok {
+		generatePopToIdentifier(identifierExpr.inner.(*Declaration), expr.Position(), ob)
+		return 
+	}
+	indexExpr, ok := expr.(*IndexExpression)
+	if !ok {
+		panic("TODO")
+	}
+	indexExpr.array.generate(exe, block, ob)
+	indexExpr.index.generate(exe, block, ob)
+        
+	ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT + getOpcodeTypeOffset(expr.typeS()))
 }

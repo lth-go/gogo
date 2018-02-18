@@ -47,7 +47,7 @@ var errMessageMap = map[int]string{
 	DERIVE_TYPE_CAST_ERR:                     "不能强制转型为派生类型。",
 	CAST_MISMATCH_ERR:                        "不能将(%s)转型为(%s)。",
 	MATH_TYPE_MISMATCH_ERR:                   "算数运算符的操作数类型不正确。",
-	COMPARE_TYPE_MISMATCH_ERR:                "比较运算符的操作数类型不正确。",
+	COMPARE_TYPE_MISMATCH_ERR:                "比较运算符的操作数类型不正确。Left: %s, Right: %s",
 	LOGICAL_TYPE_MISMATCH_ERR:                "逻辑and/or运算符的操作数类型不正确。",
 	MINUS_TYPE_MISMATCH_ERR:                  "减法运算符的操作数类型不正确。",
 	LOGICAL_NOT_TYPE_MISMATCH_ERR:            "逻辑非运算符的操作数类型不正确。",

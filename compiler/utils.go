@@ -24,7 +24,7 @@ func isNull(expr Expression) bool {
 }
 
 func isArray(t *TypeSpecifier) bool {
-	if t.deriveList == nil {
+	if t.deriveList == nil || len(t.deriveList) == 0 {
 		return false
 	}
 	firstElem := t.deriveList[0]
@@ -36,8 +36,15 @@ func isObject(t *TypeSpecifier) bool {
 	return isString(t) || isArray(t)
 }
 
-func getOpcodeTypeOffset(basicType vm.BasicType) byte {
-	switch basicType {
+func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
+
+    if typ.deriveList != nil && len(typ.deriveList) != 0 {
+		if !typ.isArrayDerive() {
+			panic("TODO")
+		}
+        return 2
+    }
+	switch typ.basicType {
 	case vm.BooleanType:
 		return byte(0)
 	case vm.IntType:
@@ -46,9 +53,11 @@ func getOpcodeTypeOffset(basicType vm.BasicType) byte {
 		return byte(1)
 	case vm.StringType:
 		return byte(2)
+    case vm.NullType: /* FALLTHRU */
 	default:
 		panic("basic type")
 	}
+	return byte(0)
 }
 
 func get2ByteInt(b []byte) int {

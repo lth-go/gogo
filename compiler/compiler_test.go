@@ -36,9 +36,7 @@ func TestParse(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	for _, stmt := range compiler.statementList {
-		stmt.show(0)
-	}
+	compiler.Show()
 }
 
 func TestGenerate(t *testing.T) {
@@ -51,6 +49,7 @@ func TestGenerate(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
+
 	exe := vm.NewExecutable()
 	compiler.Generate(exe)
 

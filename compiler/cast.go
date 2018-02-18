@@ -83,7 +83,6 @@ func castBinaryExpression(expr Expression) Expression {
 }
 
 func castMismatchError(pos Position, src, dest *TypeSpecifier) {
-	// TODO v2
 	srcName := getTypeName(src)
 	destName := getTypeName(dest)
 
@@ -100,6 +99,8 @@ func getBasicTypeName(typ vm.BasicType) string {
 		return "double"
 	case vm.StringType:
 		return "string"
+	case vm.NullType:
+		return "null"
 	default:
 		panic(fmt.Sprintf("bad case. type..%d\n", typ))
 	}
@@ -111,10 +112,11 @@ func getTypeName(typ *TypeSpecifier )string {
 	for _, derive := range typ.deriveList {
         switch derive.(type) {
         case *FunctionDerive:
-			panic("TODO:derive_tag")
+			panic("TODO:derive_tag, func")
         case *ArrayDerive:
 			typeName = typeName + "[]"
         default:
+			print("=====\n", typ.Position().Line)
 			panic("TODO:derive_tag")
         }
     }

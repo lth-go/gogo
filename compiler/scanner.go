@@ -29,8 +29,12 @@ var opName = map[string]int{
 	"int":      INT_T,
 	"double":   DOUBLE_T,
 	"string":   STRING_T,
+	"null":     NULL_T,
+	"new":      NEW,
 	"(":        LP,
 	")":        RP,
+	"[":        LB,
+	"]":        RB,
 	"{":        LC,
 	"}":        RC,
 	";":        SEMICOLON,
@@ -174,7 +178,7 @@ retry:
 				tok = int(ch)
 				lit = string(ch)
 			}
-		case '(', ')', '{', '}', ';', ',', '+', '-', '*', '/', '.':
+		case '(', ')', '[', ']', '{', '}', ';', ',', '+', '-', '*', '/', '.':
 			tok = opName[string(ch)]
 			lit = string(ch)
 		default:

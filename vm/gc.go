@@ -5,7 +5,7 @@ var HeapThresholdSize = 1024 * 256
 type objectType int
 
 const (
-	stringObjectType objectType = iota 
+	stringObjectType objectType = iota
 )
 
 //
@@ -22,14 +22,15 @@ func (vm *VmVirtualMachine) checkGC() {
 //
 // 创建对象
 //
-func (vm *VmVirtualMachine) newStringObject() *VmObjectString {
-
+func (vm *VmVirtualMachine) addObject(value VmObject) {
 	vm.checkGC()
+	value.setMark(false)
+	vm.heap.append(value)
+}
+
+func (vm *VmVirtualMachine) newStringObject() *VmObjectString {
 	ret := &VmObjectString{}
-
-	ret.setMark(false)
-
-	vm.heap.append(ret)
+	vm.addObject(ret)
 
 	return ret
 }
@@ -44,17 +45,63 @@ func (vm *VmVirtualMachine) createStringObject(str string) VmObject {
 
 // 连接字符对象
 func (vm *VmVirtualMachine) chainStringObject(str1 VmObject, str2 VmObject) VmObject {
-	str := str1.getString() + str2.getString()
+	var left, right string
+	if str1 == nil {
+		left = "null"
+	} else {
+		left = str1.getString()
+	}
+
+	if str2 == nil {
+		right = "null"
+	} else {
+		right = str2.getString()
+	}
+	
+	str := left + right
 	ret := vm.createStringObject(str)
+	return ret
+}
+
+// array
+func (vm *VmVirtualMachine) createArrayInt(size int) *VmObjectArrayInt {
+	ret := &VmObjectArrayInt{intArray: make([]int, size)}
+	vm.addObject(ret)
+
+	return ret
+}
+
+func (vm *VmVirtualMachine) createArrayDouble(size int) *VmObjectArrayDouble {
+	ret := &VmObjectArrayDouble{doubleArray: make([]float64, size)}
+	vm.addObject(ret)
+
+	return ret
+}
+
+func (vm *VmVirtualMachine) createArrayObject(size int) *VmObjectArrayObject {
+	ret := &VmObjectArrayObject{objectArray: make([]VmObject, size)}
+	vm.addObject(ret)
+
 	return ret
 }
 
 //
 // 标记，取消标记
 //
-func mark(obj VmObject) { obj.setMark(true) }
+func mark(obj VmObject) {
+	obj.setMark(true)
 
-func resetMark(obj VmObject) { obj.setMark(false) }
+	arrayObj, ok := obj.(*VmObjectArrayObject)
+	if ok {
+		for _, subObj := range arrayObj.objectArray {
+			mark(subObj)
+		}
+	}
+}
+
+func resetMark(obj VmObject) {
+	obj.setMark(false)
+}
 
 //
 // 标记
@@ -83,12 +130,19 @@ func (vm *VmVirtualMachine) markObjects() {
 // 删除对象
 //
 func (vm *VmVirtualMachine) disposeObject(obj VmObject) {
-	//switch o := obj.(type) {
-	//case *VmObjectString:
-	//    //
-	//default:
-	//    panic("TODO")
-	//}
+	switch o := obj.(type) {
+	case *VmObjectString:
+		//
+	case *VmObjectArrayInt:
+		o.intArray = nil
+	case *VmObjectArrayDouble:
+		o.doubleArray = nil
+	case *VmObjectArrayObject:
+		o.objectArray = nil
+	default:
+		panic("TODO")
+	}
+
 	obj = nil
 }
 

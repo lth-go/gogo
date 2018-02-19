@@ -173,6 +173,7 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 		case *NullExpression:
 			newExpr := &BooleanExpression{booleanValue: true}
 			newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+			return newExpr
 		}
 	}
 

@@ -53,7 +53,8 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 		return byte(1)
 	case vm.StringType:
 		return byte(2)
-    case vm.NullType: /* FALLTHRU */
+    case vm.NullType:
+		fallthrough
 	default:
 		panic("basic type")
 	}

@@ -17,3 +17,5 @@ compiler/parser.go
 compiler/y.output
 tags
 .idea
+
+single.4g

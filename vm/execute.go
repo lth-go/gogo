@@ -27,12 +27,12 @@ type Executable struct {
 
 func NewExecutable() *Executable {
 	exe := &Executable{
-		ConstantPool: NewConstantPool(),
+		ConstantPool:       NewConstantPool(),
 		GlobalVariableList: []*VmVariable{},
-		FunctionList: []*VmFunction{},
-		CodeList: []byte{},
-		LineNumberList: []*VmLineNumber{},
-		TypeSpecifierList: []*VmTypeSpecifier{},
+		FunctionList:       []*VmFunction{},
+		CodeList:           []byte{},
+		LineNumberList:     []*VmLineNumber{},
+		TypeSpecifierList:  []*VmTypeSpecifier{},
 	}
 	return exe
 }

@@ -216,7 +216,7 @@ func (stmt *ExpressionStatement) show(ident int) {
 }
 
 func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	stmt.expression.fix(currentBlock)
+	stmt.expression = stmt.expression.fix(currentBlock)
 }
 
 func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -266,14 +266,14 @@ func (stmt *IfStatement) show(ident int) {
 
 func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
-	stmt.condition.fix(currentBlock)
+	stmt.condition = stmt.condition.fix(currentBlock)
 
 	if stmt.thenBlock != nil {
 		fixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
 	}
 
 	for _, elif := range stmt.elifList {
-		elif.condition.fix(currentBlock)
+		elif.condition = elif.condition.fix(currentBlock)
 
 		if elif.block != nil {
 			fixStatementList(elif.block, elif.block.statementList, fd)
@@ -371,13 +371,13 @@ func (stmt *ForStatement) show(ident int) {
 
 func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.init != nil {
-		stmt.init.fix(currentBlock)
+		stmt.init = stmt.init.fix(currentBlock)
 	}
 	if stmt.condition != nil {
-		stmt.condition.fix(currentBlock)
+		stmt.condition = stmt.condition.fix(currentBlock)
 	}
 	if stmt.post != nil {
-		stmt.post.fix(currentBlock)
+		stmt.post = stmt.post.fix(currentBlock)
 	}
 
 	if stmt.block != nil {
@@ -452,7 +452,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	var returnValue Expression
 
 	if stmt.returnValue != nil {
-		stmt.returnValue.fix(currentBlock)
+		stmt.returnValue = stmt.returnValue.fix(currentBlock)
 		// 类型转换
 		returnValue = createAssignCast(stmt.returnValue, fd.typeSpecifier)
 		stmt.returnValue = returnValue
@@ -589,7 +589,7 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	// 类型转换
 	if stmt.initializer != nil {
-		stmt.initializer.fix(currentBlock)
+		stmt.initializer = stmt.initializer.fix(currentBlock)
 		stmt.initializer = createAssignCast(stmt.initializer, stmt.typeSpecifier)
 	}
 }

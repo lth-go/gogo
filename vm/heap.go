@@ -23,5 +23,6 @@ func NewHeap() *Heap {
 
 func (h *Heap) append(value VmObject) {
 	h.objectList = append(h.objectList, value)
+	// TODO 列表大小
 	h.currentThreshold += 1
 }

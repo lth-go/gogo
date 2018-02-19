@@ -312,10 +312,10 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		// TODO 啥意思
 		if (isNull(leftExpr) && !isNull(rightExpr)) ||
 			(!isNull(leftExpr) && isNull(rightExpr)) {
-				offset = byte(2)
+			offset = byte(2)
 		} else if (operator == EqOperator || operator == NeOperator) &&
 			isString(leftExpr.typeS()) {
-				offset = byte(3)
+			offset = byte(3)
 		} else {
 			offset = getOpcodeTypeOffset(expr.left.typeS())
 		}
@@ -773,7 +773,7 @@ func (expr *IndexExpression) generate(exe *vm.Executable, currentBlock *Block, o
 	expr.index.generate(exe, currentBlock, ob)
 
 	code := vm.VM_PUSH_ARRAY_INT + getOpcodeTypeOffset(expr.typeS())
-    ob.generateCode(expr.Position(), code)
+	ob.generateCode(expr.Position(), code)
 }
 
 // ==============================
@@ -790,7 +790,7 @@ func (expr *MemberExpression) show(ident int) {
 	printWithIdent("MemberExpr", ident)
 }
 
-func (expr *MemberExpression) fix(currentBlock *Block) Expression { return expr }
+func (expr *MemberExpression) fix(currentBlock *Block) Expression                              { return expr }
 func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
 
 // ==============================
@@ -816,9 +816,9 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 
 	elemType := firstElem.typeS()
 
-	for _, elem := range expr.arrayLiteral[1:] {
-		elem = elem.fix(currentBlock)
-		elem = createAssignCast(elem, elemType)
+	for i := 1; i < len(expr.arrayLiteral); i++ {
+		expr.arrayLiteral[i] = expr.arrayLiteral[i].fix(currentBlock)
+		expr.arrayLiteral[i] = createAssignCast(expr.arrayLiteral[i], elemType)
 	}
 
 	expr.setType(&TypeSpecifier{basicType: elemType.basicType})
@@ -841,9 +841,11 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 	if count == 0 {
 		panic("TODO")
 	}
-    
-	code := vm.VM_NEW_ARRAY_LITERAL_INT + getOpcodeTypeOffset(expr.typeS())
-    ob.generateCode(expr.Position(), code, count)
+
+	itemType := expr.arrayLiteral[0].typeS()
+	offset := getOpcodeTypeOffset(itemType)
+
+	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY_LITERAL_INT+offset, count)
 }
 
 // ==============================
@@ -897,7 +899,7 @@ func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob 
 		dimCount++
 	}
 
-	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, dimCount, index);
+	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, dimCount, index)
 }
 
 // ==============================
@@ -924,7 +926,7 @@ func (expr *NullExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *NullExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL);
+	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL)
 }
 
 // ==============================

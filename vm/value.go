@@ -143,6 +143,8 @@ type VmObject interface {
 
 	getString() string
 	setString(string)
+
+	getArraySize() int
 }
 
 type VmObjectImpl struct {
@@ -166,6 +168,11 @@ func (obj *VmObjectImpl) setString(v string) {
 	panic("TODO")
 }
 
+func (obj *VmObjectImpl) getArraySize() int {
+	panic("TODO")
+}
+
+// object string
 type VmObjectString struct {
 	VmObjectImpl
 
@@ -178,4 +185,41 @@ func (obj *VmObjectString) getString() string {
 
 func (obj *VmObjectString) setString(v string) {
 	obj.stringValue = v
+}
+
+// object array
+type VmObjectArrayInt struct {
+	VmObjectImpl
+	intArray []int
+}
+
+func (obj *VmObjectArrayInt) getArraySize() int {
+	if obj.intArray == nil {
+		return -1
+	}
+	return len(obj.intArray)
+}
+
+type VmObjectArrayDouble struct {
+	VmObjectImpl
+	doubleArray []float64
+}
+
+func (obj *VmObjectArrayDouble) getArraySize() int {
+	if obj.doubleArray == nil {
+		return -1
+	}
+	return len(obj.doubleArray)
+}
+
+type VmObjectArrayObject struct {
+	VmObjectImpl
+	objectArray []VmObject
+}
+
+func (obj *VmObjectArrayObject) getArraySize() int {
+	if obj.objectArray == nil {
+		return -1
+	}
+	return len(obj.objectArray)
 }

@@ -8,10 +8,10 @@ func (vm *VmVirtualMachine) AddNativeFunctions() {
 	vm.addNativeFunction("print", printProc, 1)
 }
 
-func (vm *VmVirtualMachine)addNativeFunction(funcName string, proc VmNativeFunctionProc, argCount int) {
+func (vm *VmVirtualMachine) addNativeFunction(funcName string, proc VmNativeFunctionProc, argCount int) {
 	function := &NativeFunction{
-		Name: funcName,
-		proc: proc,
+		Name:     funcName,
+		proc:     proc,
 		argCount: argCount,
 	}
 
@@ -19,12 +19,18 @@ func (vm *VmVirtualMachine)addNativeFunction(funcName string, proc VmNativeFunct
 }
 
 func printProc(vm *VmVirtualMachine, argCount int, args []VmValue) VmValue {
+	var str = "null"
+
 	ret := &VmIntValue{
 		intValue: 0,
 	}
 
-	str := args[0].getObjectValue().getString()
+	obj := args[0].getObjectValue()
+
+	if obj != nil {
+		str = obj.getString()
+	}
 	fmt.Println(str)
 
-    return ret
+	return ret
 }

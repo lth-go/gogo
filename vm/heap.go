@@ -3,6 +3,7 @@ package vm
 const (
 	HEAP_THRESHOLD_SIZE = 10240
 )
+
 //
 // Heap
 //

@@ -790,12 +790,14 @@ func (expr *MemberExpression) show(ident int) {
 	printWithIdent("MemberExpr", ident)
 }
 
-func (expr *MemberExpression) fix(currentBlock *Block) Expression                              { return expr }
+func (expr *MemberExpression) fix(currentBlock *Block) Expression { return expr }
+
 func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
 
 // ==============================
 // ArrayLiteralExpression
 // ==============================
+// 创建列表时的值, eg,{1,2,3,4}
 type ArrayLiteralExpression struct {
 	ExpressionImpl
 
@@ -807,7 +809,7 @@ func (expr *ArrayLiteralExpression) show(ident int) {
 }
 
 func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
-	if expr.arrayLiteral == nil {
+	if expr.arrayLiteral == nil || len(expr.arrayLiteral) == 0 {
 		compileError(expr.Position(), ARRAY_LITERAL_EMPTY_ERR)
 	}
 
@@ -822,6 +824,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 	}
 
 	expr.setType(&TypeSpecifier{basicType: elemType.basicType})
+
 	expr.typeS().deriveList = []TypeDerive{&ArrayDerive{}}
 	expr.typeS().deriveList = append(expr.typeS().deriveList, elemType.deriveList...)
 
@@ -833,13 +836,17 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 		panic("TODO")
 	}
 
-	for _, subExpr := range expr.arrayLiteral {
-		subExpr.generate(exe, currentBlock, ob)
+	if expr.arrayLiteral == nil {
+		panic("TODO")
 	}
 
 	count := len(expr.arrayLiteral)
 	if count == 0 {
 		panic("TODO")
+	}
+
+	for _, subExpr := range expr.arrayLiteral {
+		subExpr.generate(exe, currentBlock, ob)
 	}
 
 	itemType := expr.arrayLiteral[0].typeS()
@@ -851,6 +858,7 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 // ==============================
 // ArrayCreation
 // ==============================
+// 列表创建
 type ArrayCreation struct {
 	ExpressionImpl
 
@@ -905,6 +913,7 @@ func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob 
 // ==============================
 // ArrayDimension
 // ==============================
+// 列表后面的括号
 type ArrayDimension struct {
 	expression Expression
 }

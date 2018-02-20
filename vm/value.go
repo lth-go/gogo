@@ -5,48 +5,16 @@ package vm
 //
 // 虚拟机基本值接口
 type VmValue interface {
-	getIntValue() int
-	setIntValue(int)
-
-	getDoubleValue() float64
-	setDoubleValue(float64)
-
-	getObjectValue() VmObject
-	setObjectValue(VmObject)
-
 	isPointer() bool
 	setPointer(bool)
 }
 
+//
 // VmValueImpl
-
+//
 type VmValueImpl struct {
 	// 是否是指针
 	pointerFlags bool
-}
-
-func (v *VmValueImpl) getIntValue() int {
-	panic("error")
-}
-
-func (v *VmValueImpl) setIntValue(value int) {
-	panic("error")
-}
-
-func (v *VmValueImpl) getDoubleValue() float64 {
-	panic("error")
-}
-
-func (v *VmValueImpl) setDoubleValue(value float64) {
-	panic("error")
-}
-
-func (v *VmValueImpl) getObjectValue() VmObject {
-	panic("VmValue: 数据类型错误, 无法获取VmObject")
-}
-
-func (v *VmValueImpl) setObjectValue(value VmObject) {
-	panic("error")
 }
 
 func (v *VmValueImpl) isPointer() bool {
@@ -57,8 +25,9 @@ func (v *VmValueImpl) setPointer(b bool) {
 	v.pointerFlags = b
 }
 
-// CallInfo
-// 函数返回体
+//
+// CallInfo 函数返回体
+//
 type CallInfo struct {
 	VmValueImpl
 
@@ -70,7 +39,9 @@ type CallInfo struct {
 	base int
 }
 
+//
 // VmIntValue
+//
 type VmIntValue struct {
 	VmValueImpl
 	intValue int
@@ -82,16 +53,9 @@ func NewIntValue(value int) *VmIntValue {
 	}
 }
 
-func (v *VmIntValue) getIntValue() int {
-	return v.intValue
-}
-
-func (v *VmIntValue) setIntValue(value int) {
-	v.intValue = value
-}
-
+//
 // VmDoubleValue
-
+//
 type VmDoubleValue struct {
 	VmValueImpl
 	doubleValue float64
@@ -103,16 +67,9 @@ func NewDoubleValue(value float64) *VmDoubleValue {
 	}
 }
 
-func (v *VmDoubleValue) getDoubleValue() float64 {
-	return v.doubleValue
-}
-
-func (v *VmDoubleValue) setDoubleValue(value float64) {
-	v.doubleValue = value
-}
-
+//
 // VmObjectValue
-
+//
 type VmObjectValue struct {
 	VmValueImpl
 
@@ -125,14 +82,6 @@ func NewObjectValue(value VmObject) *VmObjectValue {
 	}
 }
 
-func (v *VmObjectValue) getObjectValue() VmObject {
-	return v.objectValue
-}
-
-func (v *VmObjectValue) setObjectValue(value VmObject) {
-	v.objectValue = value
-}
-
 //
 // VmObject
 //
@@ -140,11 +89,6 @@ func (v *VmObjectValue) setObjectValue(value VmObject) {
 type VmObject interface {
 	isMarked() bool
 	setMark(bool)
-
-	getString() string
-	setString(string)
-
-	getArraySize() int
 }
 
 type VmObjectImpl struct {
@@ -160,34 +104,23 @@ func (obj *VmObjectImpl) setMark(m bool) {
 	obj.marked = m
 }
 
-func (obj *VmObjectImpl) getString() string {
-	panic("TODO")
-}
-
-func (obj *VmObjectImpl) setString(v string) {
-	panic("TODO")
-}
-
-func (obj *VmObjectImpl) getArraySize() int {
-	panic("TODO")
-}
-
+//
 // object string
+//
 type VmObjectString struct {
 	VmObjectImpl
 
 	stringValue string
 }
 
-func (obj *VmObjectString) getString() string {
-	return obj.stringValue
+//
+// object array interface
+//
+type VmObjectArray interface {
+	getArraySize() int
 }
 
-func (obj *VmObjectString) setString(v string) {
-	obj.stringValue = v
-}
-
-// object array
+// array int
 type VmObjectArrayInt struct {
 	VmObjectImpl
 	intArray []int
@@ -200,6 +133,19 @@ func (obj *VmObjectArrayInt) getArraySize() int {
 	return len(obj.intArray)
 }
 
+func (array *VmObjectArrayInt) getInt(index int) int {
+	checkArray(array, index)
+
+	return array.intArray[index]
+}
+
+func (array *VmObjectArrayInt) setInt(index int, value int) {
+	checkArray(array, index)
+
+	array.intArray[index] = value
+}
+
+// array double
 type VmObjectArrayDouble struct {
 	VmObjectImpl
 	doubleArray []float64
@@ -212,6 +158,18 @@ func (obj *VmObjectArrayDouble) getArraySize() int {
 	return len(obj.doubleArray)
 }
 
+func (array *VmObjectArrayDouble) getDouble(index int) float64 {
+	checkArray(array, index)
+
+	return array.doubleArray[index]
+}
+func (array *VmObjectArrayDouble) setDouble(index int, value float64) {
+	checkArray(array, index)
+
+	array.doubleArray[index] = value
+}
+
+// array object
 type VmObjectArrayObject struct {
 	VmObjectImpl
 	objectArray []VmObject
@@ -222,4 +180,30 @@ func (obj *VmObjectArrayObject) getArraySize() int {
 		return -1
 	}
 	return len(obj.objectArray)
+}
+
+func (array *VmObjectArrayObject) getObject(index int) VmObject {
+	checkArray(array, index)
+
+	return array.objectArray[index]
+}
+
+func (array *VmObjectArrayObject) setObject(index int, value VmObject) {
+	checkArray(array, index)
+
+	array.objectArray[index] = value
+}
+
+// utils
+func checkArray(array VmObjectArray, index int) {
+
+	if array == nil {
+		vmError(NULL_POINTER_ERR)
+		return
+	}
+
+	arraySize := array.getArraySize()
+	if arraySize < 0 || index >= arraySize {
+		vmError(INDEX_OUT_OF_BOUNDS_ERR, index, arraySize)
+	}
 }

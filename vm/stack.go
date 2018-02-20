@@ -87,13 +87,16 @@ func (s *Stack) getObject(sp int) VmObject {
 
 // 直据sp返回栈中元素
 func (s *Stack) getIntI(sp int) int {
-	return s.stack[sp].getIntValue()
+	value := s.stack[sp].(*VmIntValue)
+	return value.intValue
 }
 func (s *Stack) getDoubleI(sp int) float64 {
-	return s.stack[sp].getDoubleValue()
+	value := s.stack[sp].(*VmDoubleValue)
+	return value.doubleValue
 }
 func (s *Stack) getObjectI(sp int) VmObject {
-	return s.stack[sp].getObjectValue()
+	value := s.stack[sp].(*VmObjectValue)
+	return value.objectValue
 }
 
 // 根据sp以及stackPointer向栈中写入元素
@@ -128,4 +131,10 @@ func (s *Stack) writeObjectI(sp int, value VmObject) {
 	v.setPointer(true)
 
 	s.stack[sp] = v
+}
+
+// string
+func (s *Stack) getString(sp int) string {
+	index := s.getIndexOverSp(sp)
+	return s.getObjectI(index).(*VmObjectString).stringValue
 }

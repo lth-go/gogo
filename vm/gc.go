@@ -49,13 +49,13 @@ func (vm *VmVirtualMachine) chainStringObject(str1 VmObject, str2 VmObject) VmOb
 	if str1 == nil {
 		left = "null"
 	} else {
-		left = str1.getString()
+		left = str1.(*VmObjectString).stringValue
 	}
 
 	if str2 == nil {
 		right = "null"
 	} else {
-		right = str2.getString()
+		right = str2.(*VmObjectString).stringValue
 	}
 	
 	str := left + right

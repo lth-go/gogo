@@ -5,8 +5,6 @@ import (
 	"os"
 )
 
-const NO_LINE_NUMBER_PC int = -1
-
 const (
 	BAD_MULTIBYTE_CHARACTER_ERR int = iota
 	FUNCTION_NOT_FOUND_ERR
@@ -25,7 +23,13 @@ var errMessageMap = map[int]string{
 	NULL_POINTER_ERR:             "引用了null。",
 }
 
-func vmError(exe *Executable, function *GFunction, pc int, errorNumber int, a ...interface{}) {
+func vmError(errorNumber int, a ...interface{}) {
+	vm := getVirtualMachine()
+
+	exe := vm.currentExecutable
+	function := StVirtualMachine.currentFunction
+	pc := StVirtualMachine.pc
+
 	fmt.Println("编译错误")
 	fmt.Printf("Line: %d\n", getLineNumberByPc(exe, function, pc))
 	fmt.Printf(errMessageMap[errorNumber], a...)

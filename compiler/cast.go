@@ -35,13 +35,12 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 		return src
 	}
 
-	if isObject(destTye) && src.typeS().basicType == vm.NullType {
-		if src.typeS().deriveList != nil {
+	if isObject(destTye) && srcTye.basicType == vm.NullType {
+		if srcTye.deriveList != nil {
 			panic("derive != NULL")
 		}
 		return src
 	}
-
 
 	if isInt(srcTye) && isDouble(destTye) {
 		castExpr = allocCastExpression(IntToDoubleCast, src)
@@ -50,13 +49,19 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 	} else if isDouble(srcTye) && isInt(destTye) {
 		castExpr = allocCastExpression(DoubleToIntCast, src)
 		return castExpr
+
+	} else if isString(destTye) {
+		castExpr = create_to_string_cast(src)
+		if castExpr {
+			return castExpr
+		}
 	}
 
 	castMismatchError(src.Position(), srcTye, destTye)
 	return nil
 }
 
-func castBinaryExpression(expr Expression) Expression {
+func castBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
 
 	binaryExpr := expr.(*BinaryExpression)
 
@@ -77,8 +82,8 @@ func castBinaryExpression(expr Expression) Expression {
 
 	} else if isString(leftType) && isDouble(rightType) {
 		binaryExpr.right = allocCastExpression(DoubleToStringCast, binaryExpr.right)
-
 	}
+
 	return binaryExpr
 }
 
@@ -106,20 +111,20 @@ func getBasicTypeName(typ vm.BasicType) string {
 	}
 }
 
-func getTypeName(typ *TypeSpecifier )string {
+func getTypeName(typ *TypeSpecifier) string {
 	typeName := getBasicTypeName(typ.basicType)
 
 	for _, derive := range typ.deriveList {
-        switch derive.(type) {
-        case *FunctionDerive:
+		switch derive.(type) {
+		case *FunctionDerive:
 			panic("TODO:derive_tag, func")
-        case *ArrayDerive:
+		case *ArrayDerive:
 			typeName = typeName + "[]"
-        default:
+		default:
 			print("=====\n", typ.Position().Line)
 			panic("TODO:derive_tag")
-        }
-    }
+		}
+	}
 
-    return typeName
+	return typeName
 }

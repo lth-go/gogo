@@ -3,6 +3,8 @@ package compiler
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"unicode"
 )
@@ -25,12 +27,16 @@ var opName = map[string]int{
 	"continue": CONTINUE,
 	"true":     TRUE_T,
 	"false":    FALSE_T,
+	"void":     VOID_T,
 	"boolean":  BOOLEAN_T,
 	"int":      INT_T,
 	"double":   DOUBLE_T,
 	"string":   STRING_T,
 	"null":     NULL_T,
 	"new":      NEW,
+	"require":  REQUIRE,
+	"class":    CLASS_T,
+	"this":     THIS_T,
 	"(":        LP,
 	")":        RP,
 	"[":        LB,
@@ -38,6 +44,7 @@ var opName = map[string]int{
 	"{":        LC,
 	"}":        RC,
 	";":        SEMICOLON,
+	":":        COLON,
 	",":        COMMA,
 	"+":        ADD,
 	"-":        SUB,
@@ -53,6 +60,21 @@ type Scanner struct {
 	offset   int
 	lineHead int
 	line     int
+}
+
+func newScannerByFilePath(path string) *Scanner {
+	_, err := os.Stat(path)
+	if err != nil {
+		panic("文件不存在")
+	}
+
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	scanner := &Scanner{src: []rune(string(buf))}
+
+	return scanner
 }
 
 // Scan analyses token, and decide identify or literals.

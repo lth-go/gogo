@@ -47,6 +47,11 @@ type Lexer struct {
 	compiler *Compiler
 }
 
+func newLexerByFilePath(path string) *Lexer {
+	return &Lexer{
+		s: newScannerByFilePath(path),
+	}
+}
 
 // Lex scans the token and literals.
 func (l *Lexer) Lex(lval *yySymType) int {

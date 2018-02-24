@@ -5,40 +5,6 @@ import (
 )
 
 // ==============================
-// 衍生类型
-// ==============================
-
-type TypeDerive interface {
-}
-
-type FunctionDerive struct {
-	parameterList []*Parameter
-}
-
-type ArrayDerive struct {
-}
-
-// TypeSpecifier 表达式类型, 包括基本类型和派生类型
-type TypeSpecifier struct {
-	PosImpl
-	// 基本类型
-	basicType vm.BasicType
-	// 派生类型
-	deriveList []TypeDerive
-}
-
-func (t *TypeSpecifier) appendDerive(derive TypeDerive) {
-	if t.deriveList == nil {
-		t.deriveList = []TypeDerive{}
-	}
-	t.deriveList = append(t.deriveList, derive)
-}
-
-func (t *TypeSpecifier) isArrayDerive() bool {
-	return isArray(t)
-}
-
-// ==============================
 // Statement 接口
 // ==============================
 
@@ -55,146 +21,6 @@ type Statement interface {
 
 type StatementImpl struct {
 	PosImpl
-}
-
-//
-// Block ...
-//
-type Block struct {
-	outerBlock      *Block
-	statementList   []Statement
-	declarationList []*Declaration
-
-	// 块信息，函数块，还是条件语句
-	parent BlockInfo
-}
-
-func (b *Block) show(ident int) {
-	printWithIdent("Block", ident)
-	subIdent := ident + 2
-
-	for _, decl := range b.declarationList {
-		decl.show(subIdent)
-	}
-
-	for _, stmt := range b.statementList {
-		stmt.show(subIdent)
-	}
-}
-
-func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Position) {
-	if searchDeclaration(decl.name, b) != nil {
-		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, decl.name)
-	}
-
-	if b != nil {
-		b.declarationList = append(b.declarationList, decl)
-		fd.addLocalVariable(decl)
-		decl.isLocal = true
-	} else {
-		compiler := getCurrentCompiler()
-		compiler.declarationList = append(compiler.declarationList, decl)
-		decl.isLocal = false
-	}
-}
-
-type BlockInfo interface{}
-
-type StatementBlockInfo struct {
-	statement     Statement
-	continueLabel int
-	breakLabel    int
-}
-
-type FunctionBlockInfo struct {
-	function *FunctionDefinition
-	endLabel int
-}
-
-//
-// FunctionDefinition 函数定义
-//
-type FunctionDefinition struct {
-	typeSpecifier *TypeSpecifier
-	name          string
-	parameterList []*Parameter
-	block         *Block
-
-	index int
-
-	localVariableList []*Declaration
-}
-
-func (fd *FunctionDefinition) typeS() *TypeSpecifier {
-	return fd.typeSpecifier
-}
-
-func (fd *FunctionDefinition) addParameterAsDeclaration() {
-
-	for _, param := range fd.parameterList {
-		if searchDeclaration(param.name, fd.block) != nil {
-			compileError(param.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, "parameter name: %s\n", param.name)
-		}
-		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
-
-		fd.block.addDeclaration(decl, fd, param.Position())
-	}
-}
-
-func (fd *FunctionDefinition) addReturnFunction() {
-
-	if fd.block.statementList == nil {
-		ret := &ReturnStatement{returnValue: nil}
-		ret.fix(fd.block, fd)
-		fd.block.statementList = []Statement{ret}
-		return
-	}
-
-	// TODO return 是否有必要一定最后
-	last := fd.block.statementList[len(fd.block.statementList)-1]
-	_, ok := last.(*ReturnStatement)
-	if ok {
-		return
-	}
-
-	ret := &ReturnStatement{returnValue: nil}
-    ret.SetPosition(fd.typeSpecifier.Position())
-    if ret.returnValue != nil {
-		ret.returnValue.SetPosition(fd.typeSpecifier.Position())
-    }
-	ret.fix(fd.block, fd)
-	fd.block.statementList = append(fd.block.statementList, ret)
-}
-
-func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
-	decl.variableIndex = len(fd.localVariableList)
-	fd.localVariableList = append(fd.localVariableList, decl)
-}
-
-func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression) {
-	functionCallExpr := expr.(*FunctionCallExpression)
-
-	ParameterList := fd.parameterList
-	argumentList := functionCallExpr.argumentList
-
-	length := len(ParameterList)
-	if len(argumentList) != length {
-		compileError(expr.Position(), ARGUMENT_COUNT_MISMATCH_ERR, length, len(argumentList))
-	}
-
-	for i := 0; i < length; i++ {
-		argumentList[i] = argumentList[i].fix(currentBlock)
-		argumentList[i] = createAssignCast(argumentList[i], ParameterList[i].typeSpecifier)
-	}
-}
-
-//
-// Parameter 形参
-//
-type Parameter struct {
-	PosImpl
-	typeSpecifier *TypeSpecifier
-	name          string
 }
 
 // ==============================
@@ -235,6 +61,14 @@ func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Bloc
 // IfStatement
 // ==============================
 
+//
+// Elif
+//
+type Elif struct {
+	condition Expression
+	block     *Block
+}
+
 // IfStatement if表达式
 type IfStatement struct {
 	StatementImpl
@@ -267,6 +101,10 @@ func (stmt *IfStatement) show(ident int) {
 func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	stmt.condition = stmt.condition.fix(currentBlock)
+
+	if !isBoolean(stmt.condition.typeS()) {
+		compileError(stmt.condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
+	}
 
 	if stmt.thenBlock != nil {
 		fixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
@@ -330,12 +168,6 @@ func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *O
 	ob.setLabel(endLabel)
 }
 
-// Elif ...
-type Elif struct {
-	condition Expression
-	block     *Block
-}
-
 // ==============================
 // ForStatement
 // ==============================
@@ -373,9 +205,15 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.init != nil {
 		stmt.init = stmt.init.fix(currentBlock)
 	}
+
 	if stmt.condition != nil {
 		stmt.condition = stmt.condition.fix(currentBlock)
+
+		if !isBoolean(stmt.condition.typeS()) {
+			compileError(stmt.condition.Position(), FOR_CONDITION_NOT_BOOLEAN_ERR)
+		}
 	}
+
 	if stmt.post != nil {
 		stmt.post = stmt.post.fix(currentBlock)
 	}
@@ -437,6 +275,7 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 // ReturnStatement return 语句
 type ReturnStatement struct {
 	StatementImpl
+
 	// 返回值
 	returnValue Expression
 }
@@ -451,41 +290,53 @@ func (stmt *ReturnStatement) show(ident int) {
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	var returnValue Expression
 
+	fdType := fd.typeS()
+
+	// 如果没有返回值,添加之
 	if stmt.returnValue != nil {
+		if fdType.deriveList == nil && isVoid(fdType) {
+			compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
+		}
+
 		stmt.returnValue = stmt.returnValue.fix(currentBlock)
+
 		// 类型转换
-		returnValue = createAssignCast(stmt.returnValue, fd.typeSpecifier)
-		stmt.returnValue = returnValue
+		stmt.returnValue = createAssignCast(stmt.returnValue, fdType)
+
 		return
 	}
 
-	if fd.typeSpecifier.deriveList != nil {
-		_, ok := fd.typeSpecifier.deriveList[0].(*ArrayDerive)
-		if !ok {
+	// return value == nil
+
+	// 衍生类型
+	if fdType.deriveList != nil {
+		if !fdType.isArrayDerive() {
 			panic("TODO")
 		}
-		returnValue = &NullExpression{}
-		stmt.returnValue = returnValue
+		stmt.returnValue = createNullExpression(stmt.Position())
+
 		return
 	}
 
-	switch fd.typeSpecifier.basicType {
+	// 基础类型
+	switch fdType.basicType {
+	case vm.VoidType:
+		stmt.returnValue = createIntExpression(stmt.Position())
 	case vm.BooleanType:
-		returnValue = &BooleanExpression{booleanValue: false}
+		stmt.returnValue = createBooleanExpression(stmt.Position())
 	case vm.IntType:
-		returnValue = &IntExpression{intValue: 0}
+		stmt.returnValue = createIntExpression(stmt.Position())
 	case vm.DoubleType:
-		stmt.returnValue = &DoubleExpression{doubleValue: 0.0}
+		stmt.returnValue = createDoubleExpression(stmt.Position())
 	case vm.StringType:
-		stmt.returnValue = &StringExpression{stringValue: ""}
+		stmt.returnValue = createStringExpression(stmt.Position())
+	case vm.ClassType:
+		stmt.returnValue = createNullExpression(stmt.Position())
 	case vm.NullType:
 		fallthrough
 	default:
 		panic("TODO")
 	}
-
-	returnValue.SetPosition(stmt.Position())
-	stmt.returnValue = returnValue
 }
 
 func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -586,6 +437,8 @@ func (stmt *Declaration) show(ident int) {
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	currentBlock.addDeclaration(stmt, fd, stmt.Position())
+
+	stmt.typeSpecifier.fix()
 
 	// 类型转换
 	if stmt.initializer != nil {

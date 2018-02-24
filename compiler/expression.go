@@ -5,7 +5,7 @@ import (
 )
 
 //
-// BinaryOperatorKind ...
+// BinaryOperatorKind
 //
 type BinaryOperatorKind int
 
@@ -22,6 +22,32 @@ const (
 	SubOperator
 	MulOperator
 	DivOperator
+)
+
+var operatorCodeMap = map[BinaryOperatorKind]byte{
+	EqOperator:  vm.VM_EQ_INT,
+	NeOperator:  vm.VM_NE_INT,
+	GtOperator:  vm.VM_GT_INT,
+	GeOperator:  vm.VM_GE_INT,
+	LtOperator:  vm.VM_LT_INT,
+	LeOperator:  vm.VM_LE_INT,
+	AddOperator: vm.VM_ADD_INT,
+	SubOperator: vm.VM_SUB_INT,
+	MulOperator: vm.VM_MUL_INT,
+	DivOperator: vm.VM_DIV_INT,
+}
+
+//
+// Cast
+//
+type CastType int
+
+const (
+	IntToStringCast CastType = iota
+	BooleanToStringCast
+	DoubleToStringCast
+	IntToDoubleCast
+	DoubleToIntCast
 )
 
 //
@@ -59,12 +85,271 @@ func (expr *ExpressionImpl) generate(exe *vm.Executable, currentBlock *Block, ob
 
 func (expr *ExpressionImpl) show(ident int) {}
 
-func (expr *ExpressionImpl) typeS() *TypeSpecifier {
-	return expr.typeSpecifier
+func (expr *ExpressionImpl) typeS() *TypeSpecifier { return expr.typeSpecifier }
+
+func (expr *ExpressionImpl) setType(t *TypeSpecifier) { expr.typeSpecifier = t }
+
+// ==============================
+// BooleanExpression
+// ==============================
+
+// BooleanExpression 布尔表达式
+type BooleanExpression struct {
+	ExpressionImpl
+
+	booleanValue bool
 }
 
-func (expr *ExpressionImpl) setType(t *TypeSpecifier) {
-	expr.typeSpecifier = t
+func (expr *BooleanExpression) show(ident int) {
+	printWithIdent("BoolExpr", ident)
+}
+
+func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
+	expr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	expr.typeS().fix()
+	return expr
+}
+
+func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	if expr.booleanValue {
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
+	} else {
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 0)
+	}
+
+}
+
+func createBooleanExpression(pos Position) *BooleanExpression {
+	expr := &BooleanExpression{}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+// ==============================
+// IntExpression
+// ==============================
+
+// IntExpression 数字表达式
+type IntExpression struct {
+	ExpressionImpl
+
+	intValue int
+}
+
+func (expr *IntExpression) show(ident int) {
+	printWithIdent("IntExpr", ident)
+}
+
+func (expr *IntExpression) fix(currentBlock *Block) Expression {
+	expr.setType(&TypeSpecifier{basicType: vm.IntType})
+	expr.typeS().fix()
+	return expr
+}
+func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	if expr.intValue >= 0 && expr.intValue < 256 {
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
+	} else if expr.intValue >= 0 && expr.intValue < 65536 {
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
+	} else {
+		c := vm.NewConstantInt(expr.intValue)
+		cpIdx := addConstantPool(exe, c)
+
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
+	}
+}
+
+func createIntExpression(pos Position) *IntExpression {
+	expr := &IntExpression{}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+// ==============================
+// DoubleExpression
+// ==============================
+
+// DoubleExpression 数字表达式
+type DoubleExpression struct {
+	ExpressionImpl
+
+	doubleValue float64
+}
+
+func (expr *DoubleExpression) show(ident int) {
+	printWithIdent("DoubleExpr", ident)
+}
+
+func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
+	expr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+	expr.typeS().fix()
+	return expr
+}
+func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	if expr.doubleValue == 0.0 {
+		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_0)
+
+	} else if expr.doubleValue == 1.0 {
+		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_1)
+
+	} else {
+		c := vm.NewConstantDouble(expr.doubleValue)
+		cpIdx := addConstantPool(exe, c)
+
+		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
+	}
+}
+
+func createDoubleExpression(pos Position) *DoubleExpression {
+	expr := &DoubleExpression{}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+// ==============================
+// StringExpression
+// ==============================
+
+// StringExpression 字符串表达式
+type StringExpression struct {
+	ExpressionImpl
+	stringValue string
+}
+
+func (expr *StringExpression) show(ident int) {
+	printWithIdent("StringExpr", ident)
+}
+
+func (expr *StringExpression) fix(currentBlock *Block) Expression {
+	expr.setType(&TypeSpecifier{basicType: vm.StringType})
+	expr.typeS().fix()
+	return expr
+}
+
+func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+
+	c := vm.NewConstantString(expr.stringValue)
+	cpIdx := addConstantPool(exe, c)
+
+	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
+}
+
+func createStringExpression(pos Position) *StringExpression {
+	expr := &StringExpression{}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+// ==============================
+// NullExpression
+// ==============================
+type NullExpression struct {
+	ExpressionImpl
+}
+
+func (expr *NullExpression) show(ident int) {
+	printWithIdent("NullExpr", ident)
+}
+
+func (expr *NullExpression) fix(currentBlock *Block) Expression {
+	expr.setType(&TypeSpecifier{basicType: vm.NullType})
+	expr.typeS().fix()
+	return expr
+}
+
+func (expr *NullExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL)
+}
+
+func createNullExpression(pos Position) *NullExpression {
+	expr := &NullExpression{}
+	expr.SetPosition(pos)
+	return expr
+}
+
+// ==============================
+// IdentifierExpression
+// ==============================
+type IdentifierInner interface{}
+
+type FunctionIdentifier struct {
+	functionDefinition *FunctionDefinition
+	functionIndex      int
+}
+
+// IdentifierExpression 变量表达式
+type IdentifierExpression struct {
+	ExpressionImpl
+
+	name string
+
+	// 声明要么是变量，要么是函数 (FunctionDefinition Declaration)
+	inner IdentifierInner
+}
+
+func (expr *IdentifierExpression) show(ident int) {
+	printWithIdent("IdentifierExpr", ident)
+}
+
+func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
+	// 判断是否是变量
+	decl := searchDeclaration(expr.name, currentBlock)
+	if decl != nil {
+		expr.setType(decl.typeSpecifier)
+		expr.inner = decl
+		expr.typeS().fix()
+		return expr
+	}
+
+	// 判断是否是函数
+	fd := SearchFunction(expr.name)
+	if fd != nil {
+		compiler := getCurrentCompiler()
+
+		expr.setType(create_function_derive_type(fd))
+		expr.inner = &FunctionIdentifier{
+			functionDefinition: fd,
+			functionIndex:      reserve_function_index(compiler, fd),
+		}
+
+		expr.typeS().fix()
+
+		return expr
+	}
+
+	// 都不是,报错
+	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, expr.name)
+	return nil
+}
+
+func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	switch inner := expr.inner.(type) {
+	// 函数
+	case *FunctionDefinition:
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
+		// 变量
+	case *Declaration:
+		var code byte
+
+		offset := getOpcodeTypeOffset(inner.typeSpecifier)
+		if inner.isLocal {
+			code = vm.VM_PUSH_STACK_INT
+		} else {
+			code = vm.VM_PUSH_STATIC_INT
+		}
+		ob.generateCode(expr.Position(), code+offset, inner.variableIndex)
+	}
+}
+
+func createIdentifierExpression(name string, pos Position) *IdentifierExpression {
+	expr := &IdentifierExpression{name: name}
+	expr.SetPosition(pos)
+	return expr
 }
 
 // ==============================
@@ -93,6 +378,7 @@ func (expr *CommaExpression) fix(currentBlock *Block) Expression {
 	expr.right = expr.right.fix(currentBlock)
 
 	expr.setType(expr.right.typeS())
+	expr.typeS().fix()
 
 	return expr
 }
@@ -127,17 +413,19 @@ func (expr *AssignExpression) show(ident int) {
 
 func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	switch expr.left.(type) {
-	case *IdentifierExpression, *IndexExpression:
+	case *IdentifierExpression, *IndexExpression, *MemberExpression:
 		// pass
 	default:
 		compileError(expr.left.Position(), NOT_LVALUE_ERR, "")
 	}
 
 	expr.left = expr.left.fix(currentBlock)
+
 	expr.operand = expr.operand.fix(currentBlock)
 	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
 
 	expr.setType(expr.left.typeS())
+	expr.typeS().fix()
 
 	return expr
 }
@@ -157,18 +445,6 @@ func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block
 	expr.operand.generate(exe, currentBlock, ob)
 
 	generate_pop_to_lvalue(exe, currentBlock, expr.left, ob)
-}
-
-func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
-	var code byte
-
-	offset := getOpcodeTypeOffset(decl.typeSpecifier)
-	if decl.isLocal {
-		code = vm.VM_POP_STACK_INT
-	} else {
-		code = vm.VM_POP_STATIC_INT
-	}
-	ob.generateCode(pos, code+offset, decl.variableIndex)
 }
 
 // ==============================
@@ -194,55 +470,57 @@ func (expr *BinaryExpression) show(ident int) {
 }
 
 func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
-	var newExpr Expression
+
+	expr.left = expr.left.fix(currentBlock)
+	expr.right = expr.right.fix(currentBlock)
 
 	switch expr.operator {
 	// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
-		expr.left = expr.left.fix(currentBlock)
-		expr.right = expr.right.fix(currentBlock)
 
 		// 能否合并计算
-		newExpr = evalMathExpression(currentBlock, expr)
+		newExpr := evalMathExpression(currentBlock, expr)
 		switch newExpr.(type) {
 		case *IntExpression, *DoubleExpression, *StringExpression:
+			newExpr.typeS().fix()
 			return newExpr
 		}
 
 		// 类型转换
-		newExpr = castBinaryExpression(expr)
-		newBinaryExpr := newExpr.(*BinaryExpression)
+		newBinaryExpr := castBinaryExpression(expr)
 
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
 
 		if isInt(newBinaryExprLeftType) && isInt(newBinaryExprRightType) {
-			newExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+			newBinaryExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+
 		} else if isDouble(newBinaryExprLeftType) && isDouble(newBinaryExprRightType) {
-			newExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
-		} else if (expr.operator == AddOperator) &&
-			((isString(newBinaryExprLeftType) && isString(newBinaryExprRightType)) ||
-				(isString(newBinaryExprLeftType) && isNull(newBinaryExpr.left))) {
-			newExpr.setType(&TypeSpecifier{basicType: vm.StringType})
+			newBinaryExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+
+		} else if expr.operator == AddOperator {
+			if (isString(newBinaryExprLeftType) && isString(newBinaryExprRightType)) ||
+				(isString(newBinaryExprLeftType) && isNull(newBinaryExpr.left)) {
+				newBinaryExpr.setType(&TypeSpecifier{basicType: vm.StringType})
+			}
 		} else {
 			compileError(expr.Position(), MATH_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
 		}
 
-		return newExpr
+		newBinaryExpr.typeS().fix()
+		return newBinaryExpr
 
-		// 比较
+	// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
-		expr.left = expr.left.fix(currentBlock)
-		expr.right = expr.right.fix(currentBlock)
 
-		newExpr = evalCompareExpression(expr)
+		newExpr := evalCompareExpression(expr)
 		switch newExpr.(type) {
 		case *BooleanExpression:
+			newExpr.typeS().fix()
 			return newExpr
 		}
 
-		newExpr = castBinaryExpression(expr)
-		newBinaryExpr := newExpr.(*BinaryExpression)
+		newBinaryExpr := castBinaryExpression(expr)
 
 		newBinaryExprLeftType := newBinaryExpr.left.typeS()
 		newBinaryExprRightType := newBinaryExpr.right.typeS()
@@ -250,42 +528,30 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		// TODO 字符串是否能跟null比较
 		if !(compareType(newBinaryExprLeftType, newBinaryExprRightType) ||
 			(isObject(newBinaryExprLeftType) && isNull(newBinaryExpr.right) ||
-				(isObject(newBinaryExprRightType) && isNull(newBinaryExpr.left)))) {
+				(isNull(newBinaryExpr.left) && isObject(newBinaryExprRightType)))) {
 			compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, getTypeName(newBinaryExprLeftType), getTypeName(newBinaryExprRightType))
 		}
 
-		newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+		newBinaryExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
 
-		return newExpr
+		newBinaryExpr.typeS().fix()
+		return newBinaryExpr
 
-		// && ||
+	// && ||
 	case LogicalAndOperator, LogicalOrOperator:
-		expr.left = expr.left.fix(currentBlock)
-		expr.right = expr.right.fix(currentBlock)
 
 		if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
 			expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
-		} else {
-			compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(expr.left.typeS().basicType), int(expr.right.typeS().basicType))
+			expr.typeS().fix(0)
+			return expr
 		}
-		return expr
+
+		compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(expr.left.typeS().basicType), int(expr.right.typeS().basicType))
+		return nil
 
 	default:
-		return nil
+		panic("TODO")
 	}
-}
-
-var operatorCodeMap = map[BinaryOperatorKind]byte{
-	EqOperator:  vm.VM_EQ_INT,
-	NeOperator:  vm.VM_NE_INT,
-	GtOperator:  vm.VM_GT_INT,
-	GeOperator:  vm.VM_GE_INT,
-	LtOperator:  vm.VM_LT_INT,
-	LeOperator:  vm.VM_LE_INT,
-	AddOperator: vm.VM_ADD_INT,
-	SubOperator: vm.VM_SUB_INT,
-	MulOperator: vm.VM_MUL_INT,
-	DivOperator: vm.VM_DIV_INT,
 }
 
 func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -385,6 +651,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 		return newExpr
 	}
 
+	expr.typeS().fix()
 	return expr
 }
 
@@ -419,6 +686,8 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	switch newExpr := expr.operand.(type) {
 	case *BooleanExpression:
 		newExpr.booleanValue = !newExpr.booleanValue
+		newExpr.setType(createTypeSpecifier(vm.BooleanType, expr.Position()))
+		newExpr.typeS().fix()
 		return newExpr
 	}
 
@@ -427,6 +696,7 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	}
 
 	expr.setType(expr.operand.typeS())
+	expr.typeS().fix()
 
 	return expr
 }
@@ -463,24 +733,52 @@ func (expr *FunctionCallExpression) show(ident int) {
 }
 
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
+	var fd *FunctionDefinition
+	var arrayBase *TypeSpecifier
+
 	funcExpr := expr.function.fix(currentBlock)
 
-	identifierExpr, ok := funcExpr.(*IdentifierExpression)
-	if !ok {
-		compileError(expr.Position(), FUNCTION_NOT_IDENTIFIER_ERR, "")
+	expr.function = funcExpr
+
+	switch todo := funcExpr.(type) {
+	case *IdentifierExpression:
+		fd = SearchFunction(identifierExpr.name)
+	case *MemberExpression:
+		// TODO 暂时没有列表和字符串方法
+		if isArray(todo.expression.typeS()) {
+			fd = compiler.arrayMethod[todo.methodIndex]
+			arrayBase = todo.expression.typeS()
+			arrayBase.deriveList = todo.expression.typeS().deriveList[1:]
+		} else if isString(todo.expression.typeS()) {
+			fd = compiler.stringMethod[todo.methodIndex]
+		} else {
+			switch member := todo.declaration.(type) {
+			case *FieldMember:
+				compileError(expr.Position(), FIELD_CAN_NOT_CALL_ERR, member.name)
+			case *MethodMember:
+				fd = member.functionDefinition
+			default:
+				panic("TODO")
+			}
+		}
 	}
 
-	fd := SearchFunction(identifierExpr.name)
 	if fd == nil {
-		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, "Function name: %s\n", identifierExpr.name)
+		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, identifierExpr.name)
 	}
 
-	fd.checkArgument(currentBlock, expr)
+	fd.checkArgument(currentBlock, expr, arrayBase)
 
 	expr.setType(&TypeSpecifier{basicType: fd.typeS().basicType})
 
 	expr.typeSpecifier.deriveList = fd.typeS().deriveList
 
+	if expr.typeS().basicType == vm.ClassType {
+		expr.typeS().classRef.identifier = fd.typeS().classRef.identifier
+		expr.typeS().fix()
+	}
+
+	expr.typeS().fix()
 	return expr
 }
 func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
@@ -495,202 +793,58 @@ func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *B
 }
 
 // ==============================
-// BooleanExpression
+// MemberExpression
 // ==============================
-
-// BooleanExpression 布尔表达式
-type BooleanExpression struct {
+type MemberExpression struct {
 	ExpressionImpl
 
-	booleanValue bool
+	expression Expression
+	memberName string
+
+	declaration MemberDeclaration
+	methodIndex int
 }
 
-func (expr *BooleanExpression) show(ident int) {
-	printWithIdent("BoolExpr", ident)
+func (expr *MemberExpression) show(ident int) {
+	printWithIdent("MemberExpr", ident)
 }
 
-func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+func (expr *MemberExpression) fix(currentBlock *Block) Expression { return expr }
+
+func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
+
+func createMemberExpression(expression Expression, memberName string, pos Position) *MemberExpression {
+	expr := &MemberExpression{
+		expression: expression,
+		memberName: memberName,
+	}
+	expr.SetPosition(pos)
+
 	return expr
 }
 
-func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	if expr.booleanValue {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
-	} else {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 0)
-	}
-
-}
-
 // ==============================
-// IntExpression
+// ThisExpression
 // ==============================
-
-// IntExpression 数字表达式
-type IntExpression struct {
+type ThisExpression struct {
 	ExpressionImpl
-
-	intValue int
 }
 
-func (expr *IntExpression) show(ident int) {
-	printWithIdent("IntExpr", ident)
-}
+func (expr *ThisExpression) fix(currentBlock *Block) Expression { return expr }
 
-func (expr *IntExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.IntType})
+func (expr *ThisExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
+
+func createThisExpression(pos Position) *ThisExpression {
+	expr := &ThisExpression{}
+
+	expr.SetPosition(pos)
+
 	return expr
-}
-func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-
-	if expr.intValue >= 0 && expr.intValue < 256 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
-	} else if expr.intValue >= 0 && expr.intValue < 65536 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
-	} else {
-		c := vm.NewConstantInt(expr.intValue)
-		cpIdx := addConstantPool(exe, c)
-
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
-	}
-}
-
-// ==============================
-// DoubleExpression
-// ==============================
-
-// DoubleExpression 数字表达式
-type DoubleExpression struct {
-	ExpressionImpl
-
-	doubleValue float64
-}
-
-func (expr *DoubleExpression) show(ident int) {
-	printWithIdent("DoubleExpr", ident)
-}
-
-func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.DoubleType})
-	return expr
-}
-func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-
-	if expr.doubleValue == 0.0 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_0)
-
-	} else if expr.doubleValue == 1.0 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_1)
-
-	} else {
-		c := vm.NewConstantDouble(expr.doubleValue)
-		cpIdx := addConstantPool(exe, c)
-
-		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
-	}
-}
-
-// ==============================
-// StringExpression
-// ==============================
-
-// StringExpression 字符串表达式
-type StringExpression struct {
-	ExpressionImpl
-	stringValue string
-}
-
-func (expr *StringExpression) show(ident int) {
-	printWithIdent("StringExpr", ident)
-}
-
-func (expr *StringExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.StringType})
-	return expr
-}
-
-func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-
-	c := vm.NewConstantString(expr.stringValue)
-	cpIdx := addConstantPool(exe, c)
-
-	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
-}
-
-// ==============================
-// IdentifierExpression
-// ==============================
-type IdentifierInner interface{}
-
-// IdentifierExpression 变量表达式
-type IdentifierExpression struct {
-	ExpressionImpl
-
-	name string
-
-	// 声明要么是变量，要么是函数 (FunctionDefinition Declaration)
-	inner IdentifierInner
-}
-
-func (expr *IdentifierExpression) show(ident int) {
-	printWithIdent("IdentifierExpr", ident)
-}
-
-func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
-	// 判断是否是变量
-	decl := searchDeclaration(expr.name, currentBlock)
-	if decl != nil {
-		expr.setType(decl.typeSpecifier)
-		expr.inner = decl
-		return expr
-	}
-
-	// 判断是否是函数
-	fd := SearchFunction(expr.name)
-	if fd != nil {
-		expr.setType(fd.typeSpecifier)
-		expr.inner = fd
-		return expr
-	}
-
-	// 都不是,报错
-	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, expr.name)
-	return nil
-}
-
-func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	switch inner := expr.inner.(type) {
-	// 函数
-	case *FunctionDefinition:
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.index)
-		// 变量
-	case *Declaration:
-		var code byte
-
-		offset := getOpcodeTypeOffset(inner.typeSpecifier)
-		if inner.isLocal {
-			code = vm.VM_PUSH_STACK_INT
-		} else {
-			code = vm.VM_PUSH_STATIC_INT
-		}
-		ob.generateCode(expr.Position(), code+offset, inner.variableIndex)
-	}
 }
 
 // ==============================
 // CastExpression
 // ==============================
-
-type CastType int
-
-const (
-	IntToStringCast CastType = iota
-	BooleanToStringCast
-	DoubleToStringCast
-	IntToDoubleCast
-	DoubleToIntCast
-)
 
 type CastExpression struct {
 	ExpressionImpl
@@ -724,75 +878,6 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 		panic("TODO")
 	}
 }
-
-// ==============================
-// IndexExpression
-// ==============================
-type IndexExpression struct {
-	ExpressionImpl
-
-	array Expression
-	index Expression
-}
-
-func (expr *IndexExpression) show(ident int) {
-	printWithIdent("IndexExpr", ident)
-
-	subIdent := ident + 2
-	expr.array.show(subIdent)
-	expr.index.show(subIdent)
-}
-
-func (expr *IndexExpression) fix(currentBlock *Block) Expression {
-
-	expr.array = expr.array.fix(currentBlock)
-	expr.index = expr.index.fix(currentBlock)
-
-	if expr.array.typeS().deriveList == nil {
-		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
-	}
-
-	_, ok := expr.array.typeS().deriveList[0].(*ArrayDerive)
-	if !ok {
-		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
-	}
-
-	if !isInt(expr.index.typeS()) {
-		compileError(expr.Position(), INDEX_NOT_INT_ERR)
-	}
-
-	expr.setType(&TypeSpecifier{basicType: expr.array.typeS().basicType})
-
-	expr.typeS().deriveList = expr.array.typeS().deriveList[1:]
-
-	return expr
-}
-
-func (expr *IndexExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	expr.array.generate(exe, currentBlock, ob)
-	expr.index.generate(exe, currentBlock, ob)
-
-	code := vm.VM_PUSH_ARRAY_INT + getOpcodeTypeOffset(expr.typeS())
-	ob.generateCode(expr.Position(), code)
-}
-
-// ==============================
-// MemberExpression
-// ==============================
-type MemberExpression struct {
-	ExpressionImpl
-
-	expression Expression
-	memberName string
-}
-
-func (expr *MemberExpression) show(ident int) {
-	printWithIdent("MemberExpr", ident)
-}
-
-func (expr *MemberExpression) fix(currentBlock *Block) Expression { return expr }
-
-func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
 
 // ==============================
 // ArrayLiteralExpression
@@ -858,6 +943,15 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 // ==============================
 // ArrayCreation
 // ==============================
+
+//
+// ArrayDimension
+//
+// 列表后面的括号
+type ArrayDimension struct {
+	expression Expression
+}
+
 // 列表创建
 type ArrayCreation struct {
 	ExpressionImpl
@@ -910,40 +1004,114 @@ func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob 
 	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, dimCount, index)
 }
 
-// ==============================
-// ArrayDimension
-// ==============================
-// 列表后面的括号
-type ArrayDimension struct {
-	expression Expression
-}
+func createBasicArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) {
+	expr := createClassArrayCreation(typ, dim_expr_list, dim_list, pos)
 
-// ==============================
-// NullDimension
-// ==============================
-type NullExpression struct {
-	ExpressionImpl
-}
-
-func (expr *NullExpression) show(ident int) {
-	printWithIdent("NullExpr", ident)
-}
-
-func (expr *NullExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.NullType})
 	return expr
 }
 
-func (expr *NullExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL)
+func createClassArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) {
+
+	expr := &ArrayCreation{
+		dimensionList: dim_expr_list,
+	}
+
+	expr.SetPosition(pos)
+
+	expr.setType(typ)
+
+	expr.dimensionList = append(expr.dimensionList, dim_list...)
+
+	return expr
 }
 
 // ==============================
-// utils
+// IndexExpression
 // ==============================
+type IndexExpression struct {
+	ExpressionImpl
 
-func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
-	exe.ConstantPool.Append(cp)
+	array Expression
+	index Expression
+}
 
-	return exe.ConstantPool.Length() - 1
+func (expr *IndexExpression) show(ident int) {
+	printWithIdent("IndexExpr", ident)
+
+	subIdent := ident + 2
+	expr.array.show(subIdent)
+	expr.index.show(subIdent)
+}
+
+func (expr *IndexExpression) fix(currentBlock *Block) Expression {
+
+	expr.array = expr.array.fix(currentBlock)
+	expr.index = expr.index.fix(currentBlock)
+
+	if expr.array.typeS().deriveList == nil {
+		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
+	}
+
+	_, ok := expr.array.typeS().deriveList[0].(*ArrayDerive)
+	if !ok {
+		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
+	}
+
+	if !isInt(expr.index.typeS()) {
+		compileError(expr.Position(), INDEX_NOT_INT_ERR)
+	}
+
+	expr.setType(&TypeSpecifier{basicType: expr.array.typeS().basicType})
+
+	expr.typeS().deriveList = expr.array.typeS().deriveList[1:]
+
+	return expr
+}
+
+func (expr *IndexExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	expr.array.generate(exe, currentBlock, ob)
+	expr.index.generate(exe, currentBlock, ob)
+
+	code := vm.VM_PUSH_ARRAY_INT + getOpcodeTypeOffset(expr.typeS())
+	ob.generateCode(expr.Position(), code)
+}
+
+func createIndexExpression(array, index Expression, pos Position) *IndexExpression {
+	expr := &IndexExpression{
+		array: array,
+		index: index,
+	}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+// ==============================
+// NewExpression
+// ==============================
+type NewExpression struct {
+	PosImpl
+
+	className       string
+	classDefinition ClassDefinition
+	classIndex      int
+
+	methodName        string
+	methodDeclaration *MemberDeclaration
+	argumentList      []Expression
+}
+
+func (expr *NewExpression) fix(currentBlock *Block) Expression                              {}
+func (expr *NewExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
+
+func createNewExpression(className, memthodName string, argumentList []Expression, pos Position) *NewExpression {
+	expr := &NewExpression{
+		className:    className,
+		methodName:   memthodName,
+		argumentList: argumentList,
+	}
+
+	expr.SetPosition(pos)
+
+	return expr
 }

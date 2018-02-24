@@ -18,6 +18,15 @@ const (
 	StringType
 	// Null
 	NullType
+
+	// void
+	VoidType
+
+	// class
+	ClassType
+
+	// array
+	BaseType
 )
 
 // ==============================

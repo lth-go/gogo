@@ -1,0 +1,119 @@
+package compiler
+
+import "strings"
+
+//
+// Parameter 形参
+//
+type Parameter struct {
+	typeSpecifier *TypeSpecifier
+
+	name string
+}
+
+//
+// FunctionDefinition 函数定义
+//
+type FunctionDefinition struct {
+	typeSpecifier *TypeSpecifier
+
+	packageNameList []string
+	name            string
+	parameterList   []*Parameter
+	block           *Block
+
+	localVariableList []*Declaration
+
+	classDefinition *ClassDefinition
+}
+
+func (fd *FunctionDefinition) fix() {
+	// 添加形参声明
+	fd.addParameterAsDeclaration()
+	fd.typeSpecifier.fix()
+
+	if fd.block != nil {
+		// 修正表达式列表
+		fixStatementList(fd.block, fd.block.statementList, fd)
+
+		// 修正返回值
+		fd.addReturnFunction()
+	}
+}
+
+func (fd *FunctionDefinition) typeS() *TypeSpecifier {
+	return fd.typeSpecifier
+}
+
+func (fd *FunctionDefinition) addParameterAsDeclaration() {
+
+	for _, param := range fd.parameterList {
+		if searchDeclaration(param.name, fd.block) != nil {
+			compileError(param.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, "parameter name: %s\n", param.name)
+		}
+		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
+
+		fd.block.addDeclaration(decl, fd, param.Position())
+	}
+}
+
+func (fd *FunctionDefinition) addReturnFunction() {
+
+	if fd.block.statementList == nil {
+		ret := &ReturnStatement{returnValue: nil}
+		ret.fix(fd.block, fd)
+		fd.block.statementList = []Statement{ret}
+		return
+	}
+
+	// TODO return 是否有必要一定最后
+	last := fd.block.statementList[len(fd.block.statementList)-1]
+	_, ok := last.(*ReturnStatement)
+	if ok {
+		return
+	}
+
+	ret := &ReturnStatement{returnValue: nil}
+	ret.SetPosition(fd.typeSpecifier.Position())
+	if ret.returnValue != nil {
+		ret.returnValue.SetPosition(fd.typeSpecifier.Position())
+	}
+	ret.fix(fd.block, fd)
+	fd.block.statementList = append(fd.block.statementList, ret)
+}
+
+func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
+	decl.variableIndex = len(fd.localVariableList)
+	fd.localVariableList = append(fd.localVariableList, decl)
+}
+
+func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression, arrayBase *TypeSpecifier) {
+	var tempType *TypeSpecifier
+	functionCallExpr := expr.(*FunctionCallExpression)
+
+	parameterList := fd.parameterList
+	argumentList := functionCallExpr.argumentList
+
+	paramLen := len(parameterList)
+	argLen := len(argumentList)
+
+	if argLen != paramLen {
+		compileError(expr.Position(), ARGUMENT_COUNT_MISMATCH_ERR, paramLen, argLen)
+	}
+
+	for i := 0; i < paramLen; i++ {
+		argumentList[i] = argumentList[i].fix(currentBlock)
+
+		paramType :=parameterList[i].typeS() 
+		if paramType.basicType == vm.BaseType {
+            tempType = arrayBase
+		} else {
+			tempType = paramType
+		}
+		argumentList[i] = createAssignCast(argumentList[i], tempType)
+	}
+}
+
+func (fd *FunctionDefinition) getPackageName() string {
+	return strings.Join(fd.packageNameList, ".")
+}

@@ -12,12 +12,14 @@ type VmVirtualMachine struct {
 	stack *Stack
 	// 堆
 	heap *Heap
+
 	// 全局变量
-	static *Static
+	//static *Static
+
 	// 全局函数列表
 	function []Function
 	// 解释器
-	executable *Executable
+	executable *ExecutableEntry
 	// 程序计数器
 	pc int
 
@@ -25,6 +27,9 @@ type VmVirtualMachine struct {
 	currentExecutable *Executable
 	// 当前函数
 	currentFunction *GFunction
+
+	executableList []*ExecutableEntry
+	topLevel *ExecutableEntry
 }
 
 func NewVirtualMachine() *VmVirtualMachine {

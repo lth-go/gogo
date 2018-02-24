@@ -17,6 +17,7 @@ func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
 func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
 func isBoolean(t *TypeSpecifier) bool { return t.basicType == vm.BooleanType }
 func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
+func isVoid(t *TypeSpecifier) bool    { return t.basicType == vm.VoidType }
 
 func isNull(expr Expression) bool {
 	_, ok := expr.(*NullExpression)
@@ -38,12 +39,12 @@ func isObject(t *TypeSpecifier) bool {
 
 func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 
-    if typ.deriveList != nil && len(typ.deriveList) != 0 {
+	if typ.deriveList != nil && len(typ.deriveList) != 0 {
 		if !typ.isArrayDerive() {
 			panic("TODO")
 		}
-        return 2
-    }
+		return 2
+	}
 	switch typ.basicType {
 	case vm.BooleanType:
 		return byte(0)
@@ -53,7 +54,7 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 		return byte(1)
 	case vm.StringType:
 		return byte(2)
-    case vm.NullType:
+	case vm.NullType:
 		fallthrough
 	default:
 		panic("basic type")
@@ -124,4 +125,10 @@ func compareParameter(paramList1, paramList2 []*Parameter) bool {
 		}
 	}
 	return true
+}
+
+func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
+	exe.ConstantPool.Append(cp)
+
+	return exe.ConstantPool.Length() - 1
 }

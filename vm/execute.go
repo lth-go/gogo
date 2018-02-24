@@ -3,8 +3,16 @@ package vm
 //
 // 字节码解释器
 //
-
 type Executable struct {
+	// 包名
+	PackageName []string
+
+	// 是否是被导入的
+	IsRequired bool
+
+	// 源码路径
+	Path string
+
 	// 常量池
 	ConstantPool ConstantPool
 
@@ -15,14 +23,18 @@ type Executable struct {
 	// 函数列表
 	FunctionList []*VmFunction
 
+	// 用户vm数组创建
+	TypeSpecifierList []*VmTypeSpecifier
+
 	// 顶层结构代码
 	CodeList []byte
+
+	// 类列表
+	//ClassDefinitionList []*VmClass
 
 	// 行号对应表
 	// 保存字节码和与之对应的源代码的行号
 	LineNumberList []*VmLineNumber
-
-	TypeSpecifierList []*VmTypeSpecifier
 }
 
 func NewExecutable() *Executable {
@@ -35,6 +47,53 @@ func NewExecutable() *Executable {
 		TypeSpecifierList:  []*VmTypeSpecifier{},
 	}
 	return exe
+}
+
+//
+// ExecutableEntry
+//
+type ExecutableEntry struct {
+	executable *Executable
+
+	static *Static
+}
+
+//
+// ExecutableList
+//
+type ExecutableList struct {
+	TopLevel *Executable
+	List     []*Executable
+}
+
+func (exeList *ExecutableList) AddExe(exe *Executable) bool {
+	for _, itemExe := range exeList.List {
+		if comparePackageName(itemExe.PackageName, exe.PackageName) && itemExe.IsRequired == exe.IsRequired {
+			return false
+		}
+	}
+
+	exeList.List = append(exeList.List, exe)
+	return true
+
+}
+
+func comparePackageName(packageNameList1, packageNameList2 []string) bool {
+	// TODO package is nil
+	length1 := len(packageNameList1)
+	length2 := len(packageNameList2)
+
+	if length1 != length2 {
+		return false
+	}
+
+	for i := 0; i < length1; i++ {
+		if packageNameList1[i] != packageNameList2[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // ==============================
@@ -147,17 +206,20 @@ func NewVmVariable(name string, typeSpecifier *VmTypeSpecifier) *VmVariable {
 type VmFunction struct {
 	// 类型
 	TypeSpecifier *VmTypeSpecifier
+	// 包名
+	PackageName string
 	// 函数名
 	Name string
 	// 形参列表
 	ParameterList []*VmLocalVariable
 	// 是否原生函数
 	IsImplemented bool
+	// 是否是方法
+	IsMethod bool
 	// 局部变量列表
 	LocalVariableList []*VmLocalVariable
 	// 字节码类表
 	CodeList []byte
-
 	// 行号对应表
 	LineNumberList []*VmLineNumber
 }
@@ -180,4 +242,17 @@ type VmLineNumber struct {
 
 	// 接下来有多少字节码对应相同的行号
 	PcCount int
+}
+
+// ==============================
+// VmClass
+// ==============================
+type VmClass struct {
+	PackageName string
+	Name string
+	IsImplemented bool
+	SuperClass *VmClassIdentifier
+
+	FieldList []*VmField
+	MethodList []*VmMethod
 }

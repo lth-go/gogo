@@ -230,3 +230,15 @@ func generate_pop_to_lvalue(exe *vm.Executable, block *Block , expr Expression ,
         
 	ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT + getOpcodeTypeOffset(expr.typeS()))
 }
+
+func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
+	var code byte
+
+	offset := getOpcodeTypeOffset(decl.typeSpecifier)
+	if decl.isLocal {
+		code = vm.VM_POP_STACK_INT
+	} else {
+		code = vm.VM_POP_STATIC_INT
+	}
+	ob.generateCode(pos, code+offset, decl.variableIndex)
+}

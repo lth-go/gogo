@@ -96,3 +96,12 @@ func (t *TypeSpecifier) appendDerive(derive TypeDerive) {
 func (t *TypeSpecifier) isArrayDerive() bool {
 	return isArray(t)
 }
+
+// utils
+func cloneTypeSpecifier(src *TypeSpecifier) *TypeSpecifier {
+	typ := &TypeSpecifier{}
+
+	*typ = *src
+
+	return typ
+}

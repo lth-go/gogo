@@ -57,3 +57,19 @@ func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Po
 		decl.isLocal = false
 	}
 }
+
+func (b *Block) getCurrentFunction() *FunctionDefinition {
+	var fdBlockInfo *FunctionBlockInfo 
+
+	block := b
+
+	for ;; {
+		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)
+		if ok {
+			break
+		}
+		block = block.outerBlock
+	}
+
+    return fdBlockInfo.function
+}

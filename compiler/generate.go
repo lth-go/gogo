@@ -215,11 +215,11 @@ func AddTypeSpecifier(src *TypeSpecifier, exe *vm.Executable) int {
 	return ret
 }
 
-func generate_pop_to_lvalue(exe *vm.Executable, block *Block , expr Expression , ob *OpcodeBuf) {
+func generate_pop_to_lvalue(exe *vm.Executable, block *Block, expr Expression, ob *OpcodeBuf) {
 	identifierExpr, ok := expr.(*IdentifierExpression)
 	if ok {
 		generatePopToIdentifier(identifierExpr.inner.(*Declaration), expr.Position(), ob)
-		return 
+		return
 	}
 	indexExpr, ok := expr.(*IndexExpression)
 	if !ok {
@@ -227,8 +227,8 @@ func generate_pop_to_lvalue(exe *vm.Executable, block *Block , expr Expression ,
 	}
 	indexExpr.array.generate(exe, block, ob)
 	indexExpr.index.generate(exe, block, ob)
-        
-	ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT + getOpcodeTypeOffset(expr.typeS()))
+
+	ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT+getOpcodeTypeOffset(expr.typeS()))
 }
 
 func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
@@ -241,4 +241,28 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
 		code = vm.VM_POP_STATIC_INT
 	}
 	ob.generateCode(pos, code+offset, decl.variableIndex)
+}
+
+func generatePushArgument(argList []Expression, exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+	for _, arg := range argList {
+		arg.generate(exe, currentBlock, ob)
+	}
+}
+
+func generate_method_call_expression(expr *FunctionCallExpression, exe *vm.Executable, block *Block, ob *OpcodeBuf) {
+
+	member := expr.function.(*MemberExpression)
+
+	methodIndex := get_method_index(member)
+
+	generatePushArgument(expr.argumentList, exe, block, ob)
+	member.expression.generate(exe, block, ob)
+	ob.generateCode(expr.Position(), vm.VM_PUSH_METHOD, methodIndex)
+	ob.generateCode(expr.Position(), vm.VM_INVOKE)
+}
+
+func get_method_index(member *MemberExpression) int {
+	methodIndex := member.declaration.(*MethodMember).methodIndex
+
+	return methodIndex
 }

@@ -1,5 +1,113 @@
 package vm
 
+// ==============================
+// 字节码
+// ==============================
+
+const (
+	VM_PUSH_INT_1BYTE byte = iota
+	VM_PUSH_INT_2BYTE
+	VM_PUSH_INT
+	VM_PUSH_DOUBLE_0
+	VM_PUSH_DOUBLE_1
+	VM_PUSH_DOUBLE
+	VM_PUSH_STRING
+	VM_PUSH_NULL
+	/**********/
+	VM_PUSH_STACK_INT
+	VM_PUSH_STACK_DOUBLE
+	VM_PUSH_STACK_OBJECT
+	VM_POP_STACK_INT
+	VM_POP_STACK_DOUBLE
+	VM_POP_STACK_OBJECT
+	/**********/
+	VM_PUSH_STATIC_INT
+	VM_PUSH_STATIC_DOUBLE
+	VM_PUSH_STATIC_OBJECT
+	VM_POP_STATIC_INT
+	VM_POP_STATIC_DOUBLE
+	VM_POP_STATIC_OBJECT
+	/**********/
+	VM_PUSH_ARRAY_INT
+	VM_PUSH_ARRAY_DOUBLE
+	VM_PUSH_ARRAY_OBJECT
+	VM_POP_ARRAY_INT
+	VM_POP_ARRAY_DOUBLE
+	VM_POP_ARRAY_OBJECT
+	/**********/
+	VM_PUSH_FIELD_INT
+	VM_PUSH_FIELD_DOUBLE
+	VM_PUSH_FIELD_OBJECT
+	VM_POP_FIELD_INT
+	VM_POP_FIELD_DOUBLE
+	VM_POP_FIELD_OBJECT
+	/**********/
+	VM_ADD_INT
+	VM_ADD_DOUBLE
+	VM_ADD_STRING
+	VM_SUB_INT
+	VM_SUB_DOUBLE
+	VM_MUL_INT
+	VM_MUL_DOUBLE
+	VM_DIV_INT
+	VM_DIV_DOUBLE
+	VM_MOD_INT
+	VM_MOD_DOUBLE
+	VM_MINUS_INT
+	VM_MINUS_DOUBLE
+	VM_INCREMENT
+	VM_DECREMENT
+	VM_CAST_INT_TO_DOUBLE
+	VM_CAST_DOUBLE_TO_INT
+	VM_CAST_BOOLEAN_TO_STRING
+	VM_CAST_INT_TO_STRING
+	VM_CAST_DOUBLE_TO_STRING
+	VM_UP_CAST
+	VM_DOWN_CAST
+	VM_EQ_INT
+	VM_EQ_DOUBLE
+	VM_EQ_OBJECT
+	VM_EQ_STRING
+	VM_GT_INT
+	VM_GT_DOUBLE
+	VM_GT_STRING
+	VM_GE_INT
+	VM_GE_DOUBLE
+	VM_GE_STRING
+	VM_LT_INT
+	VM_LT_DOUBLE
+	VM_LT_STRING
+	VM_LE_INT
+	VM_LE_DOUBLE
+	VM_LE_STRING
+	VM_NE_INT
+	VM_NE_DOUBLE
+	VM_NE_OBJECT
+	VM_NE_STRING
+	VM_LOGICAL_AND
+	VM_LOGICAL_OR
+	VM_LOGICAL_NOT
+	VM_POP
+	VM_DUPLICATE
+	VM_DUPLICATE_OFFSET
+	VM_JUMP
+	VM_JUMP_IF_TRUE
+	VM_JUMP_IF_FALSE
+	/**********/
+	VM_PUSH_FUNCTION
+	VM_PUSH_METHOD
+	VM_INVOKE
+	VM_RETURN
+	/**********/
+	VM_NEW
+	VM_NEW_ARRAY
+	VM_NEW_ARRAY_LITERAL_INT
+	VM_NEW_ARRAY_LITERAL_DOUBLE
+	VM_NEW_ARRAY_LITERAL_OBJECT
+	VM_SUPER
+	VM_INSTANCEOF
+)
+
 type opcodeInfo struct {
 	// 注记符
 	Mnemonic string
@@ -43,6 +151,13 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"pop_array_double", "", -1},
 	{"pop_array_object", "", -1},
 	/**********/
+	{"push_field_int", "s", 1},
+	{"push_field_double", "s", 1},
+	{"push_field_object", "s", 1},
+	{"pop_field_int", "s", -1},
+	{"pop_field_double", "s", -1},
+	{"pop_field_object", "s", -1},
+	/**********/
 	{"add_int", "", -1},
 	{"add_double", "", -1},
 	{"add_string", "", -1},
@@ -63,6 +178,8 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"cast_boolean_to_string", "", 0},
 	{"cast_int_to_string", "", 0},
 	{"cast_double_to_string", "", 0},
+	{"up_cast", "s", 0},
+	{"down_cast", "s", 0},
 	{"eq_int", "", -1},
 	{"eq_double", "", -1},
 	{"eq_object", "", -1},
@@ -88,16 +205,21 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"logical_not", "", 0},
 	{"pop", "", -1},
 	{"duplicate", "", 1},
+	{"duplicate_offset", "s", 1},
 	{"jump", "s", 0},
 	{"jump_if_true", "s", -1},
 	{"jump_if_false", "s", -1},
 	/**********/
-	{"push_function", "s", 0},
+	{"push_function", "s", 1},
+	{"push_method", "s", 1},
 	{"invoke", "", -1},
 	{"return", "", -1},
 	/**********/
+	{"new", "s", 1},
 	{"new_array", "bs", 0},
 	{"new_array_literal_int", "s", 1},
 	{"new_array_literal_double", "s", 1},
 	{"new_array_literal_object", "s", 1},
+	{"super", "", 0},
+	{"instanceof", "s", 0},
 }

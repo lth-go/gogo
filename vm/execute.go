@@ -49,6 +49,11 @@ func NewExecutable() *Executable {
 	return exe
 }
 
+func (exe *Executable) AddConstantPool(cp Constant) int {
+	exe.ConstantPool.Append(cp)
+	return exe.ConstantPool.Length() - 1
+}
+
 //
 // ExecutableEntry
 //
@@ -248,11 +253,11 @@ type VmLineNumber struct {
 // VmClass
 // ==============================
 type VmClass struct {
-	PackageName string
-	Name string
+	PackageName   string
+	Name          string
 	IsImplemented bool
-	SuperClass *VmClassIdentifier
+	SuperClass    *VmClassIdentifier
 
-	FieldList []*VmField
+	FieldList  []*VmField
 	MethodList []*VmMethod
 }

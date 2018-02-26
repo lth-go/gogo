@@ -126,9 +126,3 @@ func compareParameter(paramList1, paramList2 []*Parameter) bool {
 	}
 	return true
 }
-
-func addConstantPool(exe *vm.Executable, cp vm.Constant) int {
-	exe.ConstantPool.Append(cp)
-
-	return exe.ConstantPool.Length() - 1
-}

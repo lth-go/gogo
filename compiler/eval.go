@@ -273,3 +273,79 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 
 	return newExpr
 }
+
+func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
+	expr.left = expr.left.fix(currentBlock)
+	expr.right = expr.right.fix(currentBlock)
+
+	// 能否合并计算
+	newExpr := evalMathExpression(currentBlock, expr)
+	switch newExpr.(type) {
+	case *IntExpression, *DoubleExpression, *StringExpression:
+		return newExpr
+	}
+
+	// 类型转换
+	newBinaryExpr := castBinaryExpression(expr)
+
+	newBinaryExprLeftType := newBinaryExpr.left.typeS()
+	newBinaryExprRightType := newBinaryExpr.right.typeS()
+
+	if isInt(newBinaryExprLeftType) && isInt(newBinaryExprRightType) {
+		newBinaryExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+
+	} else if isDouble(newBinaryExprLeftType) && isDouble(newBinaryExprRightType) {
+		newBinaryExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+
+	} else if expr.operator == AddOperator {
+		if (isString(newBinaryExprLeftType) && isString(newBinaryExprRightType)) ||
+			(isString(newBinaryExprLeftType) && isNull(newBinaryExpr.left)) {
+			newBinaryExpr.setType(&TypeSpecifier{basicType: vm.StringType})
+		}
+	} else {
+		compileError(expr.Position(), MATH_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
+	}
+
+	return newBinaryExpr
+}
+
+func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
+	expr.left = expr.left.fix(currentBlock)
+	expr.right = expr.right.fix(currentBlock)
+
+	newExpr := evalCompareExpression(expr)
+	switch newExpr.(type) {
+	case *BooleanExpression:
+		return newExpr
+	}
+
+	newBinaryExpr := castBinaryExpression(expr)
+
+	newBinaryExprLeftType := newBinaryExpr.left.typeS()
+	newBinaryExprRightType := newBinaryExpr.right.typeS()
+
+	// TODO 字符串是否能跟null比较
+	if !(compareType(newBinaryExprLeftType, newBinaryExprRightType) ||
+		(isObject(newBinaryExprLeftType) && isNull(newBinaryExpr.right) ||
+			(isNull(newBinaryExpr.left) && isObject(newBinaryExprRightType)))) {
+		compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, getTypeName(newBinaryExprLeftType), getTypeName(newBinaryExprRightType))
+	}
+
+	newBinaryExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+
+	return newBinaryExpr
+}
+
+func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
+	expr.left = expr.left.fix(currentBlock)
+	expr.right = expr.right.fix(currentBlock)
+
+	if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
+		expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+		expr.typeS().fix(0)
+		return expr
+	}
+
+	compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(expr.left.typeS().basicType), int(expr.right.typeS().basicType))
+	return nil
+}

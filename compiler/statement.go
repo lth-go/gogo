@@ -50,7 +50,7 @@ func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Bloc
 	switch assignExpr := expr.(type) {
 	case *AssignExpression:
 		// TODO
-		assignExpr.generateEx(exe, currentBlock, ob)
+		assignExpr.generateEx(exe, currentBlock, ob, true)
 	default:
 		expr.generate(exe, currentBlock, ob)
 		ob.generateCode(expr.Position(), vm.VM_POP)

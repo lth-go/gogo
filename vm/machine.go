@@ -13,22 +13,29 @@ type VmVirtualMachine struct {
 	// 堆
 	heap *Heap
 
-	// 全局变量
-	//static *Static
-
 	// 全局函数列表
 	function []Function
 	// 解释器
 	executable *ExecutableEntry
+
+	// 类
+	classList []*ExecClass
+
 	// 程序计数器
 	pc int
 
 	// 当前exe
-	currentExecutable *Executable
+	currentExecutable *ExecutableEntry
 	// 当前函数
 	currentFunction *GFunction
 
-	executableList []*ExecutableEntry
+	// 从exe传来的数据
+	executableList *ExecutableList
+
+	// exe列表
+	executableEntryList []*ExecutableEntry
+
+	// 顶层exe
 	topLevel *ExecutableEntry
 }
 
@@ -57,13 +64,26 @@ func getVirtualMachine() *VmVirtualMachine {
 //
 // 一些初始化操作
 //
+// TODO
+func (vm *VmVirtualMachine) SetExecutableList(exelist *ExecutableList) {
+	vm.executableList = exelist
+
+	for _, exe := range exelist.List {
+		vm.AddExecutable(vm, exe, (exe == exeList.TopLevel))
+	}
+
+}
 
 // 虚拟机添加解释器
-func (vm *VmVirtualMachine) AddExecutable(exe *Executable) {
+func (vm *VmVirtualMachine) AddExecutable(exe *Executable, isTopLevel bool) {
 
-	vm.executable = exe
+	newEntry := &ExecutableEntry{executable: exe}
+
+	vm.executableEntryList = append(vm.executableEntryList, newEntry)
 
 	vm.addFunctions(exe)
+
+	vm.addClasses(newEntry)
 
 	vm.convertCode(exe, exe.CodeList, nil)
 
@@ -71,14 +91,24 @@ func (vm *VmVirtualMachine) AddExecutable(exe *Executable) {
 		vm.convertCode(exe, f.CodeList, f)
 	}
 
-	vm.addStaticVariables(exe)
+    addStaticVariables(newEntry, exe)
+
+	if isTopLevel {
+		vm.topLevel = newEntry
+	}
 }
 
-func (vm *VmVirtualMachine) addStaticVariables(exe *Executable) {
+func addStaticVariables(entry *ExecutableEntry, exe *Executable) {
 
-	for _, exeValue := range exe.GlobalVariableList {
-		newVmValue := vm.initializeValue(exeValue.typeSpecifier)
-		vm.static.append(newVmValue)
+	entry.static = NewStatic()
+
+	for _, value := range exe.GlobalVariableList {
+		// TODO
+        //if value.VmTypeSpecifier.BasicType == StringType {
+        //    entry.static_v.variable[i].object = dvm_null_object_ref;
+        //}
+
+		entry.static.append(initializeValue(value.typeSpecifier))
 	}
 }
 
@@ -103,6 +133,174 @@ func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
 		newVmFunc := &GFunction{Name: exeFunc.Name, Executable: exe, Index: srcIdex}
 		vm.function = append(vm.function, newVmFunc)
 	}
+}
+
+func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
+	exe := ee.executable
+
+	// 循环判断有无重复定义
+	for _, exeClass := range exe.ClassDefinitionList {
+		for dest_idx, vmClass := range vm.classList {
+			// 有重复定义
+			if vmClass.name == exeClass.Name && vmClass.getPackageName() == exeClass.getPackageName() {
+				var package_name string
+
+				if vmClass.packageName {
+					package_name = vmClass.packageName
+				} else {
+					package_name = ""
+				}
+				vmError(CLASS_MULTIPLE_DEFINE_ERR, package_name, vmClass.name)
+			}
+		}
+	}
+
+	old_class_count = len(vm.classList)
+
+	dest_idx := len(vm.classList)
+	for _, exeClass := range exe.ClassDefinitionList {
+
+		newVmClass := &ExecClass{}
+		vm.classList = append(vm.classList, newVmClass)
+
+		newVmClass.vmClass = exeClass
+		newVmClass.executable = ee
+		newVmClass.name = exeClass.name
+		newVmClass.classIndex = dest_idx
+
+		if exeClass.PackageName {
+			newVmClass.PackageName = exeClass.PackageName
+		} else {
+			newVmClass.PackageName = ""
+		}
+
+		vm.addClass(exe, exeClass, newVmClass)
+
+		dest_idx++
+	}
+
+	// 设置父类
+	set_super_class(vm, exe, old_class_count)
+}
+
+func (vm *VmVirtualMachine) addClass(exe *Executable, src *VmClass, dest *ExecClass) {
+	add_fields(exe, src, dest)
+	add_methods(vm, exe, src, dest)
+}
+
+func add_fields(exe *Executable, src *VmClass, dest *ExecClass) {
+	field_count := 0
+
+	for pos := src; ; {
+		field_count += len(pos.FieldList)
+		if pos.SuperClass == nil {
+			break
+		}
+		pos = search_class_from_executable(exe, pos.SuperClass.Name)
+	}
+
+	dest.fieldTypeList = make([]*VmTypeSpecifier, field_count)
+	set_field_types(exe, src, dest.fieldTypeList, 0)
+}
+
+func set_field_types(exe *Executable, pos *VmClass, field_type []*VmTypeSpecifier, index int) int {
+
+	if pos.SuperClass != nil {
+		next := search_class_from_executable(exe, pos.SuperClass.Name)
+		index = set_field_types(exe, next, field_type, index)
+	}
+	for _, field := range pos.FieldList {
+		field_type[index] = field.Typ
+		index++
+	}
+
+	return index
+}
+
+func add_methods(vm *VmVirtualMachine, exe *Executable, src *VmClass, dest *ExecClass) {
+
+	v_table := alloc_v_table(dest)
+	add_method(vm, exe, src, v_table)
+	// TODO
+	dest.class_table = v_table
+}
+
+func add_method(vm *VmVirtualMachine, exe *Executable, pos *VmClass, v_table *VmVTable) int {
+
+	if pos.SuperClass != nil {
+		next := search_class_from_executable(exe, pos.SuperClass.Name)
+		super_method_count = add_method(vm, exe, next, v_table)
+	}
+
+	method_count := super_method_count
+	for i = 0; i < pos.method_count; i++ {
+		for j = 0; j < super_method_count; j++ {
+			if pos.method[i].name == v_table.table[j].name {
+				set_v_table(vm, pos, &pos.method[i], &v_table.table[j], false)
+				break
+			}
+		}
+		if j == super_method_count {
+			v_table.table = MEM_realloc(v_table.table, sizeof(VTableItem)*(method_count+1))
+			set_v_table(vm, pos, &pos.method[i], &v_table.table[method_count], true)
+			method_count++
+			v_table.table_size = method_count
+		}
+	}
+
+	return method_count
+}
+
+func set_v_table(vm *VmVirtualMachine, class_p *VmClass, src *VmMethod, dest *VTableItem, set_name bool) {
+
+	if set_name {
+		dest.name = src.Name
+	}
+
+	func_name := vm_create_method_function_name(class_p.name, src.name)
+	func_idx := search_function(dvm, class_p.package_name, func_name)
+
+	if func_idx == FUNCTION_NOT_FOUND {
+		vmError(FUNCTION_NOT_FOUND_ERR, func_name)
+	}
+
+	dest.index = func_idx
+}
+
+func set_super_class(vm *VmVirtualMachine, exe *Executable, old_class_count int) {
+	for class_idx := old_class_count; class_idx < len(vm.classList); class_idx++ {
+		vmClass := vm.classList[class_idx]
+
+		exeClass := search_class_from_executable(exe, vmClass.name)
+		if exeClass.super_class == nil {
+			vmClass.super_class = nil
+		} else {
+			super_class_index = search_class(vm, exeClass.SuperClass.PackageName, exeClass.SuperClass.Name)
+			vmClass.superClass = vm.class[super_class_index]
+		}
+	}
+}
+
+func search_class_from_executable(exe *Executable, name string) *VmClass {
+
+	for _, exeClass := range exe.ClassDefinitionList {
+		if exeClass.Name == name {
+			return exeClass
+		}
+	}
+
+	panic("TODO")
+}
+
+func search_class(vm *VmVirtualMachine, package_name string, name string) int {
+
+	for i, vmClass := range vm.classList {
+		if vmClass.packageName == package_name && vmClass.name == name {
+			return i
+		}
+	}
+	vmError(CLASS_NOT_FOUND_ERR, name)
+	return 0
 }
 
 //

@@ -30,7 +30,7 @@ type Executable struct {
 	CodeList []byte
 
 	// 类列表
-	//ClassDefinitionList []*VmClass
+	ClassDefinitionList []*VmClass
 
 	// 行号对应表
 	// 保存字节码和与之对应的源代码的行号
@@ -260,4 +260,17 @@ type VmClass struct {
 
 	FieldList  []*VmField
 	MethodList []*VmMethod
+}
+
+type VmClassIdentifier struct {
+	PackageName string
+	Name        string
+}
+
+type VmField struct {
+	Name string
+	Typ  *VmTypeSpecifier
+}
+type VmMethod struct {
+	Name string
 }

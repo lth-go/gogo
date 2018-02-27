@@ -68,16 +68,18 @@ func NewDoubleValue(value float64) *VmDoubleValue {
 }
 
 //
-// VmObjectValue
+// VmObjectRef
 //
-type VmObjectValue struct {
+// 引用对象
+type VmObjectRef struct {
 	VmValueImpl
 
-	objectValue VmObject
-}
+	vTable *VmVTable
+	data *VmObject
+} 
 
-func NewObjectValue(value VmObject) *VmObjectValue {
-	return &VmObjectValue{
+func NewObjectRefValue(value VmObject) *VmObjectRef {
+	return &VmObjectRef{
 		objectValue: value,
 	}
 }
@@ -172,7 +174,7 @@ func (array *VmObjectArrayDouble) setDouble(index int, value float64) {
 // array object
 type VmObjectArrayObject struct {
 	VmObjectImpl
-	objectArray []VmObject
+	objectArray []VmObjectRef
 }
 
 func (obj *VmObjectArrayObject) getArraySize() int {
@@ -192,6 +194,15 @@ func (array *VmObjectArrayObject) setObject(index int, value VmObject) {
 	checkArray(array, index)
 
 	array.objectArray[index] = value
+}
+
+//
+// VmObjectClassObject
+//
+type VmObjectClassObject struct {
+	VmObjectImpl
+
+	fieldList []*VmValue
 }
 
 // utils

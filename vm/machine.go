@@ -13,21 +13,18 @@ type VmVirtualMachine struct {
 	// 堆
 	heap *Heap
 
-	// 全局函数列表
-	function []Function
-	// 解释器
-	executable *ExecutableEntry
-
-	// 类
-	classList []*ExecClass
-
-	// 程序计数器
-	pc int
-
 	// 当前exe
 	currentExecutable *ExecutableEntry
 	// 当前函数
 	currentFunction *GFunction
+
+	// 程序计数器
+	pc int
+
+	// 全局函数列表
+	function []Function
+	// 类
+	classList []*ExecClass
 
 	// 从exe传来的数据
 	executableList *ExecutableList
@@ -43,9 +40,7 @@ func NewVirtualMachine() *VmVirtualMachine {
 	vm := &VmVirtualMachine{
 		stack:             NewStack(),
 		heap:              NewHeap(),
-		static:            NewStatic(),
 		function:          []Function{},
-		executable:        nil,
 		currentExecutable: nil,
 	}
 	vm.AddNativeFunctions()
@@ -65,11 +60,11 @@ func getVirtualMachine() *VmVirtualMachine {
 // 一些初始化操作
 //
 // TODO
-func (vm *VmVirtualMachine) SetExecutableList(exelist *ExecutableList) {
-	vm.executableList = exelist
+func (vm *VmVirtualMachine) SetExecutableList(exeList *ExecutableList) {
+	vm.executableList = exeList
 
-	for _, exe := range exelist.List {
-		vm.AddExecutable(vm, exe, (exe == exeList.TopLevel))
+	for _, exe := range exeList.List {
+		vm.AddExecutable(exe, (exe == exeList.TopLevel))
 	}
 
 }
@@ -258,7 +253,7 @@ func set_v_table(vm *VmVirtualMachine, class_p *VmClass, src *VmMethod, dest *VT
 	}
 
 	func_name := vm_create_method_function_name(class_p.name, src.name)
-	func_idx := search_function(dvm, class_p.package_name, func_name)
+	func_idx := search_function(vm, class_p.package_name, func_name)
 
 	if func_idx == FUNCTION_NOT_FOUND {
 		vmError(FUNCTION_NOT_FOUND_ERR, func_name)
@@ -307,9 +302,9 @@ func search_class(vm *VmVirtualMachine, package_name string, name string) int {
 // 虚拟机执行入口
 //
 func (vm *VmVirtualMachine) Execute() {
-	vm.pc = 0
-	vm.currentExecutable = vm.executable
+	vm.currentExecutable = vm.topLevel
 	vm.currentFunction = nil
+	vm.pc = 0
 
 	vm.stack.expand(vm.executable.CodeList)
 
@@ -320,8 +315,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 	var base int
 
 	stack := vm.stack
-	static := vm.static
-	exe := vm.currentExecutable
+
+	ee := vm.currentExecutable
+	exe := vm.currentExecutable.executable
+
+	static := ee.static
 
 	for pc := vm.pc; pc < len(codeList); {
 
@@ -359,7 +357,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_NULL:
-			stack.writeObject(0, nil)
+			stack.writeObject(0, vmNullObjectRef)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_STACK_INT:
@@ -479,6 +477,55 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			array.setObject(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
+        case DVM_PUSH_FIELD_INT:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1])
+
+			check_null_pointer(exe, gFunc, pc, obj)
+			vm.writeInt(-1, obj.data.u.class_object.field[index].int_value)
+			pc += 3
+        case DVM_PUSH_FIELD_DOUBLE:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1])
+
+			check_null_pointer(exe, gFunc, pc, &obj);
+			vm.writeDouble(-1, obj.data.u.class_object.field[index].double_value);
+			pc += 3;
+        case DVM_PUSH_FIELD_OBJECT:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1])
+
+			check_null_pointer(exe, gFunc, pc, &obj);
+			STO_WRITE(vm, -1, obj.data.u.class_object.field[index].object);
+			pc += 3;
+			break;
+        case DVM_POP_FIELD_INT:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1])
+
+			check_null_pointer(exe, gFunc, pc, &obj);
+			obj.data.u.class_object.field[index].int_value = STI(vm, -2);
+			vm.stack.stack_pointer -= 2;
+			pc += 3;
+			break;
+        case DVM_POP_FIELD_DOUBLE:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1])
+
+			check_null_pointer(exe, gFunc, pc, &obj);
+			obj.data.u.class_object.field[index].double_value = STD(vm, -2);
+			vm.stack.stack_pointer -= 2;
+			pc += 3;
+			break;
+        case DVM_POP_FIELD_OBJECT:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1])
+
+			check_null_pointer(exe, gFunc, pc, &obj);
+			obj.data.u.class_object.field[index].object = STO(vm, -2);
+			vm.stack.stack_pointer -= 2;
+			pc += 3;
+			break;
 		case VM_ADD_INT:
 			stack.writeInt(-2, stack.getInt(-2)+stack.getInt(-1))
 			vm.stack.stackPointer--
@@ -648,6 +695,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			stack.stack[vm.stack.stackPointer] = stack.stack[vm.stack.stackPointer-1]
 			vm.stack.stackPointer++
 			pc++
+        case DVM_DUPLICATE_OFFSET:
+			offset := get2ByteInt(codeList[pc+1:])
+			vm.stack.stack[vm.stack.stackPointer] = vm.stack.stack[vm.stack.stackPointer-1-offset]
+			vm.stack.stackPointer++
+			pc += 3;
 		case VM_JUMP:
 			index := get2ByteInt(codeList[pc+1:])
 			pc = index
@@ -672,6 +724,15 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			stack.writeInt(0, value)
 			vm.stack.stackPointer++
 			pc += 3
+        case DVM_PUSH_METHOD:
+			obj := vm.getObject(-1)
+			index := get2ByteInt(codeList[pc+1:])
+
+			check_null_pointer(exe, gFunc, pc, obj)
+
+			vm.writeInt(0, obj.vTable.table[index].index)
+			vm.stack.stack_pointer++
+			pc += 3;
 		case VM_INVOKE:
 			funcIdx := stack.getInt(-1)
 			switch f := vm.function[funcIdx].(type) {
@@ -685,6 +746,11 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) {
 			}
 		case VM_RETURN:
 			vm.returnFunction(&gFunc, &codeList, &pc, &vm.stack.stackPointer, &base, exe)
+        case DVM_NEW:
+			class_index := get2ByteInt(codeList[pc+1:])
+			vm.writeObject(0, vm_create_class_object_i(vm, class_index))
+			vm.stack.stackPointer++
+			pc += 3
 		case VM_NEW_ARRAY:
 			dim := int(codeList[pc+1])
 			typ := exe.TypeSpecifierList[get2ByteInt(codeList[pc+2:])]

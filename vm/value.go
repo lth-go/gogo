@@ -75,12 +75,12 @@ type VmObjectRef struct {
 	VmValueImpl
 
 	vTable *VmVTable
-	data *VmObject
+	data VmObject
 } 
 
 func NewObjectRefValue(value VmObject) *VmObjectRef {
 	return &VmObjectRef{
-		objectValue: value,
+		data: value,
 	}
 }
 
@@ -174,7 +174,7 @@ func (array *VmObjectArrayDouble) setDouble(index int, value float64) {
 // array object
 type VmObjectArrayObject struct {
 	VmObjectImpl
-	objectArray []VmObjectRef
+	objectArray []*VmObjectRef
 }
 
 func (obj *VmObjectArrayObject) getArraySize() int {
@@ -184,13 +184,13 @@ func (obj *VmObjectArrayObject) getArraySize() int {
 	return len(obj.objectArray)
 }
 
-func (array *VmObjectArrayObject) getObject(index int) VmObject {
+func (array *VmObjectArrayObject) getObject(index int) *VmObjectRef {
 	checkArray(array, index)
 
 	return array.objectArray[index]
 }
 
-func (array *VmObjectArrayObject) setObject(index int, value VmObject) {
+func (array *VmObjectArrayObject) setObject(index int, value *VmObjectRef) {
 	checkArray(array, index)
 
 	array.objectArray[index] = value
@@ -202,7 +202,40 @@ func (array *VmObjectArrayObject) setObject(index int, value VmObject) {
 type VmObjectClassObject struct {
 	VmObjectImpl
 
-	fieldList []*VmValue
+	fieldList []VmValue
+}
+
+func (obj *VmObjectClassObject) getInt(index int) int {
+	value := obj.fieldList[index].(*VmIntValue)
+	return value.intValue
+}
+
+func (obj *VmObjectClassObject) getDouble(index int) float64 {
+	value := obj.fieldList[index].(*VmDoubleValue)
+	return value.doubleValue
+}
+
+func (obj *VmObjectClassObject) getObject(index int) *VmObjectRef {
+	value := obj.fieldList[index].(*VmObjectRef)
+	return value
+}
+
+func (obj *VmObjectClassObject) writeInt(sp int, value int) {
+	v := NewIntValue(value)
+	v.setPointer(false)
+
+	obj.fieldList[sp] = v
+}
+func (obj *VmObjectClassObject) writeDouble(sp int, value float64) {
+	v := NewDoubleValue(value)
+	v.setPointer(false)
+
+	obj.fieldList[sp] = v
+}
+func (obj *VmObjectClassObject) writeObject(sp int, value *VmObjectRef) {
+	v.setPointer(true)
+
+	obj.fieldList[sp] = v
 }
 
 // utils

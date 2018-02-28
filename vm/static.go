@@ -30,8 +30,8 @@ func (s *Static) getDouble(index int) float64 {
 	return s.variableList[index].(*VmDoubleValue).doubleValue
 }
 
-func (s *Static) getObject(index int) VmObject {
-	return s.variableList[index].(*VmObjectValue).objectValue
+func (s *Static) getObject(index int) *VmObjectRef {
+	return s.variableList[index].(*VmObjectRef)
 }
 
 //
@@ -45,6 +45,6 @@ func (s *Static) setDouble(index int, value float64) {
 	s.variableList[index].(*VmDoubleValue).doubleValue = value
 }
 
-func (s *Static) setObject(index int, value VmObject) {
-	s.variableList[index].(*VmObjectValue).objectValue = value
+func (s *Static) setObject(index int, value *VmObjectRef) {
+	s.variableList[index] = value
 }

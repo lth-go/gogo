@@ -8,6 +8,10 @@ const (
 	stringObjectType objectType = iota
 )
 
+//////////////////////////////
+// 垃圾回收
+//////////////////////////////
+
 //
 // 判断是否下需要gc
 //
@@ -17,72 +21,6 @@ func (vm *VmVirtualMachine) checkGC() {
 
 		vm.heap.currentThreshold += HeapThresholdSize
 	}
-}
-
-//
-// 创建对象
-//
-func (vm *VmVirtualMachine) addObject(value VmObject) {
-	vm.checkGC()
-	value.setMark(false)
-	vm.heap.append(value)
-}
-
-func (vm *VmVirtualMachine) newStringObject() *VmObjectString {
-	ret := &VmObjectString{}
-	vm.addObject(ret)
-
-	return ret
-}
-
-// 新建字符对象
-func (vm *VmVirtualMachine) createStringObject(str string) VmObject {
-	ret := vm.newStringObject()
-	ret.stringValue = str
-
-	return ret
-}
-
-// 连接字符对象
-func (vm *VmVirtualMachine) chainStringObject(str1 VmObject, str2 VmObject) VmObject {
-	var left, right string
-	if str1 == nil {
-		left = "null"
-	} else {
-		left = str1.(*VmObjectString).stringValue
-	}
-
-	if str2 == nil {
-		right = "null"
-	} else {
-		right = str2.(*VmObjectString).stringValue
-	}
-	
-	str := left + right
-	ret := vm.createStringObject(str)
-	return ret
-}
-
-// array
-func (vm *VmVirtualMachine) createArrayInt(size int) *VmObjectArrayInt {
-	ret := &VmObjectArrayInt{intArray: make([]int, size)}
-	vm.addObject(ret)
-
-	return ret
-}
-
-func (vm *VmVirtualMachine) createArrayDouble(size int) *VmObjectArrayDouble {
-	ret := &VmObjectArrayDouble{doubleArray: make([]float64, size)}
-	vm.addObject(ret)
-
-	return ret
-}
-
-func (vm *VmVirtualMachine) createArrayObject(size int) *VmObjectArrayObject {
-	ret := &VmObjectArrayObject{objectArray: make([]VmObject, size)}
-	vm.addObject(ret)
-
-	return ret
 }
 
 //
@@ -164,4 +102,107 @@ func (vm *VmVirtualMachine) sweepObjects() {
 func (vm *VmVirtualMachine) garbageCollect() {
 	vm.markObjects()
 	vm.sweepObjects()
+}
+
+//////////////////////////////
+// 创建对象
+//////////////////////////////
+
+//
+// 添加对象到堆, 用于垃圾回收
+//
+func (vm *VmVirtualMachine) addObject(value VmObject) {
+	vm.checkGC()
+	value.setMark(false)
+	vm.heap.append(value)
+}
+
+//////////////////////////////
+
+//
+// string object
+//
+func (vm *VmVirtualMachine) createStringObject(str string) *VmObjectRef {
+	ret := &VmObjectString{}
+	vm.addObject(ret)
+
+	ret.stringValue = str
+
+	ref := &VmObjectRef{data: ret}
+
+	return ref
+}
+
+//
+// Array object
+//
+func (vm *VmVirtualMachine) createArrayInt(size int) *VmObjectRef {
+	obj := &VmObjectArrayInt{intArray: make([]int, size)}
+	vm.addObject(obj)
+
+	ref := &VmObjectRef{data: obj}
+
+	return ref
+}
+
+func (vm *VmVirtualMachine) createArrayDouble(size int) *VmObjectRef {
+	obj := &VmObjectArrayDouble{doubleArray: make([]float64, size)}
+	vm.addObject(obj)
+
+	ref := &VmObjectRef{data: obj}
+
+	return ref
+}
+
+func (vm *VmVirtualMachine) createArrayObject(size int) *VmObjectRef {
+	obj := &VmObjectArrayObject{objectArray: make([]*VmObjectRef, size)}
+	vm.addObject(obj)
+
+	ref := &VmObjectRef{data: obj}
+
+	return ref
+}
+
+//
+// class object
+//
+func (vm *VmVirtualMachine) createClassObject(classIndex int) *VmObjectRef {
+	obj := &VmObjectClassObject{}
+	vm.addObject(obj)
+
+	execClass := vm.classList[classIndex]
+
+	obj.fieldList = []VmValue{}
+	for _, typ := range execClass.fieldTypeList {
+		obj.fieldList = append(obj.fieldList, initializeValue(typ))
+	}
+
+	ref := &VmObjectRef{
+		vTable: execClass.classTable,
+		data:   obj,
+	}
+
+	return ref
+}
+
+// utils
+
+// 连接字符对象
+func (vm *VmVirtualMachine) chainStringObject(str1, str2 *VmObjectRef) *VmObjectRef {
+	var left, right string
+	if str1.data == nil {
+		left = "null"
+	} else {
+		left = str1.data.(*VmObjectString).stringValue
+	}
+
+	if str2.data == nil {
+		right = "null"
+	} else {
+		right = str2.data.(*VmObjectString).stringValue
+	}
+
+	str := left + right
+	ret := vm.createStringObject(str)
+	return ret
 }

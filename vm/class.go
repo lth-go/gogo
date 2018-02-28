@@ -6,7 +6,7 @@ type ExecClass struct {
 	Executable *ExecutableEntry
 
 	packageName string
-	name string
+	name        string
 
 	// TODO remove
 	isImplemented bool
@@ -19,12 +19,12 @@ type ExecClass struct {
 	fieldTypeList []*VmTypeSpecifier
 }
 
-type VmVTable struct  {
+type VmVTable struct {
 	execClass *ExecClass
-	table []*VTableItem
+	table     []*VTableItem
 }
 
 type VTableItem struct {
-	name string
+	name  string
 	index int
-} 
+}

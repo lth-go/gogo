@@ -80,7 +80,7 @@ func (s *Stack) getDouble(sp int) float64 {
 	return s.getDoubleI(index)
 }
 
-func (s *Stack) getObject(sp int) VmObject {
+func (s *Stack) getObject(sp int) *VmObjectRef {
 	index := s.getIndexOverSp(sp)
 	return s.getObjectI(index)
 }
@@ -94,9 +94,9 @@ func (s *Stack) getDoubleI(sp int) float64 {
 	value := s.stack[sp].(*VmDoubleValue)
 	return value.doubleValue
 }
-func (s *Stack) getObjectI(sp int) VmObject {
-	value := s.stack[sp].(*VmObjectValue)
-	return value.objectValue
+func (s *Stack) getObjectI(sp int) *VmObjectRef {
+	value := s.stack[sp].(*VmObjectRef)
+	return value
 }
 
 // 根据sp以及stackPointer向栈中写入元素
@@ -108,7 +108,7 @@ func (s *Stack) writeDouble(sp int, value float64) {
 	index := s.getIndexOverSp(sp)
 	s.writeDoubleI(index, value)
 }
-func (s *Stack) writeObject(sp int, value VmObject) {
+func (s *Stack) writeObject(sp int, value *VmObjectRef) {
 	index := s.getIndexOverSp(sp)
 	s.writeObjectI(index, value)
 }
@@ -126,15 +126,35 @@ func (s *Stack) writeDoubleI(sp int, value float64) {
 
 	s.stack[sp] = v
 }
-func (s *Stack) writeObjectI(sp int, value VmObject) {
+func (s *Stack) writeObjectI(sp int, value *VmObjectRef) {
 	v := NewObjectValue(value)
 	v.setPointer(true)
 
 	s.stack[sp] = v
 }
 
-// string
+// other get
 func (s *Stack) getString(sp int) string {
 	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).(*VmObjectString).stringValue
+	return s.getObjectI(index).data.(*VmObjectString).stringValue
+}
+
+func (s *Stack) getArrayInt(sp int) *VmObjectArrayInt {
+	index := s.getIndexOverSp(sp)
+	return s.getObjectI(index).data.(*VmObjectArrayInt)
+}
+
+func (s *Stack) getArrayDouble(sp int) *VmObjectArrayDouble {
+	index := s.getIndexOverSp(sp)
+	return s.getObjectI(index).data.(*VmObjectArrayDouble)
+}
+
+func (s *Stack) getArrayObject(sp int) *VmObjectArrayObject {
+	index := s.getIndexOverSp(sp)
+	return s.getObjectI(index).data.(*VmObjectArrayObject)
+}
+
+func (s *Stack) getClassObject(sp int) *VmObjectClassObject {
+	index := s.getIndexOverSp(sp)
+	return s.getObjectI(index).data.(*VmObjectClassObject)
 }

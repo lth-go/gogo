@@ -79,7 +79,7 @@ func (vm *VmVirtualMachine) AddExecutable(exe *Executable, isTopLevel bool) {
 
 	vm.executableEntryList = append(vm.executableEntryList, newEntry)
 
-	vm.addFunctions(exe)
+	vm.addFunctions(newEntry)
 
 	vm.addClasses(newEntry)
 
@@ -110,7 +110,8 @@ func addStaticVariables(entry *ExecutableEntry, exe *Executable) {
 	}
 }
 
-func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
+func (vm *VmVirtualMachine) addFunctions(ee *ExecutableEntry) {
+	exe := ee.executable
 
 	for _, exeFunc := range exe.FunctionList {
 		if !exeFunc.IsImplemented {
@@ -128,9 +129,49 @@ func (vm *VmVirtualMachine) addFunctions(exe *Executable) {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-		newVmFunc := &GFunction{Name: exeFunc.Name, Executable: exe, Index: srcIdex}
+		newVmFunc := &GFunction{Name: exeFunc.Name, Executable: ee, Index: srcIdex}
 		vm.function = append(vm.function, newVmFunc)
 	}
+}
+
+func addFunctions(vm *VmVirtualMachine ,ee  *ExecutableEntry ) {
+	var dest_idx int
+
+	add_func_count  := 0
+
+	exe := ee.executable
+
+
+	for _, exeFunc := range exe.FunctionList {
+		for dest_idx, vmFunc := range vm.function {
+			if vmFunc.getName() == exeFunc.Name && vmFunc.getPackageName() == exeFunc.PackageName {
+				vmError( FUNCTION_MULTIPLE_DEFINE_ERR, vmFunc.getPackageName(), vmFunc.getName())
+			}
+		}
+		if dest_idx == len(vm.function) {
+			add_func_count++
+		}
+	}
+
+	dest_idx = len(vm.function)
+
+	for src_idx, exeFunc := range exe.FunctionList{
+		vmFunc := &GFunction{}
+
+		vm.function = append(vm.function, vmFunc)
+
+		vmFunc.PackageName = exeFunc.PackageName
+		vmFunc.Name = exeFunc.Name
+
+		implement_diksam_function(vm, dest_idx, ee, src_idx)
+
+		dest_idx++
+	}
+}
+
+func implement_diksam_function(vm *VmVirtualMachine , dest_idx int ,ee  *ExecutableEntry , src_idx int) {
+    vm.function[dest_idx].(*GFunction).Executable = ee
+    vm.function[dest_idx].(*GFunction).Index = src_idx
 }
 
 func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
@@ -278,11 +319,11 @@ func set_v_table(vm *VmVirtualMachine, class_p *VmClass, src *VmMethod, set_name
 func search_function(vm *VmVirtualMachine, package_name, name string) int {
 
 	for i, function := range vm.function {
-        if function.getPackageName() == package_name && function.getName() == name {
-            return i
-        }
-    }
-    return FUNCTION_NOT_FOUND
+		if function.getPackageName() == package_name && function.getName() == name {
+			return i
+		}
+	}
+	return FUNCTION_NOT_FOUND
 }
 
 func set_super_class(vm *VmVirtualMachine, exe *Executable, old_class_count int) {
@@ -768,7 +809,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 				panic("TODO")
 			}
 		case VM_RETURN:
-			if vm.returnFunction(&gFunc, &codeList, &pc, &vm.stack.stackPointer, &base, exe) {
+			if vm.returnFunction(&gFunc, &codeList, &pc, &base, &ee, &exe) {
 				ret = stack.stack[stack.stackPointer-1]
 				// TODO goto
 				return ret
@@ -782,7 +823,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			dim := int(codeList[pc+1])
 			typ := exe.TypeSpecifierList[get2ByteInt(codeList[pc+2:])]
 
-			vm.restore_pc(exe, gFunc, pc)
+			vm.restore_pc(ee, gFunc, pc)
 			array := vm.create_array(dim, typ)
 			vm.stack.stackPointer -= dim
 
@@ -792,7 +833,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 		case VM_NEW_ARRAY_LITERAL_INT:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restore_pc(exe, gFunc, pc)
+			vm.restore_pc(ee, gFunc, pc)
 			array := vm.create_array_literal_int(size)
 			vm.stack.stackPointer -= size
 			stack.writeObject(0, array)
@@ -801,7 +842,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 		case VM_NEW_ARRAY_LITERAL_DOUBLE:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restore_pc(exe, gFunc, pc)
+			vm.restore_pc(ee, gFunc, pc)
 			array := vm.create_array_literal_double(size)
 			vm.stack.stackPointer -= size
 			stack.writeObject(0, array)
@@ -810,7 +851,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 		case VM_NEW_ARRAY_LITERAL_OBJECT:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restore_pc(exe, gFunc, pc)
+			vm.restore_pc(ee, gFunc, pc)
 			array := vm.create_array_literal_object(size)
 			vm.stack.stackPointer -= size
 			stack.writeObject(0, array)
@@ -848,8 +889,8 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 	for i := 0; i < len(codeList); i++ {
 		code := codeList[i]
 		switch code {
-		// 函数内的本地声明
-		case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
+			// 函数内的本地声明
+			case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
 			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
 			VM_PUSH_STACK_OBJECT, VM_POP_STACK_OBJECT:
 
@@ -925,8 +966,8 @@ func (vm *VmVirtualMachine) invokeNativeFunction(f *NativeFunction, sp_p *int) {
 
 // 函数执行
 func (vm *VmVirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction,
-	code_p *[]byte, pc_p *int, sp_p *int, base_p *int,
-	exe *Executable) {
+code_p *[]byte, pc_p *int, sp_p *int, base_p *int,
+exe *Executable) {
 	// caller 调用者, 当前所属的函数调用域
 
 	// callee 要调用的函数的基本信息
@@ -965,85 +1006,49 @@ func (vm *VmVirtualMachine) invokeGFunction(caller **GFunction, callee *GFunctio
 	*code_p = callee_p.CodeList
 }
 
-func (vm *VmVirtualMachine) returnFunction(func_p **GFunction, code_p *[]byte, pc_p *int, base_p *int, ee_p *ExecutableEntry, exe *Executable) bool {
-
-	returnValue := vm.stack.stack[vm.stack.stackPointer-1]
-	vm.stack.stackPointer--
-
-	callee_p := exe.FunctionList[(*func_p).Index]
-	callInfo := vm.stack.stack[*sp_p-1-len(callee_p.LocalVariableList)-1].(*CallInfo)
-
-	if callInfo.caller != nil {
-		exe = callInfo.caller.Executable
-		caller_p := exe.FunctionList[callInfo.caller.Index]
-		*code_p = caller_p.CodeList
-	} else {
-		// TODO为什么没有返回值
-		exe = vm.executable
-		*code_p = vm.executable.CodeList
-	}
-	*func_p = callInfo.caller
-
-	*pc_p = callInfo.callerAddress + 1
-	*base_p = callInfo.base
-
-	*sp_p -= (len(callee_p.LocalVariableList) + 1 + len(callee_p.ParameterList))
-
-	vm.stack.stack[*sp_p-1] = returnValue
-}
-
-func (vm *VmVirtualMachine)return_function(func_p **GFunction, code_p *[]byte, pc_p *int, base_p *int, ee_p *ExecutableEntry, exe *Executable) {
+func (vm *VmVirtualMachine)returnFunction(func_p **GFunction, code_p *[]byte, pc_p *int, base_p *int, ee **ExecutableEntry, exe **Executable) bool {
 
 	return_value := vm.stack.stack[vm.stack.stackPointer-1]
-    vm.stack.stackPointer--;
+	vm.stack.stackPointer--
 
-	callee_func := exe.FunctionList[*func_p.Index]
+	callee_func := (*exe).FunctionList[(*func_p).Index]
 
 	ret := do_return(vm, func_p, code_p, pc_p, base_p, ee, exe)
 
-    vm.stack.stack[vm.stack.stackPointer] = return_value
+	vm.stack.stack[vm.stack.stackPointer] = return_value
 	vm.stack.stack[vm.stack.stackPointer].setPointer(is_pointer_type(callee_func.TypeSpecifier))
-    vm.stack.stackPointer++
+	vm.stack.stackPointer++
 
-    return ret
+	return ret
 }
 
-func do_return(DVM_VirtualMachine *dvm, Function **func_p, DVM_Byte **code_p, int *code_size_p, int *pc_p, int *base_p, ExecutableEntry **ee_p, DVM_Executable **exe_p) bool {
-    CallInfo *call_info;
-    DVM_Function *caller_p;
-    DVM_Function *callee_p;
-    int arg_count;
+func do_return(vm *VmVirtualMachine, func_p **GFunction,  code_p *[]byte, pc_p *int,base_p *int, ee_p **ExecutableEntry,exe_p **Executable) bool {
 
-    callee_p = &(*exe_p).function[(*func_p).u.diksam_f.index];
+	callee_p := (*exe_p).FunctionList[(*func_p).Index]
 
-    arg_count = callee_p.parameter_count;
-    if (callee_p.is_method) {
-        arg_count++; /* for this */
-    }
-    call_info = (CallInfo*)&dvm.stack.stack[*base_p + arg_count];
+	arg_count := len(callee_p.ParameterList)
+	if callee_p.IsMethod {
+		arg_count++ /* for this */
+	}
+	call_info := vm.stack.stack[*base_p + arg_count].(*CallInfo)
 
-    if (call_info.caller) {
-        *ee_p = call_info.caller.u.diksam_f.executable;
-        *exe_p = (*ee_p).executable;
-        if (call_info.caller.kind == DIKSAM_FUNCTION) {
-            caller_p
-                = &(*exe_p).function[call_info.caller.u.diksam_f.index];
-            *code_p = caller_p.code;
-            *code_size_p = caller_p.code_size;
-        }
-    } else {
-        *ee_p = dvm.top_level;
-        *exe_p = dvm.top_level.executable;
-        *code_p = dvm.top_level.executable.code;
-        *code_size_p = dvm.top_level.executable.code_size;
-    }
-    *func_p = call_info.caller;
+	if call_info.caller != nil {
+		*ee_p = call_info.caller.Executable
+		*exe_p = (*ee_p).executable
+		caller_p := &(*exe_p).FunctionList[call_info.caller.Index]
+		*code_p = caller_p.CodeList
+	} else {
+		*ee_p = vm.topLevel
+		*exe_p = vm.topLevel.executable
+		*code_p = vm.topLevel.executable.CodeList
+	}
+	*func_p = call_info.caller
 
-    dvm.stack.stack_pointer = *base_p;
-    *pc_p = call_info.caller_address + 1;
-    *base_p = call_info.base;
+	vm.stack.stackPointer = *base_p
+	*pc_p = call_info.callerAddress + 1
+	*base_p = call_info.base
 
-    return call_info.caller_address == CALL_FROM_NATIVE;
+	return call_info.callerAddress == CALL_FROM_NATIVE
 }
 
 

@@ -188,6 +188,19 @@ func (t *VmTypeSpecifier) AppendDerive(derive VmTypeDerive) {
 	t.DeriveList = append(t.DeriveList, derive)
 }
 
+func (t *VmTypeSpecifier) isArrayDerive() bool {
+	return isArray(t)
+}
+
+func isArray(t *VmTypeSpecifier) bool {
+	if t.DeriveList == nil || len(t.DeriveList) == 0 {
+		return false
+	}
+	firstElem := t.DeriveList[0]
+	_, ok := firstElem.(*VmArrayDerive)
+	return ok
+}
+
 // ==============================
 // 全局变量
 // ==============================

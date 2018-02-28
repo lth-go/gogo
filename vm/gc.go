@@ -26,15 +26,28 @@ func (vm *VmVirtualMachine) checkGC() {
 //
 // 标记，取消标记
 //
-func mark(obj VmObject) {
+func mark(ref *VmObjectRef) {
+	obj := ref.data
+	if obj == nil {
+		return
+	}
 	obj.setMark(true)
 
-	arrayObj, ok := obj.(*VmObjectArrayObject)
-	if ok {
-		for _, subObj := range arrayObj.objectArray {
+	switch o := obj.(type) {
+	case *VmObjectArrayObject:
+		for _, subObj := range o.objectArray {
 			mark(subObj)
 		}
+	case *VmObjectClassObject:
+		ec := ref.vTable.execClass
+
+		for i, typ := range ec.fieldTypeList {
+			if is_reference_type(typ) {
+				mark(o.fieldList[i].(*VmObjectRef))
+			}
+		}
 	}
+	arrayObj, ok := obj.(*VmObjectArrayObject)
 }
 
 func resetMark(obj VmObject) {
@@ -50,15 +63,17 @@ func (vm *VmVirtualMachine) markObjects() {
 		resetMark(obj)
 	}
 
-	for _, v := range vm.static.variableList {
-		if o, ok := v.(VmObject); ok {
-			mark(o)
-		}
-	}
+	for _, ee := range vm.executableEntryList {
+		for i, variable := range ee.static.variableList {
+            if is_reference_type(ee.executable.GlobalVariableList[i].typeSpecifier) {
+                mark(variable.(*VmObjectRef))
+            }
+        }
+    }
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
 		if vm.stack.stack[i].isPointer() {
-			o := vm.stack.stack[i].(VmObject)
+			o := vm.stack.stack[i].(*VmObjectRef)
 			mark(o)
 		}
 	}
@@ -186,6 +201,15 @@ func (vm *VmVirtualMachine) createClassObject(classIndex int) *VmObjectRef {
 }
 
 // utils
+
+// 判断是否是引用类型
+func is_reference_type(typ *VmTypeSpecifier) bool {
+	// 字符串, 类, 数组
+	if ((typ.BasicType == StringType || typ.BasicType == ClassType) && len(typ.DeriveList) == 0) || (typ.isArrayDerive()) {
+		return true
+	}
+	return false
+}
 
 // 连接字符对象
 func (vm *VmVirtualMachine) chainStringObject(str1, str2 *VmObjectRef) *VmObjectRef {

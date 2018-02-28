@@ -1,30 +1,30 @@
 package vm
 
 import (
-	"fmt"
+	//"fmt"
 	"os"
 )
 
 var errMessageMap = map[int]string{
-	BAD_MULTIBYTE_CHARACTER_ERR:  "不正确的多字节字符。",
-	FUNCTION_NOT_FOUND_ERR:       "找不到函数%s。",
-	FUNCTION_MULTIPLE_DEFINE_ERR: "重复定义函数%s。",
-	INDEX_OUT_OF_BOUNDS_ERR:      "数组下标越界。数组大小为%d，访问的下标为[%d]。",
-	DIVISION_BY_ZERO_ERR:         "整数值不能被0除。",
-	NULL_POINTER_ERR:             "引用了null。",
+	//BAD_MULTIBYTE_CHARACTER_ERR:  "不正确的多字节字符。",
+	//FUNCTION_NOT_FOUND_ERR:       "找不到函数%s。",
+	//FUNCTION_MULTIPLE_DEFINE_ERR: "重复定义函数%s。",
+	//INDEX_OUT_OF_BOUNDS_ERR:      "数组下标越界。数组大小为%d，访问的下标为[%d]。",
+	//DIVISION_BY_ZERO_ERR:         "整数值不能被0除。",
+	//NULL_POINTER_ERR:             "引用了null。",
 }
 
 func vmError(errorNumber int, a ...interface{}) {
-	vm := getVirtualMachine()
+	//vm := getVirtualMachine()
 
-	exe := vm.currentExecutable
-	function := StVirtualMachine.currentFunction
-	pc := StVirtualMachine.pc
+	//exe := vm.currentExecutable
+	//function := StVirtualMachine.currentFunction
+	//pc := StVirtualMachine.pc
 
-	fmt.Println("编译错误")
-	fmt.Printf("Line: %d\n", getLineNumberByPc(exe, function, pc))
-	fmt.Printf(errMessageMap[errorNumber], a...)
-	fmt.Println("\n")
+	//fmt.Println("编译错误")
+	//fmt.Printf("Line: %d\n", getLineNumberByPc(exe, function, pc))
+	//fmt.Printf(errMessageMap[errorNumber], a...)
+	//fmt.Println("\n")
 	os.Exit(1)
 }
 

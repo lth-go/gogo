@@ -288,7 +288,6 @@ func (stmt *ReturnStatement) show(ident int) {
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	var returnValue Expression
 
 	fdType := fd.typeS()
 

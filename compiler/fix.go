@@ -1,5 +1,11 @@
 package compiler
 
+func fixStatementList(currentBlock *Block, statementList []Statement, fd *FunctionDefinition) {
+	for _, statement := range statementList {
+		statement.fix(currentBlock, fd)
+	}
+}
+
 func check_member_accessibility(pos Position, targetClass *ClassDefinition, member MemberDeclaration, memberName string) {
 	compiler := getCurrentCompiler()
 
@@ -9,14 +15,12 @@ func check_member_accessibility(pos Position, targetClass *ClassDefinition, memb
 }
 
 func fixClassMemberExpression(expr *MemberExpression, obj Expression, memberName string) Expression {
-	var target_interface *ClassDefinition
-	var interface_index int
 
 	obj.typeS().fix()
 
 	cd := obj.typeS().classRef.classDefinition
 
-	member := search_member(cd, memberName)
+	member := cd.searchMember(memberName)
 	if member == nil {
 		compileError(expr.Position(), MEMBER_NOT_FOUND_ERR, cd.name, memberName)
 	}

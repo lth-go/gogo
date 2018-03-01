@@ -1,6 +1,9 @@
 package compiler
 
-import "strings"
+import (
+	"strings"
+	"../vm"
+)
 
 //
 // Parameter 形参
@@ -19,12 +22,14 @@ type FunctionDefinition struct {
 
 	packageNameList []string
 	name            string
-	parameterList   []*Parameter
-	block           *Block
+
+	parameterList []*Parameter
+	block         *Block
 
 	localVariableList []*Declaration
+	classDefinition   *ClassDefinition
 
-	classDefinition *ClassDefinition
+	index int
 }
 
 func (fd *FunctionDefinition) fix() {
@@ -49,11 +54,11 @@ func (fd *FunctionDefinition) addParameterAsDeclaration() {
 
 	for _, param := range fd.parameterList {
 		if searchDeclaration(param.name, fd.block) != nil {
-			compileError(param.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, "parameter name: %s\n", param.name)
+			compileError(param.typeSpecifier.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, param.name)
 		}
 		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
 
-		fd.block.addDeclaration(decl, fd, param.Position())
+		fd.block.addDeclaration(decl, fd, param.typeSpecifier.Position())
 	}
 }
 
@@ -75,6 +80,7 @@ func (fd *FunctionDefinition) addReturnFunction() {
 
 	ret := &ReturnStatement{returnValue: nil}
 	ret.SetPosition(fd.typeSpecifier.Position())
+
 	if ret.returnValue != nil {
 		ret.returnValue.SetPosition(fd.typeSpecifier.Position())
 	}
@@ -104,9 +110,9 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression
 	for i := 0; i < paramLen; i++ {
 		argumentList[i] = argumentList[i].fix(currentBlock)
 
-		paramType :=parameterList[i].typeS() 
+		paramType := parameterList[i].typeSpecifier
 		if paramType.basicType == vm.BaseType {
-            tempType = arrayBase
+			tempType = arrayBase
 		} else {
 			tempType = paramType
 		}

@@ -41,9 +41,7 @@ func PrintCode(codeList []byte) {
 			switch param {
 			case 'b':
 				i += 1
-			case 's':
-				fallthrough
-			case 'p':
+			case 's', 'p':
 				i += 2
 			default:
 				panic("TODO")
@@ -57,30 +55,22 @@ func PrintCode(codeList []byte) {
 func initializeValue(typ *VmTypeSpecifier) VmValue {
 	var value VmValue
 
-	// TODO 添加isArray 方法
-	if typ.DeriveList != nil && len(typ.DeriveList) > 0 {
-		_, ok := typ.DeriveList[0].(*VmArrayDerive)
-		if !ok {
-			panic("TODO")
-		}
+	if typ.isArrayDerive() {
 		value = vmNullObjectRef
 		return value
 	}
 
 	switch typ.BasicType {
-	case VoidType:
-		fallthrough
-	case BooleanType:
-		fallthrough
-	case IntType:
+	case VoidType, BooleanType, IntType:
 		value = &VmIntValue{intValue: 0}
+
 	case DoubleType:
 		value = &VmDoubleValue{doubleValue: 0.0}
-	case StringType:
-		fallthrough
-	case ClassType:
+
+	case StringType, ClassType:
 		value = vmNullObjectRef
-	case NullType:
+
+	case NullType, BaseType:
 		fallthrough
 	default:
 		panic("TODO")
@@ -96,8 +86,8 @@ func createMethodFunctionName(class_name, method_name string) string {
 	return ret
 }
 
-func check_null_pointer(obj *VmObjectRef ) {
-	if  obj.data == nil {
+func check_null_pointer(obj *VmObjectRef) {
+	if obj.data == nil {
 		vmError(NULL_POINTER_ERR)
 	}
 }

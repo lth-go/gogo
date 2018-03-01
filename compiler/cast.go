@@ -1,12 +1,10 @@
 package compiler
 
 import (
-	"fmt"
-
 	"../vm"
 )
 
-func allocCastExpression(castType CastType, expr Expression) Expression {
+func createCastExpression(castType CastType, expr Expression) Expression {
 	var typ *TypeSpecifier
 
 	castExpr := &CastExpression{castType: castType, operand: expr}
@@ -43,16 +41,16 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 	}
 
 	if isInt(srcTye) && isDouble(destTye) {
-		castExpr = allocCastExpression(IntToDoubleCast, src)
+		castExpr = createCastExpression(IntToDoubleCast, src)
 		return castExpr
 
 	} else if isDouble(srcTye) && isInt(destTye) {
-		castExpr = allocCastExpression(DoubleToIntCast, src)
+		castExpr = createCastExpression(DoubleToIntCast, src)
 		return castExpr
 
 	} else if isString(destTye) {
-		castExpr = create_to_string_cast(src)
-		if castExpr {
+		castExpr = createToStringCast(src)
+		if castExpr != nil {
 			return castExpr
 		}
 	}
@@ -61,27 +59,41 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 	return nil
 }
 
-func castBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
+func createToStringCast(src Expression) Expression {
+	var cast Expression
 
-	binaryExpr := expr.(*BinaryExpression)
+	if isBoolean(src.typeS()) {
+		cast = createCastExpression(BooleanToStringCast, src)
+	} else if isInt(src.typeS()) {
+		cast = createCastExpression(IntToStringCast, src)
+	} else if isDouble(src.typeS()) {
+		cast = createCastExpression(DoubleToStringCast, src)
+	} else {
+		panic("TODO")
+	}
+
+	return cast
+}
+
+func castBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
 
 	leftType := binaryExpr.left.typeS()
 	rightType := binaryExpr.right.typeS()
 
 	if isInt(leftType) && isDouble(rightType) {
-		binaryExpr.left = allocCastExpression(IntToDoubleCast, binaryExpr.left)
+		binaryExpr.left = createCastExpression(IntToDoubleCast, binaryExpr.left)
 
 	} else if isDouble(leftType) && isInt(rightType) {
-		binaryExpr.right = allocCastExpression(IntToDoubleCast, binaryExpr.right)
+		binaryExpr.right = createCastExpression(IntToDoubleCast, binaryExpr.right)
 
 	} else if isString(leftType) && isBoolean(rightType) {
-		binaryExpr.right = allocCastExpression(BooleanToStringCast, binaryExpr.right)
+		binaryExpr.right = createCastExpression(BooleanToStringCast, binaryExpr.right)
 
 	} else if isString(leftType) && isInt(rightType) {
-		binaryExpr.right = allocCastExpression(IntToStringCast, binaryExpr.right)
+		binaryExpr.right = createCastExpression(IntToStringCast, binaryExpr.right)
 
 	} else if isString(leftType) && isDouble(rightType) {
-		binaryExpr.right = allocCastExpression(DoubleToStringCast, binaryExpr.right)
+		binaryExpr.right = createCastExpression(DoubleToStringCast, binaryExpr.right)
 	}
 
 	return binaryExpr
@@ -92,39 +104,4 @@ func castMismatchError(pos Position, src, dest *TypeSpecifier) {
 	destName := getTypeName(dest)
 
 	compileError(pos, CAST_MISMATCH_ERR, srcName, destName)
-}
-
-func getBasicTypeName(typ vm.BasicType) string {
-	switch typ {
-	case vm.BooleanType:
-		return "boolean"
-	case vm.IntType:
-		return "int"
-	case vm.DoubleType:
-		return "double"
-	case vm.StringType:
-		return "string"
-	case vm.NullType:
-		return "null"
-	default:
-		panic(fmt.Sprintf("bad case. type..%d\n", typ))
-	}
-}
-
-func getTypeName(typ *TypeSpecifier) string {
-	typeName := getBasicTypeName(typ.basicType)
-
-	for _, derive := range typ.deriveList {
-		switch derive.(type) {
-		case *FunctionDerive:
-			panic("TODO:derive_tag, func")
-		case *ArrayDerive:
-			typeName = typeName + "[]"
-		default:
-			print("=====\n", typ.Position().Line)
-			panic("TODO:derive_tag")
-		}
-	}
-
-	return typeName
 }

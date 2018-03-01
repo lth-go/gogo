@@ -1,5 +1,9 @@
 package compiler
 
+import (
+	"../vm"
+)
+
 //
 // derive
 //
@@ -47,22 +51,25 @@ func (t *TypeSpecifier) fix() {
 		}
 	}
 
-	if typ.basicType == vm.ClassType && typ.classRef.classDefinition == nil {
+	if t.basicType == vm.ClassType && t.classRef.classDefinition == nil {
 
-		cd := searchClass(typ.classRef.identifier)
+		cd := searchClass(t.classRef.identifier)
 		if cd == nil {
 			compileError(t.Position(), TYPE_NAME_NOT_FOUND_ERR, t.classRef.identifier)
-			return nil
+			return
 		}
-		if !compare_package_name(cd.package_name, compiler.package_name) {
-			compileError(typ.Position(), PACKAGE_CLASS_ACCESS_ERR, cd.name)
+		if cd.getPackageName(), compiler.getPackageName() {
+			compileError(t.Position(), PACKAGE_CLASS_ACCESS_ERR, cd.name)
 		}
-		typ.classRef.classDefinition = cd
-		typ.classRef.classIndex = cd.add_class()
+		t.classRef.classDefinition = cd
+		t.classRef.classIndex = cd.addToCurrentCompiler()
 		return
 	}
 }
 
+//
+// create
+//
 func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 	typ := &TypeSpecifier{basicType: basicType}
 	typ.SetPosition(pos)

@@ -4,7 +4,7 @@ const DEFAULT_PACKAGE = "gogogogo.lang"
 
 func setRequireList(require_list []*Require) {
 
-	//compiler := getCurrentCompiler()
+	compiler := getCurrentCompiler()
 
 	//current_package_name = strings.Join(compiler.packageNameList, '.')
 
@@ -42,9 +42,55 @@ func create_function_derive_type(fd *FunctionDefinition) *TypeSpecifier {
 
 	*ret = *(fd.typeSpecifier)
 
-	ret.deriveList = []ArrayDerive{&FunctionDerive{parameterList: fd.parameterList}}
+	funcDerive := &FunctionDerive{parameterList: fd.parameterList}
+	ret.deriveList = []TypeDerive{funcDerive}
 
 	ret.deriveList = append(ret.deriveList, fd.typeSpecifier.deriveList...)
 
 	return ret
+}
+
+// yacc类创建
+func startClassDefine(identifier string, extends []*Extend, pos Position) {
+	compiler := getCurrentCompiler()
+
+	cd := &ClassDefinition{}
+
+	cd.packageNameList = compiler.packageNameList
+	cd.name = identifier
+	cd.extends = extends
+
+	cd.SetPosition(pos)
+
+	if compiler.currentClassDefinition != nil {
+		panic("TODO")
+	}
+
+	compiler.currentClassDefinition = cd
+}
+
+func endClassDefine(member_list []MemberDeclaration) {
+	compiler := getCurrentCompiler()
+
+	cd := compiler.currentClassDefinition
+
+	if cd == nil {
+		panic("TODO")
+	}
+
+	if compiler.classDefinitionList == nil {
+		compiler.classDefinitionList = []*ClassDefinition{}
+	}
+	compiler.classDefinitionList = append(compiler.classDefinitionList, cd)
+
+	cd.member = member_list
+	compiler.currentClassDefinition = nil
+}
+
+// 类方法定义
+func methodFunctionDefine(typ *TypeSpecifier, identifier string, parameter_list []*Parameter, block *Block) *FunctionDefinition {
+
+	fd := createFunctionDefinition(typ, identifier, parameter_list, block)
+
+	return fd
 }

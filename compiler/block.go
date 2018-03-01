@@ -59,17 +59,13 @@ func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Po
 }
 
 func (b *Block) getCurrentFunction() *FunctionDefinition {
-	var fdBlockInfo *FunctionBlockInfo 
 
-	block := b
-
-	for ;; {
+	for block := b; ; block = block.outerBlock {
 		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)
 		if ok {
-			break
+			return fdBlockInfo.function
 		}
-		block = block.outerBlock
-	}
 
-    return fdBlockInfo.function
+	}
+	return nil
 }

@@ -47,7 +47,6 @@ func mark(ref *VmObjectRef) {
 			}
 		}
 	}
-	arrayObj, ok := obj.(*VmObjectArrayObject)
 }
 
 func resetMark(obj VmObject) {
@@ -65,11 +64,11 @@ func (vm *VmVirtualMachine) markObjects() {
 
 	for _, ee := range vm.executableEntryList {
 		for i, variable := range ee.static.variableList {
-            if is_reference_type(ee.executable.GlobalVariableList[i].typeSpecifier) {
-                mark(variable.(*VmObjectRef))
-            }
-        }
-    }
+			if is_reference_type(ee.executable.GlobalVariableList[i].typeSpecifier) {
+				mark(variable.(*VmObjectRef))
+			}
+		}
+	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
 		if vm.stack.stack[i].isPointer() {

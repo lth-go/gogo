@@ -5,7 +5,7 @@ package vm
 //
 type Executable struct {
 	// 包名
-	PackageName []string
+	PackageName string
 
 	// 是否是被导入的
 	IsRequired bool
@@ -23,7 +23,7 @@ type Executable struct {
 	// 函数列表
 	FunctionList []*VmFunction
 
-	// 用户vm数组创建
+	// 用于vm数组创建
 	TypeSpecifierList []*VmTypeSpecifier
 
 	// 顶层结构代码
@@ -39,13 +39,15 @@ type Executable struct {
 
 func NewExecutable() *Executable {
 	exe := &Executable{
-		ConstantPool:       NewConstantPool(),
-		GlobalVariableList: []*VmVariable{},
-		FunctionList:       []*VmFunction{},
-		CodeList:           []byte{},
-		LineNumberList:     []*VmLineNumber{},
-		TypeSpecifierList:  []*VmTypeSpecifier{},
+		ConstantPool:        NewConstantPool(),
+		GlobalVariableList:  []*VmVariable{},
+		FunctionList:        []*VmFunction{},
+		CodeList:            []byte{},
+		LineNumberList:      []*VmLineNumber{},
+		TypeSpecifierList:   []*VmTypeSpecifier{},
+		ClassDefinitionList: []*VmClass{},
 	}
+
 	return exe
 }
 
@@ -71,33 +73,18 @@ type ExecutableList struct {
 	List     []*Executable
 }
 
+func NewExecutableList() *ExecutableList {
+	return &ExecutableList{}
+}
+
 func (exeList *ExecutableList) AddExe(exe *Executable) bool {
 	for _, itemExe := range exeList.List {
-		if comparePackageName(itemExe.PackageName, exe.PackageName) && itemExe.IsRequired == exe.IsRequired {
+		if itemExe.PackageName == exe.PackageName && itemExe.IsRequired == exe.IsRequired {
 			return false
 		}
 	}
 
 	exeList.List = append(exeList.List, exe)
-	return true
-
-}
-
-func comparePackageName(packageNameList1, packageNameList2 []string) bool {
-	// TODO package is nil
-	length1 := len(packageNameList1)
-	length2 := len(packageNameList2)
-
-	if length1 != length2 {
-		return false
-	}
-
-	for i := 0; i < length1; i++ {
-		if packageNameList1[i] != packageNameList2[i] {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -266,8 +253,9 @@ type VmLineNumber struct {
 // VmClass
 // ==============================
 type VmClass struct {
-	PackageName   string
-	Name          string
+	PackageName string
+	Name        string
+
 	IsImplemented bool
 	SuperClass    *VmClassIdentifier
 

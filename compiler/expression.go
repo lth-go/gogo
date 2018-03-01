@@ -10,7 +10,7 @@ import (
 type BinaryOperatorKind int
 
 const (
-	LogicalOrOperator BinaryOperatorKind = iota
+	LogicalOrOperator  BinaryOperatorKind = iota
 	LogicalAndOperator
 	EqOperator
 	NeOperator
@@ -43,7 +43,7 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 type CastType int
 
 const (
-	IntToStringCast CastType = iota
+	IntToStringCast     CastType = iota
 	BooleanToStringCast
 	DoubleToStringCast
 	IntToDoubleCast
@@ -232,7 +232,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	c := vm.NewConstantString(expr.stringValue)
-	cpIdx := exe.addConstantPool(c)
+	cpIdx := exe.AddConstantPool(c)
 
 	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }
@@ -313,7 +313,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 		expr.setType(create_function_derive_type(fd))
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			functionIndex:      reserve_function_index(compiler, fd),
+			functionIndex:      compiler.addToVmFunctionList(fd),
 		}
 		expr.typeS().fix()
 
@@ -672,36 +672,30 @@ func (expr *FunctionCallExpression) show(ident int) {
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	var fd *FunctionDefinition
 	var arrayBase *TypeSpecifier
+	var name string
 
-	funcExpr := expr.function.fix(currentBlock)
+	funcIfs := expr.function.fix(currentBlock)
 
-	expr.function = funcExpr
+	expr.function = funcIfs
 
-	switch todo := funcExpr.(type) {
+	switch funcExpr := funcIfs.(type) {
 	case *IdentifierExpression:
-		fd = SearchFunction(identifierExpr.name)
+		fd = SearchFunction(funcExpr.name)
+		name = funcExpr.name
 	case *MemberExpression:
-		// TODO 暂时没有列表和字符串方法
-		if isArray(todo.expression.typeS()) {
-			fd = compiler.arrayMethod[todo.methodIndex]
-			arrayBase = todo.expression.typeS()
-			arrayBase.deriveList = todo.expression.typeS().deriveList[1:]
-		} else if isString(todo.expression.typeS()) {
-			fd = compiler.stringMethod[todo.methodIndex]
-		} else {
-			switch member := todo.declaration.(type) {
-			case *FieldMember:
-				compileError(expr.Position(), FIELD_CAN_NOT_CALL_ERR, member.name)
-			case *MethodMember:
-				fd = member.functionDefinition
-			default:
-				panic("TODO")
-			}
+		switch member := funcExpr.declaration.(type) {
+		case *FieldMember:
+			compileError(expr.Position(), FIELD_CAN_NOT_CALL_ERR, member.name)
+		case *MethodMember:
+			fd = member.functionDefinition
+			name = fd.name
+		default:
+			panic("TODO")
 		}
 	}
 
 	if fd == nil {
-		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, identifierExpr.name)
+		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, name)
 	}
 
 	fd.checkArgument(currentBlock, expr, arrayBase)
@@ -722,7 +716,7 @@ func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *B
 
 	switch memberExpr := expr.function.(type) {
 	case *MemberExpression:
-		method, ok := memberExpr.declaration.(*MethodMember)
+		_, ok := memberExpr.declaration.(*MethodMember)
 		if ok {
 			generate_method_call_expression(expr, exe, currentBlock, ob)
 			return
@@ -759,7 +753,7 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	expr.expression = expr.expression.fix(currentBlock)
 	obj := expr.expression
 
-	if isClassObject(obj.typeS()) {
+	if isClass(obj.typeS()) {
 		newExpr = fixClassMemberExpression(expr, obj, expr.memberName)
 	} else {
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
@@ -771,12 +765,12 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
-	switch member := expr.declaratio.(type) {
+	switch member := expr.declaration.(type) {
 	case *FieldMember:
 		expr.expression.generate(exe, currentBlock, ob)
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FIELD_INT+getOpcodeTypeOffset(expr.typeS()), member.fieldIndex)
 	case *MethodMember:
-		compileError(expr.Position(), METHOD_IS_NOT_CALLED_ERR, member.functionDefine.name)
+		compileError(expr.Position(), METHOD_IS_NOT_CALLED_ERR, member.functionDefinition.name)
 	}
 }
 
@@ -928,6 +922,7 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 	itemType := expr.arrayLiteral[0].typeS()
 	offset := getOpcodeTypeOffset(itemType)
 
+	count := len(expr.arrayLiteral)
 	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY_LITERAL_INT+offset, count)
 }
 
@@ -967,12 +962,11 @@ func (expr *ArrayCreation) fix(currentBlock *Block) Expression {
 				compileError(expr.Position(), ARRAY_SIZE_NOT_INT_ERR)
 			}
 		}
-
-		deriveList = append([]*ArrayDerive{&ArrayDerive{}}, deriveList...)
+		deriveList = append([]TypeDerive{&ArrayDerive{}}, deriveList...)
 	}
 
 	expr.setType(cloneTypeSpecifier(expr.typeS()))
-	expr.deriveList = deriveList
+	expr.typeS().deriveList = deriveList
 
 	expr.typeS().fix()
 
@@ -999,13 +993,13 @@ func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob 
 	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, dimCount, index)
 }
 
-func createBasicArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) {
+func createBasicArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) Expression {
 	expr := createClassArrayCreation(typ, dim_expr_list, dim_list, pos)
 
 	return expr
 }
 
-func createClassArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) {
+func createClassArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) Expression {
 
 	expr := &ArrayCreation{
 		dimensionList: dim_expr_list,
@@ -1085,7 +1079,7 @@ type NewExpression struct {
 	ExpressionImpl
 
 	className       string
-	classDefinition ClassDefinition
+	classDefinition *ClassDefinition
 	classIndex      int
 
 	methodName        string
@@ -1096,11 +1090,11 @@ type NewExpression struct {
 func (expr *NewExpression) fix(currentBlock *Block) Expression {
 	expr.classDefinition = search_class_and_add(expr.Position(), expr.className, &expr.classIndex)
 
-	if !expr.methodName {
+	if expr.methodName == "" {
 		expr.methodName = DEFAULT_CONSTRUCTOR_NAME
 	}
 
-	member := search_member(expr.classDefinition, expr.methodName)
+	member := expr.classDefinition.searchMember(expr.methodName)
 
 	if member == nil {
 		compileError(expr.Position(), MEMBER_NOT_FOUND_ERR, expr.className, expr.methodName)
@@ -1117,7 +1111,7 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 		panic("TODO")
 	}
 
-	methodMember.functionDefinition.checkArgument(current_block, expr, nil)
+	methodMember.functionDefinition.checkArgument(currentBlock, expr, nil)
 
 	expr.methodDeclaration = member
 	typ := &TypeSpecifier{
@@ -1137,10 +1131,10 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 func (expr *NewExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
 
 	methodMember := expr.methodDeclaration.(*MethodMember)
-	param_count := len(methodMember.FunctionDefinition.parameterList)
+	param_count := len(methodMember.functionDefinition.parameterList)
 
 	ob.generateCode(expr.Position(), vm.VM_NEW, expr.classIndex)
-	generatePushArgument(expr.argumentList, exe, block, ob)
+	generatePushArgument(expr.argumentList, exe, currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_DUPLICATE_OFFSET, param_count)
 
 	ob.generateCode(expr.Position(), vm.VM_PUSH_METHOD, methodMember.methodIndex)

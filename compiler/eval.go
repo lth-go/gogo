@@ -35,7 +35,7 @@ func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expre
 
 	case *StringExpression:
 		if binaryExpr.operator == AddOperator {
-			newExpr := chainString(binaryExpr)
+			newExpr := chainBinaryExpressionString(binaryExpr)
 			return newExpr
 		}
 	}
@@ -91,7 +91,7 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 	return newExpr
 }
 
-func chainString(binaryExpr *BinaryExpression) Expression {
+func chainBinaryExpressionString(binaryExpr *BinaryExpression) Expression {
 
 	rightStr := expressionToString(binaryExpr.right)
 	if rightStr == "" {
@@ -342,7 +342,7 @@ func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 
 	if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
 		expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
-		expr.typeS().fix(0)
+		expr.typeS().fix()
 		return expr
 	}
 

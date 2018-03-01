@@ -25,11 +25,12 @@ func printProc(vm *VmVirtualMachine, argCount int, args []VmValue) VmValue {
 		intValue: 0,
 	}
 
-	obj := args[0].(*VmObjectValue).objectValue
+	obj := args[0].(*VmObjectRef).data
 
 	if obj != nil {
 		str = obj.(*VmObjectString).stringValue
 	}
+
 	fmt.Println(str)
 
 	return ret

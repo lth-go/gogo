@@ -233,9 +233,9 @@ func (obj *VmObjectClassObject) writeDouble(sp int, value float64) {
 	obj.fieldList[sp] = v
 }
 func (obj *VmObjectClassObject) writeObject(sp int, value *VmObjectRef) {
-	v.setPointer(true)
+	value.setPointer(true)
 
-	obj.fieldList[sp] = v
+	obj.fieldList[sp] = value
 }
 
 // utils

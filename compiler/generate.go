@@ -113,9 +113,7 @@ func (ob *OpcodeBuf) fixLabels() {
 			switch p {
 			case 'b':
 				i++
-			case 's':
-				fallthrough
-			case 'p':
+			case 's', 'p':
 				i += 2
 			default:
 				panic("param error")

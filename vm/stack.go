@@ -127,7 +127,7 @@ func (s *Stack) writeDoubleI(sp int, value float64) {
 	s.stack[sp] = v
 }
 func (s *Stack) writeObjectI(sp int, value *VmObjectRef) {
-	v := NewObjectValue(value)
+	v := value
 	v.setPointer(true)
 
 	s.stack[sp] = v

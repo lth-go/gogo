@@ -626,19 +626,19 @@ block
 class_definition
         : CLASS_T IDENTIFIER extends LC
         {
-            startClassdefinition($2, $3, $1.Position())
+            startClassDefine($2, $3, $1.Position())
         }
           member_declaration_list RC
         {
-            classDefine($6)
+            endClassDefine($6)
         }
         | CLASS_T IDENTIFIER extends LC
         {
-            startClassdefinition($2, $3, $1.Position())
+            startClassDefine($2, $3, $1.Position())
         }
           RC
         {
-            classDefine(nil)
+            endClassDefine(nil)
         }
         ;
 extends

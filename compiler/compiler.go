@@ -222,7 +222,7 @@ func (c *Compiler) fixClassList() {
 
 		fieldIndex, methodIndex := cd.getSuperFieldMethodCount()
 
-		for memberIfs := range cd.memberList {
+		for _, memberIfs := range cd.memberList {
 			switch member := memberIfs.(type) {
 			case *MethodMember:
 				member.functionDefinition.fix()

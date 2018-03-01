@@ -20,6 +20,22 @@ type Require struct {
 	packageNameList []string
 }
 
+func createRequire(packageNameList []string) *Require {
+	return &Require{
+		packageNameList: packageNameList,
+	}
+}
+
+func createRequireList(packageNameList []string) []*Require {
+	req := createRequire(packageNameList)
+
+	return []*Require{req}
+}
+
+func chainRequireList(requireList1, requireList2 []*Require) []*Require {
+	return append(requireList1, requireList2...)
+}
+
 // 获取导入文件的相对路径
 func (r *Require) getRelativePath() string {
 	path := filepath.Join(r.packageNameList...)
@@ -38,9 +54,16 @@ func (r *Require) getFullPath() string {
 	fullPath := filepath.Join(searchBasePath, relativePath)
 	_, err := os.Stat(fullPath)
 	if err != nil {
-		panic("文件不存在")
-		compileError(r.Position(), REQUIRE_FILE_NOT_FOUND_ERR, file)
+		compileError(r.Position(), REQUIRE_FILE_NOT_FOUND_ERR, fullPath)
 	}
 
 	return fullPath
+}
+
+func createPackageName(lit string) []string {
+	return []string{lit}
+}
+
+func chainPackageName(list []string, lit string) []string {
+	return append(list, lit)
 }

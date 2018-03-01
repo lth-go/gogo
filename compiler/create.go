@@ -83,7 +83,7 @@ func endClassDefine(member_list []MemberDeclaration) {
 	}
 	compiler.classDefinitionList = append(compiler.classDefinitionList, cd)
 
-	cd.member = member_list
+	cd.memberList = member_list
 	compiler.currentClassDefinition = nil
 }
 

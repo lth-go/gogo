@@ -39,3 +39,19 @@ func fixClassMemberExpression(expr *MemberExpression, obj Expression, memberName
 	return expr
 
 }
+
+func createFunctionDeriveType(fd *FunctionDefinition ) *TypeSpecifier {
+	typ := &TypeSpecifier{}
+
+	*typ = *fd.typeS()
+
+	newFuncDerive := &FunctionDerive{
+		parameterList: fd.parameterList,
+	}
+	typ.appendDerive(newFuncDerive)
+
+	typ.deriveList = append(typ.deriveList, fd.typeS().deriveList...)
+
+    return typ
+}
+

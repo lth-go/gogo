@@ -11,29 +11,29 @@ import (
     parameter_list       []*Parameter
     argument_list        []Expression
 
-    statement            Statement
+statement            Statement
     statement_list       []Statement
 
-    expression           Expression
+expression           Expression
     expression_list      []Expression
 
-    block                *Block
+block                *Block
     elif_list            []*Elif
 
-    basic_type_specifier *TypeSpecifier
+basic_type_specifier *TypeSpecifier
     type_specifier       *TypeSpecifier
 
-    array_dimension      *ArrayDimension
+array_dimension      *ArrayDimension
     array_dimension_list []*ArrayDimension
 
-    package_name         []string
+package_name         []string
     require_list         []*Require
 
-    extends_list         []*Extend
+extends_list         []*Extend
     member_declaration   []MemberDeclaration
     function_definition  *FunctionDefinition
 
-    tok                  Token
+tok                  Token
 }
 
 %token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
@@ -103,23 +103,23 @@ require_list
         : require_declaration
         | require_list require_declaration
         {
-            $$ = dkc_chain_require_list($1, $2);
+            $$ = chainRequireList($1, $2)
         }
         ;
 require_declaration
         : REQUIRE package_name SEMICOLON
         {
-            $$ = dkc_create_require_list($2);
+            $$ = createRequireList($2)
         }
         ;
 package_name
         : IDENTIFIER
         {
-            $$ = dkc_create_package_name($1.Lit)
+            $$ = createPackageName($1.Lit)
         }
         | package_name DOT IDENTIFIER
         {
-            $$ = dkc_chain_package_name($1, $3.Lit);
+            $$ = chainPackageName($1, $3.Lit)
         }
         ;
 definition_or_statement
@@ -167,7 +167,7 @@ array_type_specifier
         }
         | IDENTIFIER LB RB
         {
-            class_type := create_class_type_specifier($1, $1.Position())
+            class_type := create_class_type_specifier($1.Lit, $1.Position())
             $$ = create_array_type_specifier(class_type)
         }
         | array_type_specifier LB RB
@@ -209,7 +209,6 @@ parameter_list
         : type_specifier IDENTIFIER
         {
             parameter := &Parameter{typeSpecifier: $1, name: $2.Lit}
-            parameter.SetPosition($1.Position())
             $$ = []*Parameter{parameter}
         }
         | parameter_list COMMA type_specifier IDENTIFIER
@@ -358,7 +357,7 @@ primary_expression
 primary_no_new_array
         : primary_no_new_array LB expression RB
         {
-            $$ = createIndexExpression($1, $3, $1.Posi;ion())
+            $$ = createIndexExpression($1, $3, $1.Position())
         }
         | IDENTIFIER LB expression RB
         {
@@ -422,19 +421,19 @@ primary_no_new_array
         }
         | NEW IDENTIFIER LP RP
         {
-            $$ = createNewExpression($2.Lit, "", nil)
+            $$ = createNewExpression($2.Lit, "", nil, $1.Position())
         }
         | NEW IDENTIFIER LP argument_list RP
         {
-            $$ = createNewExpression($2.Lit, nil, $4)
+            $$ = createNewExpression($2.Lit, "", $4, $1.Position())
         }
         | NEW IDENTIFIER DOT IDENTIFIER LP RP
         {
-            $$ = createNewExpression($2.Lit, $4.Lit, nil)
+            $$ = createNewExpression($2.Lit, $4.Lit, nil, $1.Position())
         }
         | NEW IDENTIFIER DOT IDENTIFIER LP argument_list RP
         {
-            $$ = createNewExpression($2.Lit, $4.Lit, $6)
+            $$ = createNewExpression($2.Lit, $4.Lit, $6, $1.Position())
         }
         ;
 array_literal
@@ -452,19 +451,19 @@ array_literal
 array_creation
         : NEW basic_type_specifier dimension_expression_list
         {
-            $$ = createBasicArrayCreation($2, $3, nil)
+            $$ = createBasicArrayCreation($2, $3, nil, $1.Position())
         }
         | NEW basic_type_specifier dimension_expression_list dimension_list
         {
-            $$ = createBasicArrayCreation($2, $3, $4)
+            $$ = createBasicArrayCreation($2, $3, $4, $1.Position())
         }
         | NEW class_type_specifier dimension_expression_list
         {
-            $$ = createClassArrayCreation($2, $3, nil)
+            $$ = createClassArrayCreation($2, $3, nil, $1.Position())
         }
         | NEW class_type_specifier dimension_expression_list dimension_list
         {
-            $$ = createClassArrayCreation($2, $3, $4)
+            $$ = createClassArrayCreation($2, $3, $4, $1.Position())
         }
         ;
 dimension_expression_list
@@ -612,9 +611,9 @@ block
             currentBlock := $<block>2
             currentBlock.statementList = $3
 
-            l := yylex.(*Lexer)
+l := yylex.(*Lexer)
 
-            $<block>$ = l.compiler.currentBlock
+$<block>$ = l.compiler.currentBlock
             l.compiler.currentBlock = currentBlock.outerBlock
         }
         | LC RC
@@ -626,7 +625,7 @@ block
 class_definition
         : CLASS_T IDENTIFIER extends LC
         {
-            startClassDefine($2, $3, $1.Position())
+            startClassDefine($2.Lit, $3, $1.Position())
         }
           member_declaration_list RC
         {
@@ -634,7 +633,7 @@ class_definition
         }
         | CLASS_T IDENTIFIER extends LC
         {
-            startClassDefine($2, $3, $1.Position())
+            startClassDefine($2.Lit, $3, $1.Position())
         }
           RC
         {
@@ -654,11 +653,11 @@ extends
 extends_list
         : IDENTIFIER
         {
-            $$ = createExtendList($1)
+            $$ = createExtendList($1.Lit)
         }
         | extends_list COMMA IDENTIFIER
         {
-            $$ = chainExtendList($1, $3)
+            $$ = chainExtendList($1, $3.Lit)
         }
         ;
 member_declaration_list
@@ -675,31 +674,31 @@ member_declaration
 method_member
         : method_function_definition
         {
-            $$ = createMethodMember($1)
+            $$ = []MemberDeclaration{createMethodMember($1, $1.typeSpecifier.Position())}
         }
         ;
 method_function_definition
         : type_specifier IDENTIFIER LP parameter_list RP block
         {
-            $$ = methodFunctionDefine($1, $2, $4, $6);
+            $$ = methodFunctionDefine($1, $2.Lit, $4, $6);
         }
         | type_specifier IDENTIFIER LP RP block
         {
-            $$ = methodFunctionDefine($1, $2, nil, $5);
+            $$ = methodFunctionDefine($1, $2.Lit, nil, $5);
         }
         | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
         {
-            $$ = methodFunctionDefine($1, $2, $4, nil);
+            $$ = methodFunctionDefine($1, $2.Lit, $4, nil);
         }
         | type_specifier IDENTIFIER LP RP SEMICOLON
         {
-            $$ = methodFunctionDefine($1, $2, nil, nil);
+            $$ = methodFunctionDefine($1, $2.Lit, nil, nil);
         }
         ;
 field_member
         : type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = createFieldMember($1, $2, $1.Position())
+            $$ = createFieldMember($1, $2.Lit, $1.Position())
         }
         ;
 %%

@@ -61,7 +61,7 @@ func (cd *ClassDefinition) getSuperFieldMethodCount() (int, int) {
 	methodIndex := 0
 
 	for superCd := cd.superClass; superCd != nil; superCd = superCd.superClass {
-		for memberIfs := range superCd.memberList {
+		for _, memberIfs := range superCd.memberList {
 			switch member := memberIfs.(type) {
 			case *MethodMember:
 				if member.methodIndex > methodIndex {

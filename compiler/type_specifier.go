@@ -58,7 +58,7 @@ func (t *TypeSpecifier) fix() {
 			compileError(t.Position(), TYPE_NAME_NOT_FOUND_ERR, t.classRef.identifier)
 			return
 		}
-		if cd.getPackageName(), compiler.getPackageName() {
+		if cd.getPackageName() == compiler.getPackageName() {
 			compileError(t.Position(), PACKAGE_CLASS_ACCESS_ERR, cd.name)
 		}
 		t.classRef.classDefinition = cd

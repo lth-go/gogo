@@ -8,7 +8,8 @@ import (
 func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
-	fmt.Printf(errMessageMap[errorNumber], a...)
+	//fmt.Printf(errMessageMap[errorNumber], a...)
+	print(errorNumber)
 	fmt.Println("\n")
 	os.Exit(1)
 }

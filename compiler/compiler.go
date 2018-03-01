@@ -459,13 +459,23 @@ func CompileFile(path string) *vm.ExecutableList {
 	// 输出yacc错误信息
 	yyErrorVerbose = true
 
-	compiler := newCompiler()
+	compiler := createCompilerByPath(path)
 
+	exeList := compiler.Compile()
+
+	return exeList
+}
+
+func createCompilerByPath(path string) *Compiler {
+	compiler := newCompiler()
 	compiler.addLexerByPath(path)
 
-	exeList := vm.NewExecutableList()
+	return compiler
+}
 
-	exe := compiler.compile(exeList, false)
+func (c *Compiler) Compile() *vm.ExecutableList {
+	exeList := vm.NewExecutableList()
+	exe := c.compile(exeList, false)
 	exeList.TopLevel = exe
 
 	return exeList

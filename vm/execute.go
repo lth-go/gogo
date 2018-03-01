@@ -1,5 +1,9 @@
 package vm
 
+import (
+	"fmt"
+)
+
 //
 // 字节码解释器
 //
@@ -49,6 +53,27 @@ func NewExecutable() *Executable {
 	}
 
 	return exe
+}
+
+func (exe *Executable) ShowCode() {
+	for i := 0; i < len(exe.CodeList); {
+		code := exe.CodeList[i]
+		info := OpcodeInfo[int(code)]
+		paramList := []byte(info.Parameter)
+
+		fmt.Println(info.Mnemonic)
+		for _, param := range paramList {
+			switch param {
+			case 'b':
+				i += 1
+			case 's', 'p':
+				i += 2
+			default:
+				panic("TODO")
+			}
+		}
+		i += 1
+	}
 }
 
 func (exe *Executable) AddConstantPool(cp Constant) int {

@@ -40,10 +40,10 @@ func (e *Error) Error() string {
 
 // Lexer provides inteface to parse codes.
 type Lexer struct {
-	s   *Scanner
-	lit string
-	pos Position
-	e   error 
+	s        *Scanner
+	lit      string
+	pos      Position
+	e        error
 	compiler *Compiler
 }
 
@@ -66,9 +66,22 @@ func (l *Lexer) Lex(lval *yySymType) int {
 	return tok
 }
 
+func (l *Lexer) show() {
+	for {
+		tok, lit, pos, err := l.s.Scan()
+		if err != nil {
+			panic(err)
+		}
+		if tok == EOF {
+			fmt.Println("end")
+			break
+		}
+		fmt.Printf("tok: '%v', lit: '%v', pos: %v\n", tok, lit, pos)
+	}
+}
+
 // Error sets parse error.
 // parse的错误
 func (l *Lexer) Error(msg string) {
 	l.e = &Error{Message: msg, Pos: l.pos, Fatal: false}
 }
-

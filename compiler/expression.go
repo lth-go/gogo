@@ -577,11 +577,13 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(expr.operand.typeS())
 
-	switch newExpr := expr.operand.(type) {
+	switch operand := expr.operand.(type) {
 	case *IntExpression:
-		newExpr.intValue = -newExpr.intValue
+		operand.intValue = -operand.intValue
+		newExpr = operand
 	case *DoubleExpression:
-		newExpr.doubleValue = -newExpr.doubleValue
+		operand.doubleValue = -operand.doubleValue
+		newExpr = operand
 	default:
 		newExpr = expr
 	}
@@ -621,10 +623,11 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 
 	expr.operand = expr.operand.fix(currentBlock)
 
-	switch newExpr := expr.operand.(type) {
+	switch operand := expr.operand.(type) {
 	case *BooleanExpression:
-		newExpr.booleanValue = !newExpr.booleanValue
-		newExpr.setType(createTypeSpecifier(vm.BooleanType, expr.Position()))
+		operand.booleanValue = !operand.booleanValue
+		operand.setType(createTypeSpecifier(vm.BooleanType, expr.Position()))
+		newExpr = operand
 	default:
 		if !isBoolean(expr.operand.typeS()) {
 			compileError(expr.Position(), LOGICAL_NOT_TYPE_MISMATCH_ERR, "")

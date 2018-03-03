@@ -49,12 +49,14 @@ func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Po
 
 	if b != nil {
 		b.declarationList = append(b.declarationList, decl)
-		fd.addLocalVariable(decl)
+	}
+	if fd != nil {
 		decl.isLocal = true
+		fd.addLocalVariable(decl)
 	} else {
 		compiler := getCurrentCompiler()
-		compiler.declarationList = append(compiler.declarationList, decl)
 		decl.isLocal = false
+		compiler.declarationList = append(compiler.declarationList, decl)
 	}
 }
 

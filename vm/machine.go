@@ -47,9 +47,9 @@ func NewVirtualMachine() *VmVirtualMachine {
 		function:          []Function{},
 		currentExecutable: nil,
 	}
-	vm.AddNativeFunctions()
+	setVirtualMachine(vm)
 
-	StVirtualMachine = vm
+	vm.AddNativeFunctions()
 
 	return vm
 }
@@ -57,6 +57,9 @@ func NewVirtualMachine() *VmVirtualMachine {
 // 设置全局vm
 var StVirtualMachine *VmVirtualMachine
 
+func setVirtualMachine(vm *VmVirtualMachine) {
+	StVirtualMachine = vm
+}
 func getVirtualMachine() *VmVirtualMachine {
 	return StVirtualMachine
 }
@@ -125,7 +128,7 @@ func (vm *VmVirtualMachine) addFunctions(ee *ExecutableEntry) {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-		newVmFunc := &GFunction{Name: exeFunc.Name, Executable: ee, Index: srcIdex}
+		newVmFunc := &GFunction{Name: exeFunc.Name, PackageName: exeFunc.PackageName, Executable: ee, Index: srcIdex}
 		vm.function = append(vm.function, newVmFunc)
 	}
 }
@@ -168,14 +171,7 @@ func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
 		for _, vmClass := range vm.classList {
 			// 有重复定义
 			if vmClass.name == exeClass.Name && vmClass.packageName == exeClass.PackageName {
-				var package_name string
-
-				if vmClass.packageName != "" {
-					package_name = vmClass.packageName
-				} else {
-					package_name = ""
-				}
-				vmError(CLASS_MULTIPLE_DEFINE_ERR, package_name, vmClass.name)
+				vmError(CLASS_MULTIPLE_DEFINE_ERR, vmClass.packageName, vmClass.name)
 			}
 		}
 	}
@@ -333,7 +329,6 @@ func search_class_from_executable(exe *Executable, name string) *VmClass {
 			return exeClass
 		}
 	}
-
 	panic("TODO")
 }
 
@@ -1049,19 +1044,13 @@ func (vm *VmVirtualMachine) create_array_sub(dim int, dim_index int, typ *VmType
 		switch typ.BasicType {
 		case VoidType:
 			panic("TODO")
-		case BooleanType:
-			fallthrough
-		case IntType:
+		case BooleanType, IntType:
 			ret = vm.createArrayInt(size)
 		case DoubleType:
 			ret = vm.createArrayDouble(size)
-		case StringType:
-			fallthrough
-		case ClassType:
+		case StringType, ClassType:
 			ret = vm.createArrayObject(size)
-		case NullType:
-			fallthrough
-		case BaseType:
+		case NullType, BaseType:
 			fallthrough
 		default:
 			panic("TODO")

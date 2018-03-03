@@ -11,7 +11,7 @@ const (
 )
 
 const (
-	REQUIRE_SUFFIX string = ".gogogo"
+	REQUIRE_SUFFIX string = ".4g"
 )
 
 type Require struct {
@@ -44,10 +44,12 @@ func (r *Require) getRelativePath() string {
 }
 
 func (r *Require) getFullPath() string {
-	searchBasePath := os.Getenv("REQUIRE_SEARCH_PATH")
-	if searchBasePath == "" {
-		searchBasePath = "."
-	}
+	// TODO 暂时写死, 方便测试
+	//searchBasePath := os.Getenv("REQUIRE_SEARCH_PATH")
+	//if searchBasePath == "" {
+	//    searchBasePath = "."
+	//}
+	searchBasePath := "/home/lth/toy/gogogogo/test"
 
 	relativePath := r.getRelativePath()
 

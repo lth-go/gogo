@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"strings"
+
 	"../vm"
 )
 
@@ -93,18 +94,16 @@ func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
 	fd.localVariableList = append(fd.localVariableList, decl)
 }
 
-func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression, arrayBase *TypeSpecifier) {
+func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []Expression, arrayBase *TypeSpecifier) {
 	var tempType *TypeSpecifier
-	functionCallExpr := expr.(*FunctionCallExpression)
 
 	parameterList := fd.parameterList
-	argumentList := functionCallExpr.argumentList
 
 	paramLen := len(parameterList)
 	argLen := len(argumentList)
 
 	if argLen != paramLen {
-		compileError(expr.Position(), ARGUMENT_COUNT_MISMATCH_ERR, paramLen, argLen)
+		compileError(fd.typeS().Position(), ARGUMENT_COUNT_MISMATCH_ERR, paramLen, argLen)
 	}
 
 	for i := 0; i < paramLen; i++ {
@@ -122,4 +121,16 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, expr Expression
 
 func (fd *FunctionDefinition) getPackageName() string {
 	return strings.Join(fd.packageNameList, ".")
+}
+
+func (fd *FunctionDefinition) getVmFuncName() string {
+	var name string
+
+	if fd.classDefinition != nil {
+		name = createMethodFunctionName(fd.classDefinition.name, fd.name)
+	} else {
+		name = fd.name
+	}
+
+	return name
 }

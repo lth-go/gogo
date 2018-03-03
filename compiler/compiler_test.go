@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var testFile = "../test/test.4g"
+var testFile = "../test/shape.4g"
 
 //func TestLexer(t *testing.T) {
 //    l := newLexerByFilePath(testFile)
@@ -18,5 +18,8 @@ func TestParse(t *testing.T) {
 	//exeList := compiler.Compile()
 	compiler.Compile()
 
-	compiler.Show()
+	for _, c := range stCompilerList {
+		println("=======")
+		c.Show()
+	}
 }

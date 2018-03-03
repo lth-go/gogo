@@ -9,8 +9,8 @@ func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	//fmt.Printf(errMessageMap[errorNumber], a...)
-	print(errorNumber)
-	fmt.Println("\n")
+	println(errorNumber)
+	println(errMessageList[errorNumber])
 	os.Exit(1)
 }
 
@@ -93,7 +93,6 @@ const (
 	WHILE_CONDITION_NOT_BOOLEAN_ERR
 	FOR_CONDITION_NOT_BOOLEAN_ERR
 	DO_WHILE_CONDITION_NOT_BOOLEAN_ERR
-
 	OVERRIDE_METHOD_ACCESSIBILITY_ERR
 	BAD_PARAMETER_COUNT_ERR
 	BAD_PARAMETER_TYPE_ERR
@@ -124,7 +123,6 @@ var errMessageMap = map[int]string{
 	//IDENTIFIER_NOT_FOUND_ERR:                 "找不到变量或函数%s。",
 	//FUNCTION_IDENTIFIER_ERR:                  "$(name)是函数名，但没有函数调用的()。",
 	//DERIVE_TYPE_CAST_ERR:                     "不能强制转型为派生类型。",
-	//CAST_MISMATCH_ERR:                        "不能将(%s)转型为(%s)。",
 	//MATH_TYPE_MISMATCH_ERR:                   "算数运算符的操作数类型不正确。",
 	//COMPARE_TYPE_MISMATCH_ERR:                "比较运算符的操作数类型不正确。Left: %s, Right: %s",
 	//LOGICAL_TYPE_MISMATCH_ERR:                "逻辑and/or运算符的操作数类型不正确。",
@@ -213,7 +211,6 @@ var errMessageList []string = []string{
 	"因为Diksam的接口间没有父子关系, instanceof语句一直为假。",
 	"向下转型的源类型必须是类。",
 	"向下转型的目标类型必须是类。",
-
 	"不需要进行向下转型。",
 	"尝试将父类转换为子类。",
 	"尝试转换没有继承关系的类。",
@@ -223,7 +220,6 @@ var errMessageList []string = []string{
 	"while语句的条件表达式不是boolean型。",
 	"for语句的条件表达式不是boolean型。",
 	"do while语句的条件表达式不是boolean型。",
-
 	"被覆盖的方法$(name)的访问修饰符必须比超类的更严格。",
 	"方法或函数$(name)的参数数量错误。",
 	"方法或函数$(func_name)的第$(index)个参数, $(param_name)的类型错误。",

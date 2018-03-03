@@ -6,13 +6,13 @@ func fixStatementList(currentBlock *Block, statementList []Statement, fd *Functi
 	}
 }
 
-func check_member_accessibility(pos Position, targetClass *ClassDefinition, member MemberDeclaration, memberName string) {
-	compiler := getCurrentCompiler()
+//func check_member_accessibility(pos Position, targetClass *ClassDefinition, member MemberDeclaration, memberName string) {
+//    compiler := getCurrentCompiler()
 
-	if compiler.getPackageName() != targetClass.getPackageName() {
-		compileError(pos, PACKAGE_MEMBER_ACCESS_ERR, memberName)
-	}
-}
+//    if compiler.getPackageName() != targetClass.getPackageName() {
+//        compileError(pos, PACKAGE_MEMBER_ACCESS_ERR, memberName)
+//    }
+//}
 
 func fixClassMemberExpression(expr *MemberExpression, obj Expression, memberName string) Expression {
 
@@ -25,7 +25,7 @@ func fixClassMemberExpression(expr *MemberExpression, obj Expression, memberName
 		compileError(expr.Position(), MEMBER_NOT_FOUND_ERR, cd.name, memberName)
 	}
 
-	check_member_accessibility(obj.Position(), cd, member, memberName)
+	//check_member_accessibility(obj.Position(), cd, member, memberName)
 
 	expr.declaration = member
 

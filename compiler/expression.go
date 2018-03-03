@@ -701,7 +701,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, name)
 	}
 
-	fd.checkArgument(currentBlock, expr, arrayBase)
+	fd.checkArgument(currentBlock, expr.argumentList, arrayBase)
 
 	expr.setType(&TypeSpecifier{basicType: fd.typeS().basicType})
 
@@ -739,7 +739,10 @@ func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *B
 type MemberExpression struct {
 	ExpressionImpl
 
+	// 实例
 	expression Expression
+
+	// 成员名称
 	memberName string
 
 	declaration MemberDeclaration
@@ -1081,12 +1084,16 @@ func createIndexExpression(array, index Expression, pos Position) *IndexExpressi
 type NewExpression struct {
 	ExpressionImpl
 
+	// 类名
 	className       string
 	classDefinition *ClassDefinition
 	classIndex      int
 
+	// 类初始化方便名
 	methodName        string
+	// 类初始化方法
 	methodDeclaration MemberDeclaration
+	// 参数
 	argumentList      []Expression
 }
 
@@ -1108,13 +1115,13 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), CONSTRUCTOR_IS_FIELD_ERR, expr.methodName)
 	}
 
-	check_member_accessibility(expr.Position(), expr.classDefinition, member, expr.methodName)
+	//check_member_accessibility(expr.Position(), expr.classDefinition, member, expr.methodName)
 
 	if !(methodMember.functionDefinition.typeS().deriveList == nil && methodMember.functionDefinition.typeS().basicType == vm.VoidType) {
 		panic("TODO")
 	}
 
-	methodMember.functionDefinition.checkArgument(currentBlock, expr, nil)
+	methodMember.functionDefinition.checkArgument(currentBlock, expr.argumentList, nil)
 
 	expr.methodDeclaration = member
 	typ := &TypeSpecifier{

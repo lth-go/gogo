@@ -197,14 +197,15 @@ func (c *Compiler) fixTree() {
 
 	// 修正函数
 	for _, fd := range c.funcList {
-		fd.fix()
+		if fd.classDefinition == nil {
+			fd.fix()
+		}
 	}
 
 	// 修正全局声明
 	for varCount, decl := range c.declarationList {
 		decl.variableIndex = varCount
 	}
-
 }
 
 func (c *Compiler) fixClassList() {
@@ -244,7 +245,7 @@ func (c *Compiler) fixClassList() {
 
 				superMember := cd.searchMemberInSuper(member.name)
 
-				// TODO 只有方法能够继承?
+				// 不允许重复定义字段
 				if superMember != nil {
 					compileError(member.Position(), FIELD_NAME_DUPLICATE_ERR, member.name)
 				} else {
@@ -263,22 +264,20 @@ func (c *Compiler) fixClassList() {
 func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 
 	srcPackageName := src.getPackageName()
+	vmFuncName := src.getVmFuncName()
 
 	for i, vmFunction := range c.vmFunctionList {
-		if (srcPackageName == vmFunction.PackageName) && (src.name == vmFunction.Name) {
+		if (srcPackageName == vmFunction.PackageName) && (vmFuncName == vmFunction.Name) {
 			return i
 		}
 	}
 
-	dest := &vm.VmFunction{}
-	c.vmFunctionList = append(c.vmFunctionList, dest)
-
-	dest.PackageName = srcPackageName
-	if src.classDefinition != nil {
-		dest.Name = createMethodFunctionName(src.classDefinition.name, src.name)
-	} else {
-		dest.Name = src.name
+	dest := &vm.VmFunction{
+		PackageName: srcPackageName,
+		Name: vmFuncName,
 	}
+
+	c.vmFunctionList = append(c.vmFunctionList, dest)
 
 	return len(c.vmFunctionList) - 1
 }
@@ -328,12 +327,14 @@ func (compiler *Compiler) addClasses(exe *vm.Executable) {
 }
 
 // TODO 改名
+// 完善vmClass信息
 func addClass(cd *ClassDefinition, dest *vm.VmClass) {
 
 	if cd.superClass != nil {
-		dest.SuperClass = &vm.VmClassIdentifier{}
-		dest.Name = cd.name
-		dest.PackageName = cd.getPackageName()
+		dest.SuperClass = &vm.VmClassIdentifier{
+			Name: cd.superClass.name,
+			PackageName: cd.superClass.getPackageName(),
+		}
 	} else {
 		dest.SuperClass = nil
 	}

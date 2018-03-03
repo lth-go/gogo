@@ -82,12 +82,15 @@ func (cd *ClassDefinition) getSuperFieldMethodCount() (int, int) {
 func (cd *ClassDefinition) searchMemberInSuper(memberName string) MemberDeclaration {
 	var member MemberDeclaration
 
-	if cd.superClass != nil {
-		member = cd.searchMember(memberName)
-		if member != nil {
-			return member
-		}
+	if cd.superClass == nil {
+		return nil
 	}
+
+	member = cd.superClass.searchMember(memberName)
+	if member != nil {
+		return member
+	}
+
 	return nil
 }
 
@@ -165,8 +168,8 @@ func chainExtendList(list []*Extend, add string) []*Extend {
 // ==============================
 type MemberDeclaration interface{}
 
-func chainMemberDeclaration(list []MemberDeclaration, add MemberDeclaration) []MemberDeclaration {
-	list = append(list, add)
+func chainMemberDeclaration(list []MemberDeclaration, add []MemberDeclaration) []MemberDeclaration {
+	list = append(list, add...)
 
 	return list
 }
@@ -181,7 +184,7 @@ type MethodMember struct {
 	methodIndex        int
 }
 
-func createMethodMember(function_definition *FunctionDefinition, pos Position) MemberDeclaration {
+func createMethodMember(function_definition *FunctionDefinition, pos Position) []MemberDeclaration {
 	compiler := getCurrentCompiler()
 
 	ret := &MethodMember{}
@@ -195,7 +198,7 @@ func createMethodMember(function_definition *FunctionDefinition, pos Position) M
 
 	function_definition.classDefinition = compiler.currentClassDefinition
 
-	return ret
+	return []MemberDeclaration{ret}
 }
 
 //

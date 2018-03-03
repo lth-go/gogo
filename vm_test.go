@@ -1,37 +1,26 @@
 package main
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"./compiler"
 	"./vm"
 )
 
-func TestNativeFunc(t *testing.T) {
-	code, err := ioutil.ReadFile("test.4g")
-	if err != nil {
-		panic(err)
-	}
+var testFile = "test/shape.4g"
 
-	compiler, err := compiler.ParseSrc(string(code))
-	if err != nil {
-		panic(err)
-	}
-
-	compiler.Show()
-
-	exe := vm.NewExecutable()
-
-	compiler.Generate(exe)
+func TestVmMachine(t *testing.T) {
+	exeList := compiler.CompileFile(testFile)
 
 	// 打印字节码
-	vm.PrintCode(exe.CodeList)
+	for _, exe := range exeList.List {
+		vm.PrintCode(exe.CodeList)
+	}
 
 	// 创建虚拟机
 	VM := vm.NewVirtualMachine()
 
-	VM.AddExecutable(exe)
+	VM.SetExecutableList(exeList)
 
 	VM.Execute()
 }

@@ -214,19 +214,30 @@ func AddTypeSpecifier(src *TypeSpecifier, exe *vm.Executable) int {
 }
 
 func generate_pop_to_lvalue(exe *vm.Executable, block *Block, expr Expression, ob *OpcodeBuf) {
-	identifierExpr, ok := expr.(*IdentifierExpression)
-	if ok {
-		generatePopToIdentifier(identifierExpr.inner.(*Declaration), expr.Position(), ob)
-		return
+
+	switch e := expr.(type) {
+	case *IdentifierExpression:
+		generatePopToIdentifier(e.inner.(*Declaration), expr.Position(), ob)
+	case *IndexExpression:
+		e.array.generate(exe, block, ob)
+		e.index.generate(exe, block, ob)
+		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT+getOpcodeTypeOffset(expr.typeS()))
+	case *MemberExpression:
+        generatePopToMember(exe, block, e, ob)
 	}
-	indexExpr, ok := expr.(*IndexExpression)
-	if !ok {
+}
+
+func generatePopToMember(exe *vm.Executable,block *Block, expr *MemberExpression ,ob  *OpcodeBuf ) {
+	
+	switch member := expr.declaration.(type) {
+	case *FieldMember:
+		expr.expression.generate(exe, block, ob)
+		ob.generateCode(expr.Position(),vm.VM_POP_FIELD_INT + getOpcodeTypeOffset(member.typeSpecifier), member.fieldIndex)
+	case *MethodMember:
+		compileError(expr.Position(), ASSIGN_TO_METHOD_ERR, member.functionDefinition.name)
+	default:
 		panic("TODO")
 	}
-	indexExpr.array.generate(exe, block, ob)
-	indexExpr.index.generate(exe, block, ob)
-
-	ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT+getOpcodeTypeOffset(expr.typeS()))
 }
 
 func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {

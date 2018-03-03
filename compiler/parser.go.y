@@ -611,9 +611,9 @@ block
             currentBlock := $<block>2
             currentBlock.statementList = $3
 
-l := yylex.(*Lexer)
+            l := yylex.(*Lexer)
 
-$<block>$ = l.compiler.currentBlock
+            $<block>$ = l.compiler.currentBlock
             l.compiler.currentBlock = currentBlock.outerBlock
         }
         | LC RC
@@ -674,7 +674,7 @@ member_declaration
 method_member
         : method_function_definition
         {
-            $$ = []MemberDeclaration{createMethodMember($1, $1.typeSpecifier.Position())}
+            $$ = createMethodMember($1, $1.typeSpecifier.Position())
         }
         ;
 method_function_definition

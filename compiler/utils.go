@@ -79,15 +79,15 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 		return 2
 	}
 	switch typ.basicType {
-	case vm.BooleanType:
-		return byte(0)
-	case vm.IntType:
+	case vm.VoidType:
+		panic("basic type is void")
+	case vm.BooleanType, vm.IntType:
 		return byte(0)
 	case vm.DoubleType:
 		return byte(1)
-	case vm.StringType:
+	case vm.StringType, vm.ClassType:
 		return byte(2)
-	case vm.NullType:
+	case vm.NullType, vm.BaseType:
 		fallthrough
 	default:
 		panic("basic type")
@@ -191,11 +191,22 @@ func searchDeclaration(name string, currentBlock *Block) *Declaration {
 func SearchFunction(name string) *FunctionDefinition {
 	compiler := getCurrentCompiler()
 
+	// 当前compiler查找
 	for _, pos := range compiler.funcList {
 		if pos.name == name {
 			return pos
 		}
 	}
+
+	// 导入的compiler查找
+	for _, required := range compiler.requiredList {
+		for _, fd := range required.funcList {
+			if fd.name == name && fd.classDefinition == nil {
+				return fd
+			}
+		}
+	}
+
 	return nil
 }
 

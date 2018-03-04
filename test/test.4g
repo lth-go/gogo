@@ -1,4 +1,4 @@
-int print(string str);
+require todo;
 int println(string str) {
     print(str + "\n");
 }

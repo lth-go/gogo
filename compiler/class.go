@@ -57,8 +57,8 @@ func (cd *ClassDefinition) addToCurrentCompiler() int {
 }
 
 func (cd *ClassDefinition) getSuperFieldMethodCount() (int, int) {
-	fieldIndex := 0
-	methodIndex := 0
+	fieldIndex := -1
+	methodIndex := -1
 
 	for superCd := cd.superClass; superCd != nil; superCd = superCd.superClass {
 		for _, memberIfs := range superCd.memberList {
@@ -76,7 +76,7 @@ func (cd *ClassDefinition) getSuperFieldMethodCount() (int, int) {
 			}
 		}
 	}
-	return fieldIndex, methodIndex
+	return fieldIndex + 1, methodIndex + 1
 }
 
 func (cd *ClassDefinition) searchMemberInSuper(memberName string) MemberDeclaration {

@@ -365,9 +365,9 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 	ee := vm.currentExecutable
 	exe := vm.currentExecutable.executable
 
-	static := ee.static
 
 	for pc := vm.pc; pc < len(codeList); {
+		static := ee.static
 
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:
@@ -875,19 +875,21 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
 			VM_PUSH_STACK_OBJECT, VM_POP_STACK_OBJECT:
 
-			// TODO
+			var parameter_count int
+
 			if f == nil {
-				for _, lineNumber := range exe.LineNumberList {
-					if lineNumber.StartPc == i {
-						panic(fmt.Sprintf("Line: %d, func == nil", lineNumber.LineNumber))
-					}
-				}
 				panic("can't find line, need debug!!!")
 			}
 
+            if f.IsMethod {
+                parameter_count = len(f.ParameterList) + 1 /* for this */
+            } else{
+                parameter_count = len(f.ParameterList)
+            }
+
 			// 增加返回值的位置
 			src_idx := get2ByteInt(codeList[i+1:])
-			if src_idx >= len(f.ParameterList) {
+			if src_idx >= parameter_count {
 				dest_idx = src_idx + 1
 			} else {
 				dest_idx = src_idx
@@ -897,8 +899,12 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 		case VM_PUSH_FUNCTION:
 
 			idx_in_exe := get2ByteInt(codeList[i+1:])
-			funcIdx := vm.SearchFunction(exe.FunctionList[idx_in_exe].Name)
+			funcIdx := vm.searchFunction(exe.FunctionList[idx_in_exe].PackageName, exe.FunctionList[idx_in_exe].Name)
 			set2ByteInt(codeList[i+1:], funcIdx)
+		case VM_NEW:
+			idx_in_exe := get2ByteInt(codeList[i+1:])
+			class_idx := vm.searchClass(exe.ClassDefinitionList[idx_in_exe].PackageName, exe.ClassDefinitionList[idx_in_exe].Name)
+			set2ByteInt(codeList[i+1:], class_idx)
 		}
 
 		info := &OpcodeInfo[code]
@@ -906,9 +912,7 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 			switch p {
 			case 'b':
 				i++
-			case 's':
-				fallthrough
-			case 'p':
+			case 's', 'p':
 				i += 2
 			default:
 				panic("TODO")
@@ -916,17 +920,28 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 		}
 	}
 }
-
 // 查找函数
-func (vm *VmVirtualMachine) SearchFunction(name string) int {
+func (vm *VmVirtualMachine) searchFunction(packageName, name string) int {
 
 	for i, f := range vm.function {
-		if f.getName() == name {
+		if f.getPackageName() == packageName && f.getName() == name {
 			return i
 		}
 	}
-	vmError(FUNCTION_NOT_FOUND_ERR, name)
-	return 0
+	return FUNCTION_NOT_FOUND
+}
+
+func (vm *VmVirtualMachine)searchClass(package_name, name string) int {
+
+	for i, class := range vm.classList {
+		if class.packageName == package_name && class.name == name {
+			return i
+		}
+	}
+
+    vmError(CLASS_NOT_FOUND_ERR, name)
+
+    return 0
 }
 
 //

@@ -259,6 +259,27 @@ type VmLocalVariable struct {
 	TypeSpecifier *VmTypeSpecifier
 }
 
+func (f *VmFunction) ShowCode() {
+	for i := 0; i < len(f.CodeList); {
+		code := f.CodeList[i]
+		info := OpcodeInfo[int(code)]
+		paramList := []byte(info.Parameter)
+
+		fmt.Println(info.Mnemonic)
+		for _, param := range paramList {
+			switch param {
+			case 'b':
+				i += 1
+			case 's', 'p':
+				i += 2
+			default:
+				panic("TODO")
+			}
+		}
+		i += 1
+	}
+}
+
 // ==============================
 // 行号对应表
 // ==============================

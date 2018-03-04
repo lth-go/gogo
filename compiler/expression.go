@@ -751,6 +751,9 @@ type MemberExpression struct {
 
 func (expr *MemberExpression) show(ident int) {
 	printWithIdent("MemberExpr", ident)
+
+	subIdent := ident + 2
+	expr.expression.show(subIdent)
 }
 
 func (expr *MemberExpression) fix(currentBlock *Block) Expression {
@@ -795,6 +798,10 @@ func createMemberExpression(expression Expression, memberName string, pos Positi
 // ==============================
 type ThisExpression struct {
 	ExpressionImpl
+}
+
+func (expr *ThisExpression) show(ident int) {
+	printWithIdent("ThisExpr", ident)
 }
 
 func (expr *ThisExpression) fix(currentBlock *Block) Expression {

@@ -1,0 +1,42 @@
+int print(string str);
+
+int println(string str) {
+    print(str + "\n");
+}
+
+class Printable {
+    void print() {}
+}
+
+class Shape : Printable {
+    int color;
+
+    void draw() {}
+}
+
+class Line : Shape {
+    double  start_x;
+    double  start_y;
+    double  end_x;
+    double  end_y;
+
+    void draw() {
+        println("draw Line!");
+    }
+
+    void print() {
+        println("(" + this.start_x + ", " + this.end_x + ")-(" + this.end_x + ", " + this.end_y + ")");
+    }
+
+    void init(double start_x, double start_y, double end_x, double end_y) {
+        this.start_x = start_x;
+        this.start_y = start_y;
+        this.end_x = end_x;
+        this.end_y = end_y;
+    }
+}
+
+Line l = new Line(10, 10, 20, 20);
+
+l.draw();
+l.print();

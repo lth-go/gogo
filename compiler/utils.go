@@ -169,19 +169,19 @@ func compareParameter(paramList1, paramList2 []*Parameter) bool {
 func searchDeclaration(name string, currentBlock *Block) *Declaration {
 
 	// 从局部作用域查找
-	for b := currentBlock; b != nil; b = b.outerBlock {
-		for _, decl := range b.declarationList {
-			if decl.name == name {
-				return decl
+	for block := currentBlock; block != nil; block = block.outerBlock {
+		for _, declaration := range block.declarationList {
+			if declaration.name == name {
+				return declaration
 			}
 		}
 	}
 
 	// 从全局作用域查找
 	compiler := getCurrentCompiler()
-	for _, decl := range compiler.declarationList {
-		if decl.name == name {
-			return decl
+	for _, declaration := range compiler.declarationList {
+		if declaration.name == name {
+			return declaration
 		}
 	}
 

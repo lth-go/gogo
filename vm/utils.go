@@ -29,31 +29,8 @@ func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
 
-func PrintCode(codeList []byte) {
-	print("=====\n", "code list start\n=====\n")
-	for i := 0; i < len(codeList); {
-		code := codeList[i]
-		info := OpcodeInfo[int(code)]
-		paramList := []byte(info.Parameter)
-
-		fmt.Println(info.Mnemonic)
-		for _, param := range paramList {
-			switch param {
-			case 'b':
-				i += 1
-			case 's', 'p':
-				i += 2
-			default:
-				panic("TODO")
-			}
-		}
-		i += 1
-	}
-	print("=====\n", "code list end\n=====\n")
-}
-
-func initializeValue(typ *VmTypeSpecifier) VmValue {
-	var value VmValue
+func initializeValue(typ *TypeSpecifier) Value {
+	var value Value
 
 	if typ.isArrayDerive() {
 		value = vmNullObjectRef
@@ -62,10 +39,10 @@ func initializeValue(typ *VmTypeSpecifier) VmValue {
 
 	switch typ.BasicType {
 	case VoidType, BooleanType, IntType:
-		value = &VmIntValue{intValue: 0}
+		value = &IntValue{intValue: 0}
 
 	case DoubleType:
-		value = &VmDoubleValue{doubleValue: 0.0}
+		value = &DoubleValue{doubleValue: 0.0}
 
 	case StringType, ClassType:
 		value = vmNullObjectRef
@@ -79,14 +56,14 @@ func initializeValue(typ *VmTypeSpecifier) VmValue {
 	return value
 }
 
-func createMethodFunctionName(class_name, method_name string) string {
+func createMethodFunctionName(className, methodName string) string {
 
-	ret := fmt.Sprintf("%s#%s", class_name, method_name)
+	ret := fmt.Sprintf("%s#%s", className, methodName)
 
 	return ret
 }
 
-func check_null_pointer(obj *VmObjectRef) {
+func checkNullPointer(obj *ObjectRef) {
 	if obj.data == nil {
 		vmError(NULL_POINTER_ERR)
 	}

@@ -13,8 +13,8 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-compiler/parser.go
-compiler/y.output
+src/compiler/parser.go
+src/compiler/y.output
 tags
 .idea
 

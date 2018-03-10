@@ -1,7 +1,7 @@
 package vm
 
 const (
-	stackAllocSize int = 4096
+	stackAllocSize = 4096
 )
 
 //
@@ -10,12 +10,12 @@ const (
 // 虚拟机栈
 type Stack struct {
 	stackPointer int
-	stack        []VmValue
+	stack        []Value
 }
 
 func NewStack() *Stack {
 	s := &Stack{
-		stack:        make([]VmValue, stackAllocSize, (stackAllocSize+1)*2),
+		stack:        make([]Value, stackAllocSize, (stackAllocSize+1)*2),
 		stackPointer: 0,
 	}
 	return s
@@ -30,7 +30,7 @@ func (s *Stack) expand(codeList []byte) {
 	if rest <= needStackSize {
 		size := len(s.stack) + needStackSize - rest
 
-		newStack := make([]VmValue, size, (size+1)*2)
+		newStack := make([]Value, size, (size+1)*2)
 		copy(newStack, s.stack)
 
 		s.stack = newStack
@@ -80,53 +80,53 @@ func (s *Stack) getDouble(sp int) float64 {
 	return s.getDoubleI(index)
 }
 
-func (s *Stack) getObject(sp int) *VmObjectRef {
+func (s *Stack) getObject(sp int) *ObjectRef {
 	index := s.getIndexOverSp(sp)
 	return s.getObjectI(index)
 }
 
 // 直据sp返回栈中元素
 func (s *Stack) getIntI(sp int) int {
-	value := s.stack[sp].(*VmIntValue)
+	value := s.stack[sp].(*IntValue)
 	return value.intValue
 }
 func (s *Stack) getDoubleI(sp int) float64 {
-	value := s.stack[sp].(*VmDoubleValue)
+	value := s.stack[sp].(*DoubleValue)
 	return value.doubleValue
 }
-func (s *Stack) getObjectI(sp int) *VmObjectRef {
-	value := s.stack[sp].(*VmObjectRef)
+func (s *Stack) getObjectI(sp int) *ObjectRef {
+	value := s.stack[sp].(*ObjectRef)
 	return value
 }
 
 // 根据sp以及stackPointer向栈中写入元素
-func (s *Stack) writeInt(sp int, value int) {
+func (s *Stack) setInt(sp int, value int) {
 	index := s.getIndexOverSp(sp)
-	s.writeIntI(index, value)
+	s.setIntI(index, value)
 }
-func (s *Stack) writeDouble(sp int, value float64) {
+func (s *Stack) setDouble(sp int, value float64) {
 	index := s.getIndexOverSp(sp)
-	s.writeDoubleI(index, value)
+	s.setDoubleI(index, value)
 }
-func (s *Stack) writeObject(sp int, value *VmObjectRef) {
+func (s *Stack) setObject(sp int, value *ObjectRef) {
 	index := s.getIndexOverSp(sp)
-	s.writeObjectI(index, value)
+	s.setObjectI(index, value)
 }
 
 // 根据sp向栈中写入元素
-func (s *Stack) writeIntI(sp int, value int) {
+func (s *Stack) setIntI(sp int, value int) {
 	v := NewIntValue(value)
 	v.setPointer(false)
 
 	s.stack[sp] = v
 }
-func (s *Stack) writeDoubleI(sp int, value float64) {
+func (s *Stack) setDoubleI(sp int, value float64) {
 	v := NewDoubleValue(value)
 	v.setPointer(false)
 
 	s.stack[sp] = v
 }
-func (s *Stack) writeObjectI(sp int, value *VmObjectRef) {
+func (s *Stack) setObjectI(sp int, value *ObjectRef) {
 	v := value
 	v.setPointer(true)
 
@@ -136,25 +136,25 @@ func (s *Stack) writeObjectI(sp int, value *VmObjectRef) {
 // other get
 func (s *Stack) getString(sp int) string {
 	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*VmObjectString).stringValue
+	return s.getObjectI(index).data.(*ObjectString).stringValue
 }
 
-func (s *Stack) getArrayInt(sp int) *VmObjectArrayInt {
+func (s *Stack) getArrayInt(sp int) *ObjectArrayInt {
 	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*VmObjectArrayInt)
+	return s.getObjectI(index).data.(*ObjectArrayInt)
 }
 
-func (s *Stack) getArrayDouble(sp int) *VmObjectArrayDouble {
+func (s *Stack) getArrayDouble(sp int) *ObjectArrayDouble {
 	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*VmObjectArrayDouble)
+	return s.getObjectI(index).data.(*ObjectArrayDouble)
 }
 
-func (s *Stack) getArrayObject(sp int) *VmObjectArrayObject {
+func (s *Stack) getArrayObject(sp int) *ObjectArrayObject {
 	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*VmObjectArrayObject)
+	return s.getObjectI(index).data.(*ObjectArrayObject)
 }
 
-func (s *Stack) getClassObject(sp int) *VmObjectClassObject {
+func (s *Stack) getClassObject(sp int) *ObjectClassObject {
 	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*VmObjectClassObject)
+	return s.getObjectI(index).data.(*ObjectClassObject)
 }

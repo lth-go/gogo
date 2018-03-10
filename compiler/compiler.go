@@ -54,9 +54,9 @@ type Compiler struct {
 
 	// TODO 能否去掉
 	// vm函数列表
-	vmFunctionList []*vm.VmFunction
+	vmFunctionList []*vm.Function
 	// vm类
-	vmClassList []*vm.VmClass
+	vmClassList []*vm.Class
 }
 
 func newCompiler() *Compiler {
@@ -64,8 +64,8 @@ func newCompiler() *Compiler {
 	c := &Compiler{
 		requireList:         []*Require{},
 		funcList:            []*FunctionDefinition{},
-		vmFunctionList:      []*vm.VmFunction{},
-		vmClassList:         []*vm.VmClass{},
+		vmFunctionList:      []*vm.Function{},
+		vmClassList:         []*vm.Class{},
 		declarationList:     []*Declaration{},
 		statementList:       []Statement{},
 		classDefinitionList: []*ClassDefinition{},
@@ -171,12 +171,12 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 //////////////////////////////
 func (c *Compiler) Show() {
 	fmt.Println("==========")
-	fmt.Println("stmt list start\n")
+	fmt.Println("stmt list start")
 	for _, stmt := range c.statementList {
 		stmt.show(0)
 	}
 	fmt.Println("\nstmt list end")
-	fmt.Println("==========\n")
+	fmt.Println("==========")
 }
 
 //////////////////////////////
@@ -203,8 +203,8 @@ func (c *Compiler) fixTree() {
 	}
 
 	// 修正全局声明
-	for varCount, decl := range c.declarationList {
-		decl.variableIndex = varCount
+	for varCount, declaration := range c.declarationList {
+		declaration.variableIndex = varCount
 	}
 }
 
@@ -260,7 +260,7 @@ func (c *Compiler) fixClassList() {
 	}
 }
 
-// 添加VmFuntion
+// 添加VmFunction
 func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 
 	srcPackageName := src.getPackageName()
@@ -272,7 +272,7 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 		}
 	}
 
-	dest := &vm.VmFunction{
+	dest := &vm.Function{
 		PackageName: srcPackageName,
 		Name: vmFuncName,
 	}
@@ -305,8 +305,8 @@ func (c *Compiler) generate() *vm.Executable {
 }
 
 // 添加全局变量
-func (compiler *Compiler) addGlobalVariable(exe *vm.Executable) {
-	for _, dl := range compiler.declarationList {
+func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
+	for _, dl := range c.declarationList {
 
 		newValue := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
 		exe.GlobalVariableList = append(exe.GlobalVariableList, newValue)
@@ -314,13 +314,13 @@ func (compiler *Compiler) addGlobalVariable(exe *vm.Executable) {
 }
 
 // 添加类
-func (compiler *Compiler) addClasses(exe *vm.Executable) {
-	for _, cd := range compiler.classDefinitionList {
-		vmClass := compiler.searchVmClass(cd)
+func (c *Compiler) addClasses(exe *vm.Executable) {
+	for _, cd := range c.classDefinitionList {
+		vmClass := c.searchVmClass(cd)
 		vmClass.IsImplemented = true
 	}
 
-	for _, vmClass := range compiler.vmClassList {
+	for _, vmClass := range c.vmClassList {
 		cd := searchClass(vmClass.Name)
 		addClass(cd, vmClass)
 	}
@@ -328,10 +328,10 @@ func (compiler *Compiler) addClasses(exe *vm.Executable) {
 
 // TODO 改名
 // 完善vmClass信息
-func addClass(cd *ClassDefinition, dest *vm.VmClass) {
+func addClass(cd *ClassDefinition, dest *vm.Class) {
 
 	if cd.superClass != nil {
-		dest.SuperClass = &vm.VmClassIdentifier{
+		dest.SuperClass = &vm.ClassIdentifier{
 			Name: cd.superClass.name,
 			PackageName: cd.superClass.getPackageName(),
 		}
@@ -342,12 +342,12 @@ func addClass(cd *ClassDefinition, dest *vm.VmClass) {
 	for _, memberIfs := range cd.memberList {
 		switch member := memberIfs.(type) {
 		case *MethodMember:
-			newMethod := &vm.VmMethod{
+			newMethod := &vm.Method{
 				Name: member.functionDefinition.name,
 			}
 			dest.MethodList = append(dest.MethodList, newMethod)
 		case *FieldMember:
-			newField := &vm.VmField{
+			newField := &vm.Field{
 				Name: member.name,
 				Typ:  copyTypeSpecifier(member.typeSpecifier),
 			}
@@ -361,7 +361,7 @@ func addClass(cd *ClassDefinition, dest *vm.VmClass) {
 // 添加函数
 func (c *Compiler) addFunctions(exe *vm.Executable) {
 
-	in_this_exe := make([]bool, len(c.vmFunctionList))
+	inThisExes := make([]bool, len(c.vmFunctionList))
 
 	for _, fd := range c.funcList {
 		// TODO 为什么block是空
@@ -369,29 +369,29 @@ func (c *Compiler) addFunctions(exe *vm.Executable) {
 			continue
 		}
 
-		dest_idx := c.getFunctionIndex(fd)
-		in_this_exe[dest_idx] = true
+		destIdx := c.getFunctionIndex(fd)
+		inThisExes[destIdx] = true
 
-		add_function(exe, fd, c.vmFunctionList[dest_idx], true)
+		addFunction(exe, fd, c.vmFunctionList[destIdx], true)
 	}
 
 	for i, vmFunc := range c.vmFunctionList {
-		if in_this_exe[i] {
+		if inThisExes[i] {
 			continue
 		}
 
 		fd := SearchFunction(vmFunc.Name)
-		add_function(exe, fd, vmFunc, false)
+		addFunction(exe, fd, vmFunc, false)
 	}
 }
 
-func add_function(exe *vm.Executable, src *FunctionDefinition, dest *vm.VmFunction, in_this_exe bool) {
+func addFunction(exe *vm.Executable, src *FunctionDefinition, dest *vm.Function, inThisExe bool) {
 	ob := newCodeBuf()
 
 	dest.TypeSpecifier = copyTypeSpecifier(src.typeS())
 	dest.ParameterList = copyParameterList(src.parameterList)
 
-	if src.block != nil && in_this_exe {
+	if src.block != nil && inThisExe {
 		generateStatementList(exe, src.block, src.block.statementList, ob)
 
 		dest.IsImplemented = true
@@ -411,18 +411,18 @@ func add_function(exe *vm.Executable, src *FunctionDefinition, dest *vm.VmFuncti
 }
 
 func (c *Compiler) getFunctionIndex(src *FunctionDefinition) int {
-	var func_name string
+	var funcName string
 
 	srcPackageName := src.getPackageName()
 
 	if src.classDefinition != nil {
-		func_name = createMethodFunctionName(src.classDefinition.name, src.name)
+		funcName = createMethodFunctionName(src.classDefinition.name, src.name)
 	} else {
-		func_name = src.name
+		funcName = src.name
 	}
 
 	for i, vmFunc := range c.vmFunctionList {
-		if srcPackageName == vmFunc.PackageName && func_name == vmFunc.Name {
+		if srcPackageName == vmFunc.PackageName && funcName == vmFunc.Name {
 			return i
 		}
 	}
@@ -431,16 +431,16 @@ func (c *Compiler) getFunctionIndex(src *FunctionDefinition) int {
 }
 
 // 添加字节码
-func (compiler *Compiler) addTopLevel(exe *vm.Executable) {
+func (c *Compiler) addTopLevel(exe *vm.Executable) {
 	ob := newCodeBuf()
-	generateStatementList(exe, nil, compiler.statementList, ob)
+	generateStatementList(exe, nil, c.statementList, ob)
 
 	exe.CodeList = ob.fixOpcodeBuf()
 	exe.LineNumberList = ob.lineNumberList
 }
 
 // other
-func (c *Compiler) searchVmClass(src *ClassDefinition) *vm.VmClass {
+func (c *Compiler) searchVmClass(src *ClassDefinition) *vm.Class {
 
 	srcPackageName := src.getPackageName()
 

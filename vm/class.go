@@ -1,29 +1,37 @@
 package vm
 
+// 虚拟机中的类信息
 type ExecClass struct {
-	vmClass *VmClass
+	// 具体类实现
+	vmClass *Class
 
+	// 所属的exe
 	Executable *ExecutableEntry
 
+	// 所属包名
 	packageName string
+	// 类名
 	name        string
 
-	// TODO remove
-	isImplemented bool
-
+	// 虚拟机中的类下标
 	classIndex int
 
+	// 父类
 	superClass *ExecClass
-	classTable *VmVTable
+	// 虚表
+	classTable *VTable
 
-	fieldTypeList []*VmTypeSpecifier
+	// 所有字段类型表
+	fieldTypeList []*TypeSpecifier
 }
 
-type VmVTable struct {
+// 虚表
+type VTable struct {
 	execClass *ExecClass
 	table     []*VTableItem
 }
 
+// 虚表字段
 type VTableItem struct {
 	name  string
 	index int

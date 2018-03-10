@@ -42,8 +42,8 @@ type TypeSpecifier struct {
 func (t *TypeSpecifier) fix() {
 	compiler := getCurrentCompiler()
 
-	for _, derive_pos := range t.deriveList {
-		derive, ok := derive_pos.(*FunctionDerive)
+	for _, deriveIfs := range t.deriveList {
+		derive, ok := deriveIfs.(*FunctionDerive)
 		if ok {
 			for _, parameter := range derive.parameterList {
 				parameter.typeSpecifier.fix()
@@ -75,7 +75,7 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 	typ.SetPosition(pos)
 	return typ
 }
-func create_class_type_specifier(identifier string, pos Position) *TypeSpecifier {
+func createClassTypeSpecifier(identifier string, pos Position) *TypeSpecifier {
 
 	typ := &TypeSpecifier{
 		basicType: vm.ClassType,
@@ -88,7 +88,7 @@ func create_class_type_specifier(identifier string, pos Position) *TypeSpecifier
 	return typ
 }
 
-func create_array_type_specifier(typ *TypeSpecifier) *TypeSpecifier {
+func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 	typ.appendDerive(&ArrayDerive{})
 	return typ
 }

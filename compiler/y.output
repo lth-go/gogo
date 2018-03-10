@@ -1,0 +1,2932 @@
+
+state 0
+	$accept: .translation_unit $end 
+	initial_declaration: .    (3)
+
+	REQUIRE  shift 5
+	.  reduce 3 (src line 92)
+
+	require_list  goto 3
+	require_declaration  goto 4
+	translation_unit  goto 1
+	initial_declaration  goto 2
+
+state 1
+	$accept:  translation_unit.$end 
+	translation_unit:  translation_unit.definition_or_statement 
+
+	$end  accept
+	IF  shift 23
+	FOR  shift 24
+	RETURN_T  shift 25
+	BREAK  shift 26
+	CONTINUE  shift 27
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 33
+	EXCLAMATION  shift 57
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	NEW  shift 49
+	CLASS_T  shift 11
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 12
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	statement  goto 9
+	if_statement  goto 13
+	for_statement  goto 14
+	return_statement  goto 15
+	break_statement  goto 16
+	continue_statement  goto 17
+	declaration_statement  goto 18
+	basic_type_specifier  goto 19
+	type_specifier  goto 10
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+	definition_or_statement  goto 6
+	function_definition  goto 7
+	class_definition  goto 8
+
+state 2
+	translation_unit:  initial_declaration.definition_or_statement 
+
+	IF  shift 23
+	FOR  shift 24
+	RETURN_T  shift 25
+	BREAK  shift 26
+	CONTINUE  shift 27
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 33
+	EXCLAMATION  shift 57
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	NEW  shift 49
+	CLASS_T  shift 11
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 12
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	statement  goto 9
+	if_statement  goto 13
+	for_statement  goto 14
+	return_statement  goto 15
+	break_statement  goto 16
+	continue_statement  goto 17
+	declaration_statement  goto 18
+	basic_type_specifier  goto 19
+	type_specifier  goto 10
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+	definition_or_statement  goto 58
+	function_definition  goto 7
+	class_definition  goto 8
+
+state 3
+	initial_declaration:  require_list.    (4)
+	require_list:  require_list.require_declaration 
+
+	REQUIRE  shift 5
+	.  reduce 4 (src line 97)
+
+	require_declaration  goto 59
+
+state 4
+	require_list:  require_declaration.    (5)
+
+	.  reduce 5 (src line 102)
+
+
+state 5
+	require_declaration:  REQUIRE.package_name SEMICOLON 
+
+	IDENTIFIER  shift 61
+	.  error
+
+	package_name  goto 60
+
+state 6
+	translation_unit:  translation_unit definition_or_statement.    (2)
+
+	.  reduce 2 (src line 90)
+
+
+state 7
+	definition_or_statement:  function_definition.    (10)
+
+	.  reduce 10 (src line 125)
+
+
+state 8
+	definition_or_statement:  class_definition.    (11)
+
+	.  reduce 11 (src line 127)
+
+
+state 9
+	definition_or_statement:  statement.    (12)
+
+	.  reduce 12 (src line 128)
+
+
+state 10
+	function_definition:  type_specifier.IDENTIFIER LP parameter_list RP block 
+	function_definition:  type_specifier.IDENTIFIER LP RP block 
+	function_definition:  type_specifier.IDENTIFIER LP parameter_list RP SEMICOLON 
+	function_definition:  type_specifier.IDENTIFIER LP RP SEMICOLON 
+	declaration_statement:  type_specifier.IDENTIFIER SEMICOLON 
+	declaration_statement:  type_specifier.IDENTIFIER ASSIGN_T expression SEMICOLON 
+
+	IDENTIFIER  shift 62
+	.  error
+
+
+state 11
+	class_definition:  CLASS_T.IDENTIFIER extends LC $$120 member_declaration_list RC 
+	class_definition:  CLASS_T.IDENTIFIER extends LC $$122 RC 
+
+	IDENTIFIER  shift 63
+	.  error
+
+
+state 12
+	expression:  expression.COMMA assignment_expression 
+	statement:  expression.SEMICOLON 
+
+	SEMICOLON  shift 65
+	COMMA  shift 64
+	.  error
+
+
+state 13
+	statement:  if_statement.    (97)
+
+	.  reduce 97 (src line 515)
+
+
+state 14
+	statement:  for_statement.    (98)
+
+	.  reduce 98 (src line 516)
+
+
+state 15
+	statement:  return_statement.    (99)
+
+	.  reduce 99 (src line 517)
+
+
+state 16
+	statement:  break_statement.    (100)
+
+	.  reduce 100 (src line 518)
+
+
+state 17
+	statement:  continue_statement.    (101)
+
+	.  reduce 101 (src line 519)
+
+
+state 18
+	statement:  declaration_statement.    (102)
+
+	.  reduce 102 (src line 520)
+
+
+state 19
+	array_type_specifier:  basic_type_specifier.LB RB 
+	type_specifier:  basic_type_specifier.    (22)
+
+	LB  shift 66
+	.  reduce 22 (src line 178)
+
+
+state 20
+	array_type_specifier:  array_type_specifier.LB RB 
+	type_specifier:  array_type_specifier.    (23)
+
+	LB  shift 67
+	.  reduce 23 (src line 183)
+
+
+state 21
+	type_specifier:  class_type_specifier.    (24)
+
+	.  reduce 24 (src line 184)
+
+
+state 22
+	expression:  assignment_expression.    (35)
+
+	.  reduce 35 (src line 239)
+
+
+state 23
+	if_statement:  IF.expression block 
+	if_statement:  IF.expression block ELSE block 
+	if_statement:  IF.expression block elif_list 
+	if_statement:  IF.expression block elif_list ELSE block 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 68
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 24
+	for_statement:  FOR.LP expression_opt SEMICOLON expression_opt SEMICOLON expression_opt RP block 
+
+	LP  shift 70
+	.  error
+
+
+state 25
+	return_statement:  RETURN_T.expression_opt SEMICOLON 
+	expression_opt: .    (110)
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  reduce 110 (src line 562)
+
+	expression  goto 72
+	expression_opt  goto 71
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 26
+	break_statement:  BREAK.SEMICOLON 
+
+	SEMICOLON  shift 73
+	.  error
+
+
+state 27
+	continue_statement:  CONTINUE.SEMICOLON 
+
+	SEMICOLON  shift 74
+	.  error
+
+
+state 28
+	basic_type_specifier:  VOID_T.    (13)
+
+	.  reduce 13 (src line 134)
+
+
+state 29
+	basic_type_specifier:  BOOLEAN_T.    (14)
+
+	.  reduce 14 (src line 139)
+
+
+state 30
+	basic_type_specifier:  INT_T.    (15)
+
+	.  reduce 15 (src line 143)
+
+
+state 31
+	basic_type_specifier:  DOUBLE_T.    (16)
+
+	.  reduce 16 (src line 147)
+
+
+state 32
+	basic_type_specifier:  STRING_T.    (17)
+
+	.  reduce 17 (src line 151)
+
+
+state 33
+	class_type_specifier:  IDENTIFIER.    (18)
+	array_type_specifier:  IDENTIFIER.LB RB 
+	primary_expression:  IDENTIFIER.    (63)
+	primary_no_new_array:  IDENTIFIER.LB expression RB 
+
+	LB  shift 75
+	IDENTIFIER  reduce 18 (src line 156)
+	.  reduce 63 (src line 352)
+
+
+state 34
+	assignment_expression:  logical_or_expression.    (37)
+	logical_or_expression:  logical_or_expression.LOGICAL_OR logical_and_expression 
+
+	LOGICAL_OR  shift 76
+	.  reduce 37 (src line 247)
+
+
+state 35
+	assignment_expression:  primary_expression.ASSIGN_T assignment_expression 
+	postfix_expression:  primary_expression.    (60)
+	primary_no_new_array:  primary_expression.DOT IDENTIFIER 
+	primary_no_new_array:  primary_expression.LP argument_list RP 
+	primary_no_new_array:  primary_expression.LP RP 
+
+	LP  shift 79
+	ASSIGN_T  shift 77
+	DOT  shift 78
+	.  reduce 60 (src line 346)
+
+
+state 36
+	logical_or_expression:  logical_and_expression.    (39)
+	logical_and_expression:  logical_and_expression.LOGICAL_AND equality_expression 
+
+	LOGICAL_AND  shift 80
+	.  reduce 39 (src line 255)
+
+
+state 37
+	primary_expression:  primary_no_new_array.    (61)
+	primary_no_new_array:  primary_no_new_array.LB expression RB 
+
+	LB  shift 81
+	.  reduce 61 (src line 349)
+
+
+state 38
+	primary_expression:  array_creation.    (62)
+
+	.  reduce 62 (src line 351)
+
+
+state 39
+	logical_and_expression:  equality_expression.    (41)
+	equality_expression:  equality_expression.EQ relational_expression 
+	equality_expression:  equality_expression.NE relational_expression 
+
+	EQ  shift 82
+	NE  shift 83
+	.  reduce 41 (src line 263)
+
+
+state 40
+	primary_no_new_array:  LP.expression RP 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 84
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 41
+	primary_no_new_array:  INT_LITERAL.    (70)
+
+	.  reduce 70 (src line 385)
+
+
+state 42
+	primary_no_new_array:  DOUBLE_LITERAL.    (71)
+
+	.  reduce 71 (src line 391)
+
+
+state 43
+	primary_no_new_array:  STRING_LITERAL.    (72)
+
+	.  reduce 72 (src line 397)
+
+
+state 44
+	primary_no_new_array:  TRUE_T.    (73)
+
+	.  reduce 73 (src line 402)
+
+
+state 45
+	primary_no_new_array:  FALSE_T.    (74)
+
+	.  reduce 74 (src line 407)
+
+
+state 46
+	primary_no_new_array:  NULL_T.    (75)
+
+	.  reduce 75 (src line 412)
+
+
+state 47
+	primary_no_new_array:  array_literal.    (76)
+
+	.  reduce 76 (src line 417)
+
+
+state 48
+	primary_no_new_array:  THIS_T.    (77)
+
+	.  reduce 77 (src line 418)
+
+
+state 49
+	primary_no_new_array:  NEW.IDENTIFIER LP RP 
+	primary_no_new_array:  NEW.IDENTIFIER LP argument_list RP 
+	primary_no_new_array:  NEW.IDENTIFIER DOT IDENTIFIER LP RP 
+	primary_no_new_array:  NEW.IDENTIFIER DOT IDENTIFIER LP argument_list RP 
+	array_creation:  NEW.basic_type_specifier dimension_expression_list 
+	array_creation:  NEW.basic_type_specifier dimension_expression_list dimension_list 
+	array_creation:  NEW.class_type_specifier dimension_expression_list 
+	array_creation:  NEW.class_type_specifier dimension_expression_list dimension_list 
+
+	IDENTIFIER  shift 85
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	.  error
+
+	basic_type_specifier  goto 86
+	class_type_specifier  goto 87
+
+state 50
+	equality_expression:  relational_expression.    (43)
+	relational_expression:  relational_expression.GT additive_expression 
+	relational_expression:  relational_expression.GE additive_expression 
+	relational_expression:  relational_expression.LT additive_expression 
+	relational_expression:  relational_expression.LE additive_expression 
+
+	GT  shift 88
+	GE  shift 89
+	LT  shift 90
+	LE  shift 91
+	.  reduce 43 (src line 271)
+
+
+state 51
+	array_literal:  LC.expression_list RC 
+	array_literal:  LC.expression_list COMMA RC 
+	expression_list: .    (93)
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  reduce 93 (src line 495)
+
+	assignment_expression  goto 93
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	expression_list  goto 92
+
+state 52
+	relational_expression:  additive_expression.    (46)
+	additive_expression:  additive_expression.ADD multiplicative_expression 
+	additive_expression:  additive_expression.SUB multiplicative_expression 
+
+	ADD  shift 94
+	SUB  shift 95
+	.  reduce 46 (src line 284)
+
+
+state 53
+	additive_expression:  multiplicative_expression.    (51)
+	multiplicative_expression:  multiplicative_expression.MUL unary_expression 
+	multiplicative_expression:  multiplicative_expression.DIV unary_expression 
+
+	MUL  shift 96
+	DIV  shift 97
+	.  reduce 51 (src line 307)
+
+
+state 54
+	multiplicative_expression:  unary_expression.    (54)
+
+	.  reduce 54 (src line 320)
+
+
+state 55
+	unary_expression:  postfix_expression.    (57)
+
+	.  reduce 57 (src line 333)
+
+
+state 56
+	unary_expression:  SUB.unary_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	unary_expression  goto 98
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 57
+	unary_expression:  EXCLAMATION.unary_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	unary_expression  goto 100
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 58
+	translation_unit:  initial_declaration definition_or_statement.    (1)
+
+	.  reduce 1 (src line 88)
+
+
+state 59
+	require_list:  require_list require_declaration.    (6)
+
+	.  reduce 6 (src line 104)
+
+
+state 60
+	require_declaration:  REQUIRE package_name.SEMICOLON 
+	package_name:  package_name.DOT IDENTIFIER 
+
+	SEMICOLON  shift 101
+	DOT  shift 102
+	.  error
+
+
+state 61
+	package_name:  IDENTIFIER.    (8)
+
+	.  reduce 8 (src line 115)
+
+
+state 62
+	function_definition:  type_specifier IDENTIFIER.LP parameter_list RP block 
+	function_definition:  type_specifier IDENTIFIER.LP RP block 
+	function_definition:  type_specifier IDENTIFIER.LP parameter_list RP SEMICOLON 
+	function_definition:  type_specifier IDENTIFIER.LP RP SEMICOLON 
+	declaration_statement:  type_specifier IDENTIFIER.SEMICOLON 
+	declaration_statement:  type_specifier IDENTIFIER.ASSIGN_T expression SEMICOLON 
+
+	LP  shift 103
+	SEMICOLON  shift 104
+	ASSIGN_T  shift 105
+	.  error
+
+
+state 63
+	class_definition:  CLASS_T IDENTIFIER.extends LC $$120 member_declaration_list RC 
+	class_definition:  CLASS_T IDENTIFIER.extends LC $$122 RC 
+	extends: .    (124)
+
+	COLON  shift 107
+	.  reduce 124 (src line 643)
+
+	extends  goto 106
+
+state 64
+	expression:  expression COMMA.assignment_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 108
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 65
+	statement:  expression SEMICOLON.    (96)
+
+	.  reduce 96 (src line 509)
+
+
+state 66
+	array_type_specifier:  basic_type_specifier LB.RB 
+
+	RB  shift 109
+	.  error
+
+
+state 67
+	array_type_specifier:  array_type_specifier LB.RB 
+
+	RB  shift 110
+	.  error
+
+
+state 68
+	expression:  expression.COMMA assignment_expression 
+	if_statement:  IF expression.block 
+	if_statement:  IF expression.block ELSE block 
+	if_statement:  IF expression.block elif_list 
+	if_statement:  IF expression.block elif_list ELSE block 
+
+	LC  shift 112
+	COMMA  shift 64
+	.  error
+
+	block  goto 111
+
+state 69
+	primary_expression:  IDENTIFIER.    (63)
+	primary_no_new_array:  IDENTIFIER.LB expression RB 
+
+	LB  shift 113
+	.  reduce 63 (src line 352)
+
+
+state 70
+	for_statement:  FOR LP.expression_opt SEMICOLON expression_opt SEMICOLON expression_opt RP block 
+	expression_opt: .    (110)
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  reduce 110 (src line 562)
+
+	expression  goto 72
+	expression_opt  goto 114
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 71
+	return_statement:  RETURN_T expression_opt.SEMICOLON 
+
+	SEMICOLON  shift 115
+	.  error
+
+
+state 72
+	expression:  expression.COMMA assignment_expression 
+	expression_opt:  expression.    (111)
+
+	COMMA  shift 64
+	.  reduce 111 (src line 567)
+
+
+state 73
+	break_statement:  BREAK SEMICOLON.    (113)
+
+	.  reduce 113 (src line 576)
+
+
+state 74
+	continue_statement:  CONTINUE SEMICOLON.    (114)
+
+	.  reduce 114 (src line 583)
+
+
+state 75
+	array_type_specifier:  IDENTIFIER LB.RB 
+	primary_no_new_array:  IDENTIFIER LB.expression RB 
+
+	LP  shift 40
+	LC  shift 51
+	RB  shift 116
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 117
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 76
+	logical_or_expression:  logical_or_expression LOGICAL_OR.logical_and_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	logical_and_expression  goto 118
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 77
+	assignment_expression:  primary_expression ASSIGN_T.assignment_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 119
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 78
+	primary_no_new_array:  primary_expression DOT.IDENTIFIER 
+
+	IDENTIFIER  shift 120
+	.  error
+
+
+state 79
+	primary_no_new_array:  primary_expression LP.argument_list RP 
+	primary_no_new_array:  primary_expression LP.RP 
+
+	LP  shift 40
+	RP  shift 122
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 123
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	argument_list  goto 121
+
+state 80
+	logical_and_expression:  logical_and_expression LOGICAL_AND.equality_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	equality_expression  goto 124
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 81
+	primary_no_new_array:  primary_no_new_array LB.expression RB 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 125
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 82
+	equality_expression:  equality_expression EQ.relational_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	relational_expression  goto 126
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 83
+	equality_expression:  equality_expression NE.relational_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	relational_expression  goto 127
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 84
+	expression:  expression.COMMA assignment_expression 
+	primary_no_new_array:  LP expression.RP 
+
+	RP  shift 128
+	COMMA  shift 64
+	.  error
+
+
+state 85
+	class_type_specifier:  IDENTIFIER.    (18)
+	primary_no_new_array:  NEW IDENTIFIER.LP RP 
+	primary_no_new_array:  NEW IDENTIFIER.LP argument_list RP 
+	primary_no_new_array:  NEW IDENTIFIER.DOT IDENTIFIER LP RP 
+	primary_no_new_array:  NEW IDENTIFIER.DOT IDENTIFIER LP argument_list RP 
+
+	LP  shift 129
+	DOT  shift 130
+	.  reduce 18 (src line 156)
+
+
+state 86
+	array_creation:  NEW basic_type_specifier.dimension_expression_list 
+	array_creation:  NEW basic_type_specifier.dimension_expression_list dimension_list 
+
+	LB  shift 133
+	.  error
+
+	dimension_expression  goto 132
+	dimension_expression_list  goto 131
+
+state 87
+	array_creation:  NEW class_type_specifier.dimension_expression_list 
+	array_creation:  NEW class_type_specifier.dimension_expression_list dimension_list 
+
+	LB  shift 133
+	.  error
+
+	dimension_expression  goto 132
+	dimension_expression_list  goto 134
+
+state 88
+	relational_expression:  relational_expression GT.additive_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	additive_expression  goto 135
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 89
+	relational_expression:  relational_expression GE.additive_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	additive_expression  goto 136
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 90
+	relational_expression:  relational_expression LT.additive_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	additive_expression  goto 137
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 91
+	relational_expression:  relational_expression LE.additive_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	additive_expression  goto 138
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 92
+	array_literal:  LC expression_list.RC 
+	array_literal:  LC expression_list.COMMA RC 
+	expression_list:  expression_list.COMMA assignment_expression 
+
+	RC  shift 139
+	COMMA  shift 140
+	.  error
+
+
+state 93
+	expression_list:  assignment_expression.    (94)
+
+	.  reduce 94 (src line 500)
+
+
+state 94
+	additive_expression:  additive_expression ADD.multiplicative_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	multiplicative_expression  goto 141
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 95
+	additive_expression:  additive_expression SUB.multiplicative_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	multiplicative_expression  goto 142
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 96
+	multiplicative_expression:  multiplicative_expression MUL.unary_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	unary_expression  goto 143
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 97
+	multiplicative_expression:  multiplicative_expression DIV.unary_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	unary_expression  goto 144
+	postfix_expression  goto 55
+	primary_expression  goto 99
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 98
+	unary_expression:  SUB unary_expression.    (58)
+
+	.  reduce 58 (src line 335)
+
+
+state 99
+	postfix_expression:  primary_expression.    (60)
+	primary_no_new_array:  primary_expression.DOT IDENTIFIER 
+	primary_no_new_array:  primary_expression.LP argument_list RP 
+	primary_no_new_array:  primary_expression.LP RP 
+
+	LP  shift 79
+	DOT  shift 78
+	.  reduce 60 (src line 346)
+
+
+state 100
+	unary_expression:  EXCLAMATION unary_expression.    (59)
+
+	.  reduce 59 (src line 340)
+
+
+state 101
+	require_declaration:  REQUIRE package_name SEMICOLON.    (7)
+
+	.  reduce 7 (src line 109)
+
+
+state 102
+	package_name:  package_name DOT.IDENTIFIER 
+
+	IDENTIFIER  shift 145
+	.  error
+
+
+state 103
+	function_definition:  type_specifier IDENTIFIER LP.parameter_list RP block 
+	function_definition:  type_specifier IDENTIFIER LP.RP block 
+	function_definition:  type_specifier IDENTIFIER LP.parameter_list RP SEMICOLON 
+	function_definition:  type_specifier IDENTIFIER LP.RP SEMICOLON 
+
+	RP  shift 147
+	IDENTIFIER  shift 149
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	.  error
+
+	parameter_list  goto 146
+	basic_type_specifier  goto 19
+	type_specifier  goto 148
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+
+state 104
+	declaration_statement:  type_specifier IDENTIFIER SEMICOLON.    (115)
+
+	.  reduce 115 (src line 590)
+
+
+state 105
+	declaration_statement:  type_specifier IDENTIFIER ASSIGN_T.expression SEMICOLON 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 150
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 106
+	class_definition:  CLASS_T IDENTIFIER extends.LC $$120 member_declaration_list RC 
+	class_definition:  CLASS_T IDENTIFIER extends.LC $$122 RC 
+
+	LC  shift 151
+	.  error
+
+
+state 107
+	extends:  COLON.extends_list 
+
+	IDENTIFIER  shift 153
+	.  error
+
+	extends_list  goto 152
+
+state 108
+	expression:  expression COMMA assignment_expression.    (36)
+
+	.  reduce 36 (src line 241)
+
+
+state 109
+	array_type_specifier:  basic_type_specifier LB RB.    (19)
+
+	.  reduce 19 (src line 162)
+
+
+state 110
+	array_type_specifier:  array_type_specifier LB RB.    (21)
+
+	.  reduce 21 (src line 173)
+
+
+state 111
+	if_statement:  IF expression block.    (103)
+	if_statement:  IF expression block.ELSE block 
+	if_statement:  IF expression block.elif_list 
+	if_statement:  IF expression block.elif_list ELSE block 
+
+	ELSE  shift 154
+	ELIF  shift 156
+	.  reduce 103 (src line 522)
+
+	elif_list  goto 155
+
+state 112
+	block:  LC.$$117 statement_list RC 
+	block:  LC.RC 
+	$$117: .    (117)
+
+	RC  shift 158
+	.  reduce 117 (src line 602)
+
+	$$117  goto 157
+
+state 113
+	primary_no_new_array:  IDENTIFIER LB.expression RB 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 117
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 114
+	for_statement:  FOR LP expression_opt.SEMICOLON expression_opt SEMICOLON expression_opt RP block 
+
+	SEMICOLON  shift 159
+	.  error
+
+
+state 115
+	return_statement:  RETURN_T expression_opt SEMICOLON.    (112)
+
+	.  reduce 112 (src line 569)
+
+
+state 116
+	array_type_specifier:  IDENTIFIER LB RB.    (20)
+
+	.  reduce 20 (src line 168)
+
+
+state 117
+	expression:  expression.COMMA assignment_expression 
+	primary_no_new_array:  IDENTIFIER LB expression.RB 
+
+	RB  shift 160
+	COMMA  shift 64
+	.  error
+
+
+state 118
+	logical_or_expression:  logical_or_expression LOGICAL_OR logical_and_expression.    (40)
+	logical_and_expression:  logical_and_expression.LOGICAL_AND equality_expression 
+
+	LOGICAL_AND  shift 80
+	.  reduce 40 (src line 257)
+
+
+state 119
+	assignment_expression:  primary_expression ASSIGN_T assignment_expression.    (38)
+
+	.  reduce 38 (src line 249)
+
+
+state 120
+	primary_no_new_array:  primary_expression DOT IDENTIFIER.    (66)
+
+	.  reduce 66 (src line 367)
+
+
+state 121
+	argument_list:  argument_list.COMMA assignment_expression 
+	primary_no_new_array:  primary_expression LP argument_list.RP 
+
+	RP  shift 162
+	COMMA  shift 161
+	.  error
+
+
+state 122
+	primary_no_new_array:  primary_expression LP RP.    (68)
+
+	.  reduce 68 (src line 376)
+
+
+state 123
+	argument_list:  assignment_expression.    (31)
+
+	.  reduce 31 (src line 219)
+
+
+state 124
+	logical_and_expression:  logical_and_expression LOGICAL_AND equality_expression.    (42)
+	equality_expression:  equality_expression.EQ relational_expression 
+	equality_expression:  equality_expression.NE relational_expression 
+
+	EQ  shift 82
+	NE  shift 83
+	.  reduce 42 (src line 265)
+
+
+state 125
+	expression:  expression.COMMA assignment_expression 
+	primary_no_new_array:  primary_no_new_array LB expression.RB 
+
+	RB  shift 163
+	COMMA  shift 64
+	.  error
+
+
+state 126
+	equality_expression:  equality_expression EQ relational_expression.    (44)
+	relational_expression:  relational_expression.GT additive_expression 
+	relational_expression:  relational_expression.GE additive_expression 
+	relational_expression:  relational_expression.LT additive_expression 
+	relational_expression:  relational_expression.LE additive_expression 
+
+	GT  shift 88
+	GE  shift 89
+	LT  shift 90
+	LE  shift 91
+	.  reduce 44 (src line 273)
+
+
+state 127
+	equality_expression:  equality_expression NE relational_expression.    (45)
+	relational_expression:  relational_expression.GT additive_expression 
+	relational_expression:  relational_expression.GE additive_expression 
+	relational_expression:  relational_expression.LT additive_expression 
+	relational_expression:  relational_expression.LE additive_expression 
+
+	GT  shift 88
+	GE  shift 89
+	LT  shift 90
+	LE  shift 91
+	.  reduce 45 (src line 278)
+
+
+state 128
+	primary_no_new_array:  LP expression RP.    (69)
+
+	.  reduce 69 (src line 381)
+
+
+state 129
+	primary_no_new_array:  NEW IDENTIFIER LP.RP 
+	primary_no_new_array:  NEW IDENTIFIER LP.argument_list RP 
+
+	LP  shift 40
+	RP  shift 164
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 123
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	argument_list  goto 165
+
+state 130
+	primary_no_new_array:  NEW IDENTIFIER DOT.IDENTIFIER LP RP 
+	primary_no_new_array:  NEW IDENTIFIER DOT.IDENTIFIER LP argument_list RP 
+
+	IDENTIFIER  shift 166
+	.  error
+
+
+state 131
+	array_creation:  NEW basic_type_specifier dimension_expression_list.    (84)
+	array_creation:  NEW basic_type_specifier dimension_expression_list.dimension_list 
+	dimension_expression_list:  dimension_expression_list.dimension_expression 
+
+	LB  shift 169
+	.  reduce 84 (src line 451)
+
+	dimension_expression  goto 168
+	dimension_list  goto 167
+
+state 132
+	dimension_expression_list:  dimension_expression.    (88)
+
+	.  reduce 88 (src line 469)
+
+
+state 133
+	dimension_expression:  LB.expression RB 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 170
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 134
+	array_creation:  NEW class_type_specifier dimension_expression_list.    (86)
+	array_creation:  NEW class_type_specifier dimension_expression_list.dimension_list 
+	dimension_expression_list:  dimension_expression_list.dimension_expression 
+
+	LB  shift 169
+	.  reduce 86 (src line 460)
+
+	dimension_expression  goto 168
+	dimension_list  goto 171
+
+state 135
+	relational_expression:  relational_expression GT additive_expression.    (47)
+	additive_expression:  additive_expression.ADD multiplicative_expression 
+	additive_expression:  additive_expression.SUB multiplicative_expression 
+
+	ADD  shift 94
+	SUB  shift 95
+	.  reduce 47 (src line 286)
+
+
+state 136
+	relational_expression:  relational_expression GE additive_expression.    (48)
+	additive_expression:  additive_expression.ADD multiplicative_expression 
+	additive_expression:  additive_expression.SUB multiplicative_expression 
+
+	ADD  shift 94
+	SUB  shift 95
+	.  reduce 48 (src line 291)
+
+
+state 137
+	relational_expression:  relational_expression LT additive_expression.    (49)
+	additive_expression:  additive_expression.ADD multiplicative_expression 
+	additive_expression:  additive_expression.SUB multiplicative_expression 
+
+	ADD  shift 94
+	SUB  shift 95
+	.  reduce 49 (src line 296)
+
+
+state 138
+	relational_expression:  relational_expression LE additive_expression.    (50)
+	additive_expression:  additive_expression.ADD multiplicative_expression 
+	additive_expression:  additive_expression.SUB multiplicative_expression 
+
+	ADD  shift 94
+	SUB  shift 95
+	.  reduce 50 (src line 301)
+
+
+state 139
+	array_literal:  LC expression_list RC.    (82)
+
+	.  reduce 82 (src line 439)
+
+
+state 140
+	array_literal:  LC expression_list COMMA.RC 
+	expression_list:  expression_list COMMA.assignment_expression 
+
+	LP  shift 40
+	LC  shift 51
+	RC  shift 172
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 173
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 141
+	additive_expression:  additive_expression ADD multiplicative_expression.    (52)
+	multiplicative_expression:  multiplicative_expression.MUL unary_expression 
+	multiplicative_expression:  multiplicative_expression.DIV unary_expression 
+
+	MUL  shift 96
+	DIV  shift 97
+	.  reduce 52 (src line 309)
+
+
+state 142
+	additive_expression:  additive_expression SUB multiplicative_expression.    (53)
+	multiplicative_expression:  multiplicative_expression.MUL unary_expression 
+	multiplicative_expression:  multiplicative_expression.DIV unary_expression 
+
+	MUL  shift 96
+	DIV  shift 97
+	.  reduce 53 (src line 314)
+
+
+state 143
+	multiplicative_expression:  multiplicative_expression MUL unary_expression.    (55)
+
+	.  reduce 55 (src line 322)
+
+
+state 144
+	multiplicative_expression:  multiplicative_expression DIV unary_expression.    (56)
+
+	.  reduce 56 (src line 327)
+
+
+state 145
+	package_name:  package_name DOT IDENTIFIER.    (9)
+
+	.  reduce 9 (src line 120)
+
+
+state 146
+	function_definition:  type_specifier IDENTIFIER LP parameter_list.RP block 
+	function_definition:  type_specifier IDENTIFIER LP parameter_list.RP SEMICOLON 
+	parameter_list:  parameter_list.COMMA type_specifier IDENTIFIER 
+
+	RP  shift 174
+	COMMA  shift 175
+	.  error
+
+
+state 147
+	function_definition:  type_specifier IDENTIFIER LP RP.block 
+	function_definition:  type_specifier IDENTIFIER LP RP.SEMICOLON 
+
+	LC  shift 112
+	SEMICOLON  shift 177
+	.  error
+
+	block  goto 176
+
+state 148
+	parameter_list:  type_specifier.IDENTIFIER 
+
+	IDENTIFIER  shift 178
+	.  error
+
+
+state 149
+	class_type_specifier:  IDENTIFIER.    (18)
+	array_type_specifier:  IDENTIFIER.LB RB 
+
+	LB  shift 179
+	.  reduce 18 (src line 156)
+
+
+state 150
+	expression:  expression.COMMA assignment_expression 
+	declaration_statement:  type_specifier IDENTIFIER ASSIGN_T expression.SEMICOLON 
+
+	SEMICOLON  shift 180
+	COMMA  shift 64
+	.  error
+
+
+state 151
+	class_definition:  CLASS_T IDENTIFIER extends LC.$$120 member_declaration_list RC 
+	class_definition:  CLASS_T IDENTIFIER extends LC.$$122 RC 
+	$$120: .    (120)
+	$$122: .    (122)
+
+	RC  reduce 122 (src line 634)
+	.  reduce 120 (src line 625)
+
+	$$120  goto 181
+	$$122  goto 182
+
+state 152
+	extends:  COLON extends_list.    (125)
+	extends_list:  extends_list.COMMA IDENTIFIER 
+
+	COMMA  shift 183
+	.  reduce 125 (src line 648)
+
+
+state 153
+	extends_list:  IDENTIFIER.    (126)
+
+	.  reduce 126 (src line 653)
+
+
+state 154
+	if_statement:  IF expression block ELSE.block 
+
+	LC  shift 112
+	.  error
+
+	block  goto 184
+
+state 155
+	if_statement:  IF expression block elif_list.    (105)
+	if_statement:  IF expression block elif_list.ELSE block 
+	elif_list:  elif_list.ELIF expression block 
+
+	ELSE  shift 185
+	ELIF  shift 186
+	.  reduce 105 (src line 533)
+
+
+state 156
+	elif_list:  ELIF.expression block 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 187
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 157
+	block:  LC $$117.statement_list RC 
+
+	IF  shift 23
+	FOR  shift 24
+	RETURN_T  shift 25
+	BREAK  shift 26
+	CONTINUE  shift 27
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 33
+	EXCLAMATION  shift 57
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 12
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	statement  goto 189
+	if_statement  goto 13
+	for_statement  goto 14
+	return_statement  goto 15
+	break_statement  goto 16
+	continue_statement  goto 17
+	declaration_statement  goto 18
+	statement_list  goto 188
+	basic_type_specifier  goto 19
+	type_specifier  goto 190
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+
+state 158
+	block:  LC RC.    (119)
+
+	.  reduce 119 (src line 619)
+
+
+state 159
+	for_statement:  FOR LP expression_opt SEMICOLON.expression_opt SEMICOLON expression_opt RP block 
+	expression_opt: .    (110)
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  reduce 110 (src line 562)
+
+	expression  goto 72
+	expression_opt  goto 191
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 160
+	primary_no_new_array:  IDENTIFIER LB expression RB.    (65)
+
+	.  reduce 65 (src line 362)
+
+
+state 161
+	argument_list:  argument_list COMMA.assignment_expression 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 192
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 162
+	primary_no_new_array:  primary_expression LP argument_list RP.    (67)
+
+	.  reduce 67 (src line 371)
+
+
+state 163
+	primary_no_new_array:  primary_no_new_array LB expression RB.    (64)
+
+	.  reduce 64 (src line 357)
+
+
+state 164
+	primary_no_new_array:  NEW IDENTIFIER LP RP.    (78)
+
+	.  reduce 78 (src line 422)
+
+
+state 165
+	argument_list:  argument_list.COMMA assignment_expression 
+	primary_no_new_array:  NEW IDENTIFIER LP argument_list.RP 
+
+	RP  shift 193
+	COMMA  shift 161
+	.  error
+
+
+state 166
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER.LP RP 
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER.LP argument_list RP 
+
+	LP  shift 194
+	.  error
+
+
+state 167
+	array_creation:  NEW basic_type_specifier dimension_expression_list dimension_list.    (85)
+	dimension_list:  dimension_list.LB RB 
+
+	LB  shift 195
+	.  reduce 85 (src line 456)
+
+
+state 168
+	dimension_expression_list:  dimension_expression_list dimension_expression.    (89)
+
+	.  reduce 89 (src line 474)
+
+
+state 169
+	dimension_expression:  LB.expression RB 
+	dimension_list:  LB.RB 
+
+	LP  shift 40
+	LC  shift 51
+	RB  shift 196
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 170
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 170
+	expression:  expression.COMMA assignment_expression 
+	dimension_expression:  LB expression.RB 
+
+	RB  shift 197
+	COMMA  shift 64
+	.  error
+
+
+state 171
+	array_creation:  NEW class_type_specifier dimension_expression_list dimension_list.    (87)
+	dimension_list:  dimension_list.LB RB 
+
+	LB  shift 195
+	.  reduce 87 (src line 464)
+
+
+state 172
+	array_literal:  LC expression_list COMMA RC.    (83)
+
+	.  reduce 83 (src line 445)
+
+
+state 173
+	expression_list:  expression_list COMMA assignment_expression.    (95)
+
+	.  reduce 95 (src line 504)
+
+
+state 174
+	function_definition:  type_specifier IDENTIFIER LP parameter_list RP.block 
+	function_definition:  type_specifier IDENTIFIER LP parameter_list RP.SEMICOLON 
+
+	LC  shift 112
+	SEMICOLON  shift 199
+	.  error
+
+	block  goto 198
+
+state 175
+	parameter_list:  parameter_list COMMA.type_specifier IDENTIFIER 
+
+	IDENTIFIER  shift 149
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	.  error
+
+	basic_type_specifier  goto 19
+	type_specifier  goto 200
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+
+state 176
+	function_definition:  type_specifier IDENTIFIER LP RP block.    (26)
+
+	.  reduce 26 (src line 192)
+
+
+state 177
+	function_definition:  type_specifier IDENTIFIER LP RP SEMICOLON.    (28)
+
+	.  reduce 28 (src line 202)
+
+
+state 178
+	parameter_list:  type_specifier IDENTIFIER.    (29)
+
+	.  reduce 29 (src line 208)
+
+
+state 179
+	array_type_specifier:  IDENTIFIER LB.RB 
+
+	RB  shift 116
+	.  error
+
+
+state 180
+	declaration_statement:  type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON.    (116)
+
+	.  reduce 116 (src line 596)
+
+
+state 181
+	class_definition:  CLASS_T IDENTIFIER extends LC $$120.member_declaration_list RC 
+
+	IDENTIFIER  shift 149
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	.  error
+
+	basic_type_specifier  goto 19
+	type_specifier  goto 206
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+	member_declaration  goto 202
+	member_declaration_list  goto 201
+	method_member  goto 203
+	field_member  goto 204
+	method_function_definition  goto 205
+
+state 182
+	class_definition:  CLASS_T IDENTIFIER extends LC $$122.RC 
+
+	RC  shift 207
+	.  error
+
+
+state 183
+	extends_list:  extends_list COMMA.IDENTIFIER 
+
+	IDENTIFIER  shift 208
+	.  error
+
+
+state 184
+	if_statement:  IF expression block ELSE block.    (104)
+
+	.  reduce 104 (src line 528)
+
+
+state 185
+	if_statement:  IF expression block elif_list ELSE.block 
+
+	LC  shift 112
+	.  error
+
+	block  goto 209
+
+state 186
+	elif_list:  elif_list ELIF.expression block 
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 210
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 187
+	expression:  expression.COMMA assignment_expression 
+	elif_list:  ELIF expression.block 
+
+	LC  shift 112
+	COMMA  shift 64
+	.  error
+
+	block  goto 211
+
+state 188
+	statement_list:  statement_list.statement 
+	block:  LC $$117 statement_list.RC 
+
+	IF  shift 23
+	FOR  shift 24
+	RETURN_T  shift 25
+	BREAK  shift 26
+	CONTINUE  shift 27
+	LP  shift 40
+	LC  shift 51
+	RC  shift 213
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 33
+	EXCLAMATION  shift 57
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	expression  goto 12
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	statement  goto 212
+	if_statement  goto 13
+	for_statement  goto 14
+	return_statement  goto 15
+	break_statement  goto 16
+	continue_statement  goto 17
+	declaration_statement  goto 18
+	basic_type_specifier  goto 19
+	type_specifier  goto 190
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+
+state 189
+	statement_list:  statement.    (33)
+
+	.  reduce 33 (src line 229)
+
+
+state 190
+	declaration_statement:  type_specifier.IDENTIFIER SEMICOLON 
+	declaration_statement:  type_specifier.IDENTIFIER ASSIGN_T expression SEMICOLON 
+
+	IDENTIFIER  shift 214
+	.  error
+
+
+state 191
+	for_statement:  FOR LP expression_opt SEMICOLON expression_opt.SEMICOLON expression_opt RP block 
+
+	SEMICOLON  shift 215
+	.  error
+
+
+state 192
+	argument_list:  argument_list COMMA assignment_expression.    (32)
+
+	.  reduce 32 (src line 224)
+
+
+state 193
+	primary_no_new_array:  NEW IDENTIFIER LP argument_list RP.    (79)
+
+	.  reduce 79 (src line 426)
+
+
+state 194
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER LP.RP 
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER LP.argument_list RP 
+
+	LP  shift 40
+	RP  shift 216
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  error
+
+	assignment_expression  goto 123
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+	argument_list  goto 217
+
+state 195
+	dimension_list:  dimension_list LB.RB 
+
+	RB  shift 218
+	.  error
+
+
+state 196
+	dimension_list:  LB RB.    (91)
+
+	.  reduce 91 (src line 485)
+
+
+state 197
+	dimension_expression:  LB expression RB.    (90)
+
+	.  reduce 90 (src line 479)
+
+
+state 198
+	function_definition:  type_specifier IDENTIFIER LP parameter_list RP block.    (25)
+
+	.  reduce 25 (src line 186)
+
+
+state 199
+	function_definition:  type_specifier IDENTIFIER LP parameter_list RP SEMICOLON.    (27)
+
+	.  reduce 27 (src line 197)
+
+
+state 200
+	parameter_list:  parameter_list COMMA type_specifier.IDENTIFIER 
+
+	IDENTIFIER  shift 219
+	.  error
+
+
+state 201
+	class_definition:  CLASS_T IDENTIFIER extends LC $$120 member_declaration_list.RC 
+	member_declaration_list:  member_declaration_list.member_declaration 
+
+	RC  shift 220
+	IDENTIFIER  shift 149
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	.  error
+
+	basic_type_specifier  goto 19
+	type_specifier  goto 206
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+	member_declaration  goto 221
+	method_member  goto 203
+	field_member  goto 204
+	method_function_definition  goto 205
+
+state 202
+	member_declaration_list:  member_declaration.    (128)
+
+	.  reduce 128 (src line 663)
+
+
+state 203
+	member_declaration:  method_member.    (130)
+
+	.  reduce 130 (src line 670)
+
+
+state 204
+	member_declaration:  field_member.    (131)
+
+	.  reduce 131 (src line 672)
+
+
+state 205
+	method_member:  method_function_definition.    (132)
+
+	.  reduce 132 (src line 674)
+
+
+state 206
+	method_function_definition:  type_specifier.IDENTIFIER LP parameter_list RP block 
+	method_function_definition:  type_specifier.IDENTIFIER LP RP block 
+	method_function_definition:  type_specifier.IDENTIFIER LP parameter_list RP SEMICOLON 
+	method_function_definition:  type_specifier.IDENTIFIER LP RP SEMICOLON 
+	field_member:  type_specifier.IDENTIFIER SEMICOLON 
+
+	IDENTIFIER  shift 222
+	.  error
+
+
+state 207
+	class_definition:  CLASS_T IDENTIFIER extends LC $$122 RC.    (123)
+
+	.  reduce 123 (src line 638)
+
+
+state 208
+	extends_list:  extends_list COMMA IDENTIFIER.    (127)
+
+	.  reduce 127 (src line 658)
+
+
+state 209
+	if_statement:  IF expression block elif_list ELSE block.    (106)
+
+	.  reduce 106 (src line 538)
+
+
+state 210
+	expression:  expression.COMMA assignment_expression 
+	elif_list:  elif_list ELIF expression.block 
+
+	LC  shift 112
+	COMMA  shift 64
+	.  error
+
+	block  goto 223
+
+state 211
+	elif_list:  ELIF expression block.    (107)
+
+	.  reduce 107 (src line 544)
+
+
+state 212
+	statement_list:  statement_list statement.    (34)
+
+	.  reduce 34 (src line 234)
+
+
+state 213
+	block:  LC $$117 statement_list RC.    (118)
+
+	.  reduce 118 (src line 609)
+
+
+state 214
+	declaration_statement:  type_specifier IDENTIFIER.SEMICOLON 
+	declaration_statement:  type_specifier IDENTIFIER.ASSIGN_T expression SEMICOLON 
+
+	SEMICOLON  shift 104
+	ASSIGN_T  shift 105
+	.  error
+
+
+state 215
+	for_statement:  FOR LP expression_opt SEMICOLON expression_opt SEMICOLON.expression_opt RP block 
+	expression_opt: .    (110)
+
+	LP  shift 40
+	LC  shift 51
+	SUB  shift 56
+	INT_LITERAL  shift 41
+	DOUBLE_LITERAL  shift 42
+	STRING_LITERAL  shift 43
+	TRUE_T  shift 44
+	FALSE_T  shift 45
+	NULL_T  shift 46
+	IDENTIFIER  shift 69
+	EXCLAMATION  shift 57
+	NEW  shift 49
+	THIS_T  shift 48
+	.  reduce 110 (src line 562)
+
+	expression  goto 72
+	expression_opt  goto 224
+	assignment_expression  goto 22
+	logical_and_expression  goto 36
+	logical_or_expression  goto 34
+	equality_expression  goto 39
+	relational_expression  goto 50
+	additive_expression  goto 52
+	multiplicative_expression  goto 53
+	unary_expression  goto 54
+	postfix_expression  goto 55
+	primary_expression  goto 35
+	primary_no_new_array  goto 37
+	array_literal  goto 47
+	array_creation  goto 38
+
+state 216
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER LP RP.    (80)
+
+	.  reduce 80 (src line 430)
+
+
+state 217
+	argument_list:  argument_list.COMMA assignment_expression 
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER LP argument_list.RP 
+
+	RP  shift 225
+	COMMA  shift 161
+	.  error
+
+
+state 218
+	dimension_list:  dimension_list LB RB.    (92)
+
+	.  reduce 92 (src line 490)
+
+
+state 219
+	parameter_list:  parameter_list COMMA type_specifier IDENTIFIER.    (30)
+
+	.  reduce 30 (src line 214)
+
+
+state 220
+	class_definition:  CLASS_T IDENTIFIER extends LC $$120 member_declaration_list RC.    (121)
+
+	.  reduce 121 (src line 630)
+
+
+state 221
+	member_declaration_list:  member_declaration_list member_declaration.    (129)
+
+	.  reduce 129 (src line 665)
+
+
+state 222
+	method_function_definition:  type_specifier IDENTIFIER.LP parameter_list RP block 
+	method_function_definition:  type_specifier IDENTIFIER.LP RP block 
+	method_function_definition:  type_specifier IDENTIFIER.LP parameter_list RP SEMICOLON 
+	method_function_definition:  type_specifier IDENTIFIER.LP RP SEMICOLON 
+	field_member:  type_specifier IDENTIFIER.SEMICOLON 
+
+	LP  shift 226
+	SEMICOLON  shift 227
+	.  error
+
+
+state 223
+	elif_list:  elif_list ELIF expression block.    (108)
+
+	.  reduce 108 (src line 549)
+
+
+state 224
+	for_statement:  FOR LP expression_opt SEMICOLON expression_opt SEMICOLON expression_opt.RP block 
+
+	RP  shift 228
+	.  error
+
+
+state 225
+	primary_no_new_array:  NEW IDENTIFIER DOT IDENTIFIER LP argument_list RP.    (81)
+
+	.  reduce 81 (src line 434)
+
+
+state 226
+	method_function_definition:  type_specifier IDENTIFIER LP.parameter_list RP block 
+	method_function_definition:  type_specifier IDENTIFIER LP.RP block 
+	method_function_definition:  type_specifier IDENTIFIER LP.parameter_list RP SEMICOLON 
+	method_function_definition:  type_specifier IDENTIFIER LP.RP SEMICOLON 
+
+	RP  shift 230
+	IDENTIFIER  shift 149
+	VOID_T  shift 28
+	BOOLEAN_T  shift 29
+	INT_T  shift 30
+	DOUBLE_T  shift 31
+	STRING_T  shift 32
+	.  error
+
+	parameter_list  goto 229
+	basic_type_specifier  goto 19
+	type_specifier  goto 148
+	class_type_specifier  goto 21
+	array_type_specifier  goto 20
+
+state 227
+	field_member:  type_specifier IDENTIFIER SEMICOLON.    (137)
+
+	.  reduce 137 (src line 698)
+
+
+state 228
+	for_statement:  FOR LP expression_opt SEMICOLON expression_opt SEMICOLON expression_opt RP.block 
+
+	LC  shift 112
+	.  error
+
+	block  goto 231
+
+state 229
+	parameter_list:  parameter_list.COMMA type_specifier IDENTIFIER 
+	method_function_definition:  type_specifier IDENTIFIER LP parameter_list.RP block 
+	method_function_definition:  type_specifier IDENTIFIER LP parameter_list.RP SEMICOLON 
+
+	RP  shift 232
+	COMMA  shift 175
+	.  error
+
+
+state 230
+	method_function_definition:  type_specifier IDENTIFIER LP RP.block 
+	method_function_definition:  type_specifier IDENTIFIER LP RP.SEMICOLON 
+
+	LC  shift 112
+	SEMICOLON  shift 234
+	.  error
+
+	block  goto 233
+
+state 231
+	for_statement:  FOR LP expression_opt SEMICOLON expression_opt SEMICOLON expression_opt RP block.    (109)
+
+	.  reduce 109 (src line 554)
+
+
+state 232
+	method_function_definition:  type_specifier IDENTIFIER LP parameter_list RP.block 
+	method_function_definition:  type_specifier IDENTIFIER LP parameter_list RP.SEMICOLON 
+
+	LC  shift 112
+	SEMICOLON  shift 236
+	.  error
+
+	block  goto 235
+
+state 233
+	method_function_definition:  type_specifier IDENTIFIER LP RP block.    (134)
+
+	.  reduce 134 (src line 685)
+
+
+state 234
+	method_function_definition:  type_specifier IDENTIFIER LP RP SEMICOLON.    (136)
+
+	.  reduce 136 (src line 693)
+
+
+state 235
+	method_function_definition:  type_specifier IDENTIFIER LP parameter_list RP block.    (133)
+
+	.  reduce 133 (src line 680)
+
+
+state 236
+	method_function_definition:  type_specifier IDENTIFIER LP parameter_list RP SEMICOLON.    (135)
+
+	.  reduce 135 (src line 689)
+
+
+50 terminals, 54 nonterminals
+138 grammar rules, 237/8000 states
+0 shift/reduce, 0 reduce/reduce conflicts reported
+103 working sets used
+memory: parser 590/120000
+149 extra closures
+748 shift entries, 3 exceptions
+136 goto entries
+451 entries saved by goto default
+Optimizer space used: output 505/120000
+505 table entries, 61 zero
+maximum spread: 50, maximum offset: 232

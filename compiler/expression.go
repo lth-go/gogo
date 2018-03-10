@@ -60,7 +60,7 @@ type Expression interface {
 	// 用于类型修正,以及简单的类型转换
 	fix(*Block) Expression
 	// 生成字节码
-	generate(*vm.Executable, *Block, *OpcodeBuf)
+	generate(*vm.Executable, *Block, *OpCodeBuf)
 
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
@@ -81,7 +81,7 @@ type ExpressionImpl struct {
 
 func (expr *ExpressionImpl) fix(currentBlock *Block) Expression { return nil }
 
-func (expr *ExpressionImpl) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {}
+func (expr *ExpressionImpl) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {}
 
 func (expr *ExpressionImpl) show(ident int) {}
 
@@ -101,7 +101,7 @@ type BooleanExpression struct {
 }
 
 func (expr *BooleanExpression) show(ident int) {
-	printWithIdent("BoolExpr", ident)
+	printWithIndent("BoolExpr", ident)
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
@@ -110,7 +110,7 @@ func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	if expr.booleanValue {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
 	} else {
@@ -137,7 +137,7 @@ type IntExpression struct {
 }
 
 func (expr *IntExpression) show(ident int) {
-	printWithIdent("IntExpr", ident)
+	printWithIndent("IntExpr", ident)
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
@@ -145,7 +145,7 @@ func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	expr.typeS().fix()
 	return expr
 }
-func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	if expr.intValue >= 0 && expr.intValue < 256 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
@@ -178,7 +178,7 @@ type DoubleExpression struct {
 }
 
 func (expr *DoubleExpression) show(ident int) {
-	printWithIdent("DoubleExpr", ident)
+	printWithIndent("DoubleExpr", ident)
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
@@ -186,7 +186,7 @@ func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
 	expr.typeS().fix()
 	return expr
 }
-func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	if expr.doubleValue == 0.0 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_0)
@@ -220,7 +220,7 @@ type StringExpression struct {
 }
 
 func (expr *StringExpression) show(ident int) {
-	printWithIdent("StringExpr", ident)
+	printWithIndent("StringExpr", ident)
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
@@ -229,7 +229,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	c := vm.NewConstantString(expr.stringValue)
 	cpIdx := exe.AddConstantPool(c)
@@ -252,7 +252,7 @@ type NullExpression struct {
 }
 
 func (expr *NullExpression) show(ident int) {
-	printWithIdent("NullExpr", ident)
+	printWithIndent("NullExpr", ident)
 }
 
 func (expr *NullExpression) fix(currentBlock *Block) Expression {
@@ -261,7 +261,7 @@ func (expr *NullExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *NullExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *NullExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL)
 }
 
@@ -292,7 +292,7 @@ type IdentifierExpression struct {
 }
 
 func (expr *IdentifierExpression) show(ident int) {
-	printWithIdent("IdentifierExpr", ident)
+	printWithIndent("IdentifierExpr", ident)
 }
 
 func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
@@ -310,7 +310,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	if fd != nil {
 		compiler := getCurrentCompiler()
 
-		expr.setType(create_function_derive_type(fd))
+		expr.setType(createFunctionDeriveType(fd))
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
 			functionIndex:      compiler.addToVmFunctionList(fd),
@@ -325,7 +325,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	return nil
 }
 
-func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	switch inner := expr.inner.(type) {
 	// 函数
 	case *FunctionIdentifier:
@@ -363,7 +363,7 @@ type CommaExpression struct {
 }
 
 func (expr *CommaExpression) show(ident int) {
-	printWithIdent("CommaExpr", ident)
+	printWithIndent("CommaExpr", ident)
 
 	subIdent := ident + 2
 	expr.left.show(subIdent)
@@ -381,7 +381,7 @@ func (expr *CommaExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *CommaExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *CommaExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	expr.left.generate(exe, currentBlock, ob)
 	expr.right.generate(exe, currentBlock, ob)
@@ -402,7 +402,7 @@ type AssignExpression struct {
 }
 
 func (expr *AssignExpression) show(ident int) {
-	printWithIdent("AssignExpr", ident)
+	printWithIndent("AssignExpr", ident)
 
 	subIdent := ident + 2
 	expr.left.show(subIdent)
@@ -428,19 +428,19 @@ func (expr *AssignExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr.generateEx(exe, currentBlock, ob, false)
 }
 
 // 顶层
-func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf, isTopLevel bool) {
+func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf, isTopLevel bool) {
 	expr.operand.generate(exe, currentBlock, ob)
 
 	if !isTopLevel {
 		ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
 	}
 
-	generate_pop_to_lvalue(exe, currentBlock, expr.left, ob)
+	generatePopToLvalue(exe, currentBlock, expr.left, ob)
 }
 
 // ==============================
@@ -458,7 +458,7 @@ type BinaryExpression struct {
 }
 
 func (expr *BinaryExpression) show(ident int) {
-	printWithIdent("BinaryExpr", ident)
+	printWithIndent("BinaryExpr", ident)
 
 	subIdent := ident + 2
 	expr.left.show(subIdent)
@@ -487,7 +487,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	switch operator := expr.operator; operator {
 	case GtOperator, GeOperator, LtOperator, LeOperator,
@@ -560,7 +560,7 @@ type MinusExpression struct {
 }
 
 func (expr *MinusExpression) show(ident int) {
-	printWithIdent("MinusExpr", ident)
+	printWithIndent("MinusExpr", ident)
 
 	subIdent := ident + 2
 	expr.operand.show(subIdent)
@@ -593,7 +593,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.typeS())
 	ob.generateCode(expr.Position(), code)
@@ -611,7 +611,7 @@ type LogicalNotExpression struct {
 }
 
 func (expr *LogicalNotExpression) show(ident int) {
-	printWithIdent("LogicalNotExpr", ident)
+	printWithIndent("LogicalNotExpr", ident)
 
 	subIdent := ident + 2
 
@@ -641,7 +641,7 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *LogicalNotExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *LogicalNotExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_LOGICAL_NOT)
 }
@@ -661,13 +661,13 @@ type FunctionCallExpression struct {
 }
 
 func (expr *FunctionCallExpression) show(ident int) {
-	printWithIdent("FuncCallExpr", ident)
+	printWithIndent("FuncCallExpr", ident)
 
 	subIdent := ident + 2
 
 	expr.function.show(subIdent)
 	for _, arg := range expr.argumentList {
-		printWithIdent("ArgList", subIdent)
+		printWithIndent("ArgList", subIdent)
 		arg.show(subIdent + 2)
 	}
 }
@@ -715,13 +715,13 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	expr.typeS().fix()
 	return expr
 }
-func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	switch memberExpr := expr.function.(type) {
 	case *MemberExpression:
 		_, ok := memberExpr.declaration.(*MethodMember)
 		if ok {
-			generate_method_call_expression(expr, exe, currentBlock, ob)
+			generateMethodCallExpression(expr, exe, currentBlock, ob)
 			return
 		}
 	}
@@ -750,7 +750,7 @@ type MemberExpression struct {
 }
 
 func (expr *MemberExpression) show(ident int) {
-	printWithIdent("MemberExpr", ident)
+	printWithIndent("MemberExpr", ident)
 
 	subIdent := ident + 2
 	expr.expression.show(subIdent)
@@ -773,7 +773,7 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	switch member := expr.declaration.(type) {
 	case *FieldMember:
 		expr.expression.generate(exe, currentBlock, ob)
@@ -801,7 +801,7 @@ type ThisExpression struct {
 }
 
 func (expr *ThisExpression) show(ident int) {
-	printWithIdent("ThisExpr", ident)
+	printWithIndent("ThisExpr", ident)
 }
 
 func (expr *ThisExpression) fix(currentBlock *Block) Expression {
@@ -824,11 +824,11 @@ func (expr *ThisExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *ThisExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *ThisExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	fd := currentBlock.getCurrentFunction()
-	param_count := len(fd.parameterList)
-	ob.generateCode(expr.Position(), vm.VM_PUSH_STACK_OBJECT, param_count)
+	paramCount := len(fd.parameterList)
+	ob.generateCode(expr.Position(), vm.VM_PUSH_STACK_OBJECT, paramCount)
 }
 
 func createThisExpression(pos Position) *ThisExpression {
@@ -851,13 +851,13 @@ type CastExpression struct {
 	operand Expression
 }
 
-func (expr *CastExpression) show(ident int) {
-	printWithIdent("CastExpr", ident)
+func (expr *CastExpression) show(indent int) {
+	printWithIndent("CastExpr", indent)
 }
 
 func (expr *CastExpression) fix(currentBlock *Block) Expression { return expr }
 
-func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr.operand.generate(exe, currentBlock, ob)
 
 	switch expr.castType {
@@ -887,7 +887,7 @@ type ArrayLiteralExpression struct {
 }
 
 func (expr *ArrayLiteralExpression) show(ident int) {
-	printWithIdent("ArrayLiteralExpr", ident)
+	printWithIndent("ArrayLiteralExpr", ident)
 }
 
 func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
@@ -915,7 +915,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	if !expr.typeS().isArrayDerive() {
 		panic("TODO")
 	}
@@ -959,7 +959,7 @@ type ArrayCreation struct {
 }
 
 func (expr *ArrayCreation) show(ident int) {
-	printWithIdent("ArrayCreationExpr", ident)
+	printWithIndent("ArrayCreationExpr", ident)
 }
 
 func (expr *ArrayCreation) fix(currentBlock *Block) Expression {
@@ -986,7 +986,7 @@ func (expr *ArrayCreation) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	index := AddTypeSpecifier(expr.typeS(), exe)
 
 	if !expr.typeS().isArrayDerive() {
@@ -1006,23 +1006,23 @@ func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob 
 	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, dimCount, index)
 }
 
-func createBasicArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) Expression {
-	expr := createClassArrayCreation(typ, dim_expr_list, dim_list, pos)
+func createBasicArrayCreation(typ *TypeSpecifier, dimExprLists, dimList []*ArrayDimension, pos Position) Expression {
+	expr := createClassArrayCreation(typ, dimExprLists, dimList, pos)
 
 	return expr
 }
 
-func createClassArrayCreation(typ *TypeSpecifier, dim_expr_list, dim_list []*ArrayDimension, pos Position) Expression {
+func createClassArrayCreation(typ *TypeSpecifier, dimExprList, dimList []*ArrayDimension, pos Position) Expression {
 
 	expr := &ArrayCreation{
-		dimensionList: dim_expr_list,
+		dimensionList: dimExprList,
 	}
 
 	expr.SetPosition(pos)
 
 	expr.setType(typ)
 
-	expr.dimensionList = append(expr.dimensionList, dim_list...)
+	expr.dimensionList = append(expr.dimensionList, dimList...)
 
 	return expr
 }
@@ -1038,7 +1038,7 @@ type IndexExpression struct {
 }
 
 func (expr *IndexExpression) show(ident int) {
-	printWithIdent("IndexExpr", ident)
+	printWithIndent("IndexExpr", ident)
 
 	subIdent := ident + 2
 	expr.array.show(subIdent)
@@ -1067,7 +1067,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *IndexExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *IndexExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr.array.generate(exe, currentBlock, ob)
 	expr.index.generate(exe, currentBlock, ob)
 
@@ -1105,10 +1105,10 @@ type NewExpression struct {
 }
 
 func (expr *NewExpression) fix(currentBlock *Block) Expression {
-	expr.classDefinition = search_class_and_add(expr.Position(), expr.className, &expr.classIndex)
+	expr.classDefinition = searchClassAndAdd(expr.Position(), expr.className, &expr.classIndex)
 
 	if expr.methodName == "" {
-		expr.methodName = DEFAULT_CONSTRUCTOR_NAME
+		expr.methodName = defaultConstructorName
 	}
 
 	member := expr.classDefinition.searchMember(expr.methodName)
@@ -1145,14 +1145,14 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *NewExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (expr *NewExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	methodMember := expr.methodDeclaration.(*MethodMember)
-	param_count := len(methodMember.functionDefinition.parameterList)
+	paramCount := len(methodMember.functionDefinition.parameterList)
 
 	ob.generateCode(expr.Position(), vm.VM_NEW, expr.classIndex)
 	generatePushArgument(expr.argumentList, exe, currentBlock, ob)
-	ob.generateCode(expr.Position(), vm.VM_DUPLICATE_OFFSET, param_count)
+	ob.generateCode(expr.Position(), vm.VM_DUPLICATE_OFFSET, paramCount)
 
 	ob.generateCode(expr.Position(), vm.VM_PUSH_METHOD, methodMember.methodIndex)
 	ob.generateCode(expr.Position(), vm.VM_INVOKE)

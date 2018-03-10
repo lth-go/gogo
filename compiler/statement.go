@@ -14,7 +14,7 @@ type Statement interface {
 	Pos
 
 	fix(*Block, *FunctionDefinition)
-	generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf)
+	generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf)
 
 	show(ident int)
 }
@@ -34,7 +34,7 @@ type ExpressionStatement struct {
 }
 
 func (stmt *ExpressionStatement) show(ident int) {
-	printWithIdent("ExprStmt", ident)
+	printWithIndent("ExprStmt", ident)
 
 	subIdent := ident + 2
 
@@ -45,7 +45,7 @@ func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition
 	stmt.expression = stmt.expression.fix(currentBlock)
 }
 
-func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr := stmt.expression
 	switch assignExpr := expr.(type) {
 	case *AssignExpression:
@@ -80,7 +80,7 @@ type IfStatement struct {
 }
 
 func (stmt *IfStatement) show(ident int) {
-	printWithIdent("IfStmt", ident)
+	printWithIndent("IfStmt", ident)
 
 	subIdent := ident + 2
 	stmt.condition.show(subIdent)
@@ -88,7 +88,7 @@ func (stmt *IfStatement) show(ident int) {
 		stmt.thenBlock.show(subIdent)
 	}
 	for _, elif := range stmt.elifList {
-		printWithIdent("Elif", subIdent)
+		printWithIndent("Elif", subIdent)
 		elif.condition.show(subIdent + 2)
 		elif.block.show(subIdent + 2)
 	}
@@ -123,7 +123,7 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	stmt.condition.generate(exe, currentBlock, ob)
 
@@ -183,7 +183,7 @@ type ForStatement struct {
 }
 
 func (stmt *ForStatement) show(ident int) {
-	printWithIdent("ForStmt", ident)
+	printWithIndent("ForStmt", ident)
 	subIdent := ident + 2
 
 	if stmt.init != nil {
@@ -222,7 +222,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		fixStatementList(stmt.block, stmt.block.statementList, fd)
 	}
 }
-func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	if stmt.init != nil {
 		stmt.init.generate(exe, currentBlock, ob)
@@ -281,7 +281,7 @@ type ReturnStatement struct {
 }
 
 func (stmt *ReturnStatement) show(ident int) {
-	printWithIdent("ReturnStmt", ident)
+	printWithIndent("ReturnStmt", ident)
 	subIdent := ident + 2
 
 	stmt.returnValue.show(subIdent)
@@ -338,7 +338,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	if stmt.returnValue == nil {
 		panic("Return value is nil.")
 	}
@@ -358,12 +358,12 @@ type BreakStatement struct {
 }
 
 func (stmt *BreakStatement) show(ident int) {
-	printWithIdent("BreakStmt", ident)
+	printWithIndent("BreakStmt", ident)
 }
 
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
-func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	// 向外寻找,直到找到for的block
 	for block := currentBlock; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
@@ -387,12 +387,12 @@ type ContinueStatement struct {
 }
 
 func (stmt *ContinueStatement) show(ident int) {
-	printWithIdent("ContinueStmt", ident)
+	printWithIndent("ContinueStmt", ident)
 }
 
 func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
-func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	// 向外寻找,直到找到for的block
 	for block := currentBlock; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
@@ -426,7 +426,7 @@ type Declaration struct {
 }
 
 func (stmt *Declaration) show(ident int) {
-	printWithIdent("DeclStmt", ident)
+	printWithIndent("DeclStmt", ident)
 
 	subIdent := ident + 2
 	if stmt.initializer != nil {
@@ -446,7 +446,7 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *Declaration) generate(exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func (stmt *Declaration) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	if stmt.initializer == nil {
 		return
 	}

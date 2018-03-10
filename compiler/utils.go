@@ -8,8 +8,8 @@ import (
 	"../vm"
 )
 
-func printWithIdent(a string, ident int) {
-	fmt.Print(strings.Repeat(" ", ident))
+func printWithIndent(a string, indent int) {
+	fmt.Print(strings.Repeat(" ", indent))
 	fmt.Println(a)
 }
 
@@ -231,7 +231,7 @@ func searchClass(identifier string) *ClassDefinition {
 	return nil
 }
 
-func search_class_and_add(pos Position, name string, class_index_p *int) *ClassDefinition {
+func searchClassAndAdd(pos Position, name string, classIndexP *int) *ClassDefinition {
 
 	cd := searchClass(name)
 
@@ -239,14 +239,14 @@ func search_class_and_add(pos Position, name string, class_index_p *int) *ClassD
 		compileError(pos, CLASS_NOT_FOUND_ERR, name)
 	}
 
-	*class_index_p = cd.addToCurrentCompiler()
+	*classIndexP = cd.addToCurrentCompiler()
 
 	return cd
 }
 
-func searchCompiler(list []*Compiler, package_name []string) *Compiler {
+func searchCompiler(list []*Compiler, packageName []string) *Compiler {
 	for _, c := range list {
-		if comparePackageName(c.packageNameList, package_name) {
+		if comparePackageName(c.packageNameList, packageName) {
 			return c
 		}
 	}

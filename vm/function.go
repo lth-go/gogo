@@ -1,10 +1,10 @@
 package vm
 
 //
-// Function
+// ExecFunction
 //
 // 虚拟机全局函数
-type Function interface {
+type ExecFunction interface {
 	getName() string
 	getPackageName() string
 }
@@ -20,14 +20,14 @@ type NativeFunction struct {
 	Name string
 	PackageName string
 
-	proc     VmNativeFunctionProc
+	proc     NativeFunctionProc
 	argCount int
 }
 
 func (f *NativeFunction) getName() string { return f.Name }
 func (f *NativeFunction) getPackageName() string { return f.PackageName }
 
-type VmNativeFunctionProc func(vm *VmVirtualMachine, argCount int, args []VmValue) VmValue
+type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Value) Value
 
 // 保存调用函数的索引
 type GFunction struct {

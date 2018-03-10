@@ -4,8 +4,8 @@ Simple language writen by go.
 
 # TODO
 
-+ complete error prompts
++ 编译错误修缮
 
-+ package support
-+ OO support
-+ Exception support
++ 包支持(类似Golang)
++ 面向对象支持
++ 异常支持

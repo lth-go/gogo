@@ -22,34 +22,34 @@ type Executable struct {
 
 	// 全局变量
 	// 仅保存名称和类型
-	GlobalVariableList []*VmVariable
+	GlobalVariableList []*Variable
 
 	// 函数列表
-	FunctionList []*VmFunction
+	FunctionList []*Function
 
 	// 用于vm数组创建
-	TypeSpecifierList []*VmTypeSpecifier
+	TypeSpecifierList []*TypeSpecifier
 
 	// 顶层结构代码
 	CodeList []byte
 
 	// 类列表
-	ClassDefinitionList []*VmClass
+	ClassDefinitionList []*Class
 
 	// 行号对应表
 	// 保存字节码和与之对应的源代码的行号
-	LineNumberList []*VmLineNumber
+	LineNumberList []*LineNumber
 }
 
 func NewExecutable() *Executable {
 	exe := &Executable{
 		ConstantPool:        NewConstantPool(),
-		GlobalVariableList:  []*VmVariable{},
-		FunctionList:        []*VmFunction{},
+		GlobalVariableList:  []*Variable{},
+		FunctionList:        []*Function{},
 		CodeList:            []byte{},
-		LineNumberList:      []*VmLineNumber{},
-		TypeSpecifierList:   []*VmTypeSpecifier{},
-		ClassDefinitionList: []*VmClass{},
+		LineNumberList:      []*LineNumber{},
+		TypeSpecifierList:   []*TypeSpecifier{},
+		ClassDefinitionList: []*Class{},
 	}
 
 	return exe
@@ -179,37 +179,37 @@ func (c *ConstantString) getString() string {
 //
 //
 //
-type VmTypeDerive interface{}
+type TypeDerive interface{}
 
-type VmFunctionDerive struct {
-	ParameterList []*VmLocalVariable
+type FunctionDerive struct {
+	ParameterList []*LocalVariable
 }
 
-type VmArrayDerive struct {
+type ArrayDerive struct {
 }
 
-type VmTypeSpecifier struct {
+type TypeSpecifier struct {
 	BasicType  BasicType
-	DeriveList []VmTypeDerive
+	DeriveList []TypeDerive
 }
 
-func (t *VmTypeSpecifier) AppendDerive(derive VmTypeDerive) {
+func (t *TypeSpecifier) AppendDerive(derive TypeDerive) {
 	if t.DeriveList == nil {
-		t.DeriveList = []VmTypeDerive{}
+		t.DeriveList = []TypeDerive{}
 	}
 	t.DeriveList = append(t.DeriveList, derive)
 }
 
-func (t *VmTypeSpecifier) isArrayDerive() bool {
+func (t *TypeSpecifier) isArrayDerive() bool {
 	return isArray(t)
 }
 
-func isArray(t *VmTypeSpecifier) bool {
+func isArray(t *TypeSpecifier) bool {
 	if t.DeriveList == nil || len(t.DeriveList) == 0 {
 		return false
 	}
 	firstElem := t.DeriveList[0]
-	_, ok := firstElem.(*VmArrayDerive)
+	_, ok := firstElem.(*ArrayDerive)
 	return ok
 }
 
@@ -217,13 +217,13 @@ func isArray(t *VmTypeSpecifier) bool {
 // 全局变量
 // ==============================
 
-type VmVariable struct {
+type Variable struct {
 	name          string
-	typeSpecifier *VmTypeSpecifier
+	typeSpecifier *TypeSpecifier
 }
 
-func NewVmVariable(name string, typeSpecifier *VmTypeSpecifier) *VmVariable {
-	return &VmVariable{
+func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {
+	return &Variable{
 		name:          name,
 		typeSpecifier: typeSpecifier,
 	}
@@ -233,33 +233,33 @@ func NewVmVariable(name string, typeSpecifier *VmTypeSpecifier) *VmVariable {
 // 函数
 // ==============================
 
-type VmFunction struct {
+type Function struct {
 	// 类型
-	TypeSpecifier *VmTypeSpecifier
+	TypeSpecifier *TypeSpecifier
 	// 包名
 	PackageName string
 	// 函数名
 	Name string
 	// 形参列表
-	ParameterList []*VmLocalVariable
+	ParameterList []*LocalVariable
 	// 是否原生函数
 	IsImplemented bool
 	// 是否是方法
 	IsMethod bool
 	// 局部变量列表
-	LocalVariableList []*VmLocalVariable
+	LocalVariableList []*LocalVariable
 	// 字节码类表
 	CodeList []byte
 	// 行号对应表
-	LineNumberList []*VmLineNumber
+	LineNumberList []*LineNumber
 }
 
-type VmLocalVariable struct {
+type LocalVariable struct {
 	Name          string
-	TypeSpecifier *VmTypeSpecifier
+	TypeSpecifier *TypeSpecifier
 }
 
-func (f *VmFunction) ShowCode() {
+func (f *Function) ShowCode() {
 	for i := 0; i < len(f.CodeList); {
 		code := f.CodeList[i]
 		info := OpcodeInfo[int(code)]
@@ -284,7 +284,7 @@ func (f *VmFunction) ShowCode() {
 // 行号对应表
 // ==============================
 
-type VmLineNumber struct {
+type LineNumber struct {
 	// 源代码行号
 	LineNumber int
 
@@ -296,28 +296,28 @@ type VmLineNumber struct {
 }
 
 // ==============================
-// VmClass
+// Class
 // ==============================
-type VmClass struct {
+type Class struct {
 	PackageName string
 	Name        string
 
 	IsImplemented bool
-	SuperClass    *VmClassIdentifier
+	SuperClass    *ClassIdentifier
 
-	FieldList  []*VmField
-	MethodList []*VmMethod
+	FieldList  []*Field
+	MethodList []*Method
 }
 
-type VmClassIdentifier struct {
+type ClassIdentifier struct {
 	PackageName string
 	Name        string
 }
 
-type VmField struct {
+type Field struct {
 	Name string
-	Typ  *VmTypeSpecifier
+	Typ  *TypeSpecifier
 }
-type VmMethod struct {
+type Method struct {
 	Name string
 }

@@ -49,11 +49,11 @@ func vmError(errorNumber int, a ...interface{}) {
 	//vm := getVirtualMachine()
 
 	//exe := vm.currentExecutable.executable
-	//function := vm.currentFunction
+	//functionList := vm.currentFunction
 	//pc := vm.pc
 
 	fmt.Println("运行错误")
-	//fmt.Printf("Line: %d\n", getLineNumberByPc(exe, function, pc))
+	//fmt.Printf("Line: %d\n", getLineNumberByPc(exe, functionList, pc))
 	println(errorNumber)
 	println(errMessageList[errorNumber])
 	//fmt.Printf(errMessageMap[errorNumber], a...)
@@ -61,7 +61,7 @@ func vmError(errorNumber int, a ...interface{}) {
 }
 
 func getLineNumberByPc(exe *Executable, function *GFunction, pc int) int {
-	var lineNumber []*VmLineNumber
+	var lineNumber []*LineNumber
 	var ret int
 
 	if function != nil {

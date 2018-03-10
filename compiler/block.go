@@ -29,34 +29,34 @@ type Block struct {
 	parent BlockInfo
 }
 
-func (b *Block) show(ident int) {
-	printWithIdent("Block", ident)
-	subIdent := ident + 2
+func (b *Block) show(indent int) {
+	printWithIndent("Block", indent)
+	subIndent := indent + 2
 
-	for _, decl := range b.declarationList {
-		decl.show(subIdent)
+	for _, declaration := range b.declarationList {
+		declaration.show(subIndent)
 	}
 
 	for _, stmt := range b.statementList {
-		stmt.show(subIdent)
+		stmt.show(subIndent)
 	}
 }
 
-func (b *Block) addDeclaration(decl *Declaration, fd *FunctionDefinition, pos Position) {
-	if searchDeclaration(decl.name, b) != nil {
-		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, decl.name)
+func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition, pos Position) {
+	if searchDeclaration(declaration.name, b) != nil {
+		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, declaration.name)
 	}
 
 	if b != nil {
-		b.declarationList = append(b.declarationList, decl)
+		b.declarationList = append(b.declarationList, declaration)
 	}
 	if fd != nil {
-		decl.isLocal = true
-		fd.addLocalVariable(decl)
+		declaration.isLocal = true
+		fd.addLocalVariable(declaration)
 	} else {
 		compiler := getCurrentCompiler()
-		decl.isLocal = false
-		compiler.declarationList = append(compiler.declarationList, decl)
+		declaration.isLocal = false
+		compiler.declarationList = append(compiler.declarationList, declaration)
 	}
 }
 

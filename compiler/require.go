@@ -6,12 +6,7 @@ import (
 )
 
 const (
-	HEAD_SOURCE int = iota
-	SOURCE
-)
-
-const (
-	REQUIRE_SUFFIX string = ".4g"
+	requireSuffix = ".4g"
 )
 
 type Require struct {
@@ -39,7 +34,7 @@ func chainRequireList(requireList1, requireList2 []*Require) []*Require {
 // 获取导入文件的相对路径
 func (r *Require) getRelativePath() string {
 	path := filepath.Join(r.packageNameList...)
-	path = path + REQUIRE_SUFFIX
+	path = path + requireSuffix
 	return path
 }
 

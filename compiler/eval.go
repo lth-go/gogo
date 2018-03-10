@@ -185,9 +185,9 @@ func evalCompareExpressionBoolean(binaryExpr *BinaryExpression, left, right bool
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value = (left == right)
+		value = left == right
 	case NeOperator:
-		value = (left != right)
+		value = left != right
 	default:
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
@@ -203,17 +203,17 @@ func evalCompareExpressionInt(binaryExpr *BinaryExpression, left, right int) Exp
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value = (left == right)
+		value = left == right
 	case NeOperator:
-		value = (left != right)
+		value = left != right
 	case GtOperator:
-		value = (left > right)
+		value = left > right
 	case GeOperator:
-		value = (left >= right)
+		value = left >= right
 	case LtOperator:
-		value = (left < right)
+		value = left < right
 	case LeOperator:
-		value = (left <= right)
+		value = left <= right
 	default:
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
@@ -228,17 +228,17 @@ func evalCompareExpressionDouble(binaryExpr *BinaryExpression, left, right float
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value = (left == right)
+		value = left == right
 	case NeOperator:
-		value = (left != right)
+		value = left != right
 	case GtOperator:
-		value = (left > right)
+		value = left > right
 	case GeOperator:
-		value = (left >= right)
+		value = left >= right
 	case LtOperator:
-		value = (left < right)
+		value = left < right
 	case LeOperator:
-		value = (left <= right)
+		value = left <= right
 	default:
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
@@ -253,17 +253,17 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 
 	switch binaryExpr.operator {
 	case EqOperator:
-		value = (left == right)
+		value = left == right
 	case NeOperator:
-		value = (left != right)
+		value = left != right
 	case GtOperator:
-		value = (left > right)
+		value = left > right
 	case GeOperator:
-		value = (left >= right)
+		value = left >= right
 	case LtOperator:
-		value = (left < right)
+		value = left < right
 	case LeOperator:
-		value = (left <= right)
+		value = left <= right
 	default:
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}

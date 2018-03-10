@@ -4,31 +4,31 @@ import (
 	"fmt"
 )
 
-func (vm *VmVirtualMachine) AddNativeFunctions() {
+func (vm *VirtualMachine) AddNativeFunctions() {
 	vm.addNativeFunction("print", printProc, 1)
 }
 
-func (vm *VmVirtualMachine) addNativeFunction(funcName string, proc VmNativeFunctionProc, argCount int) {
+func (vm *VirtualMachine) addNativeFunction(funcName string, proc NativeFunctionProc, argCount int) {
 	function := &NativeFunction{
 		Name:     funcName,
 		proc:     proc,
 		argCount: argCount,
 	}
 
-	vm.function = append(vm.function, function)
+	vm.functionList = append(vm.functionList, function)
 }
 
-func printProc(vm *VmVirtualMachine, argCount int, args []VmValue) VmValue {
+func printProc(vm *VirtualMachine, argCount int, args []Value) Value {
 	var str = "null"
 
-	ret := &VmIntValue{
+	ret := &IntValue{
 		intValue: 0,
 	}
 
-	obj := args[0].(*VmObjectRef).data
+	obj := args[0].(*ObjectRef).data
 
 	if obj != nil {
-		str = obj.(*VmObjectString).stringValue
+		str = obj.(*ObjectString).stringValue
 	}
 
 	fmt.Println(str)

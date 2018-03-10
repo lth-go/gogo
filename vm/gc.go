@@ -2,12 +2,6 @@ package vm
 
 var HeapThresholdSize = 1024 * 256
 
-type objectType int
-
-const (
-	stringObjectType objectType = iota
-)
-
 //////////////////////////////
 // 垃圾回收
 //////////////////////////////
@@ -15,7 +9,7 @@ const (
 //
 // 判断是否下需要gc
 //
-func (vm *VmVirtualMachine) checkGC() {
+func (vm *VirtualMachine) checkGC() {
 	if len(vm.heap.objectList) > vm.heap.currentThreshold {
 		vm.garbageCollect()
 
@@ -26,7 +20,7 @@ func (vm *VmVirtualMachine) checkGC() {
 //
 // 标记，取消标记
 //
-func mark(ref *VmObjectRef) {
+func mark(ref *ObjectRef) {
 	obj := ref.data
 	if obj == nil {
 		return
@@ -34,22 +28,22 @@ func mark(ref *VmObjectRef) {
 	obj.setMark(true)
 
 	switch o := obj.(type) {
-	case *VmObjectArrayObject:
+	case *ObjectArrayObject:
 		for _, subObj := range o.objectArray {
 			mark(subObj)
 		}
-	case *VmObjectClassObject:
+	case *ObjectClassObject:
 		ec := ref.vTable.execClass
 
 		for i, typ := range ec.fieldTypeList {
-			if is_reference_type(typ) {
-				mark(o.fieldList[i].(*VmObjectRef))
+			if isReferenceType(typ) {
+				mark(o.fieldList[i].(*ObjectRef))
 			}
 		}
 	}
 }
 
-func resetMark(obj VmObject) {
+func resetMark(obj Object) {
 	obj.setMark(false)
 }
 
@@ -57,22 +51,22 @@ func resetMark(obj VmObject) {
 // 标记
 //
 // TODO
-func (vm *VmVirtualMachine) markObjects() {
+func (vm *VirtualMachine) markObjects() {
 	for _, obj := range vm.heap.objectList {
 		resetMark(obj)
 	}
 
 	for _, ee := range vm.executableEntryList {
 		for i, variable := range ee.static.variableList {
-			if is_reference_type(ee.executable.GlobalVariableList[i].typeSpecifier) {
-				mark(variable.(*VmObjectRef))
+			if isReferenceType(ee.executable.GlobalVariableList[i].typeSpecifier) {
+				mark(variable.(*ObjectRef))
 			}
 		}
 	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
 		if vm.stack.stack[i].isPointer() {
-			o := vm.stack.stack[i].(*VmObjectRef)
+			o := vm.stack.stack[i].(*ObjectRef)
 			mark(o)
 		}
 	}
@@ -81,15 +75,15 @@ func (vm *VmVirtualMachine) markObjects() {
 //
 // 删除对象
 //
-func (vm *VmVirtualMachine) disposeObject(obj VmObject) {
+func (vm *VirtualMachine) disposeObject(obj Object) {
 	switch o := obj.(type) {
-	case *VmObjectString:
+	case *ObjectString:
 		//
-	case *VmObjectArrayInt:
+	case *ObjectArrayInt:
 		o.intArray = nil
-	case *VmObjectArrayDouble:
+	case *ObjectArrayDouble:
 		o.doubleArray = nil
-	case *VmObjectArrayObject:
+	case *ObjectArrayObject:
 		o.objectArray = nil
 	default:
 		panic("TODO")
@@ -101,8 +95,8 @@ func (vm *VmVirtualMachine) disposeObject(obj VmObject) {
 //
 // 清理
 //
-func (vm *VmVirtualMachine) sweepObjects() {
-	newObjectList := []VmObject{}
+func (vm *VirtualMachine) sweepObjects() {
+	newObjectList := []Object{}
 	for _, obj := range vm.heap.objectList {
 		if !obj.isMarked() {
 			vm.disposeObject(obj)
@@ -113,7 +107,7 @@ func (vm *VmVirtualMachine) sweepObjects() {
 	vm.heap.objectList = newObjectList
 }
 
-func (vm *VmVirtualMachine) garbageCollect() {
+func (vm *VirtualMachine) garbageCollect() {
 	vm.markObjects()
 	vm.sweepObjects()
 }
@@ -125,7 +119,7 @@ func (vm *VmVirtualMachine) garbageCollect() {
 //
 // 添加对象到堆, 用于垃圾回收
 //
-func (vm *VmVirtualMachine) addObject(value VmObject) {
+func (vm *VirtualMachine) addObject(value Object) {
 	vm.checkGC()
 	value.setMark(false)
 	vm.heap.append(value)
@@ -136,13 +130,13 @@ func (vm *VmVirtualMachine) addObject(value VmObject) {
 //
 // string object
 //
-func (vm *VmVirtualMachine) createStringObject(str string) *VmObjectRef {
-	ret := &VmObjectString{}
+func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
+	ret := &ObjectString{}
 	vm.addObject(ret)
 
 	ret.stringValue = str
 
-	ref := &VmObjectRef{data: ret}
+	ref := &ObjectRef{data: ret}
 
 	return ref
 }
@@ -150,29 +144,29 @@ func (vm *VmVirtualMachine) createStringObject(str string) *VmObjectRef {
 //
 // Array object
 //
-func (vm *VmVirtualMachine) createArrayInt(size int) *VmObjectRef {
-	obj := &VmObjectArrayInt{intArray: make([]int, size)}
+func (vm *VirtualMachine) createArrayInt(size int) *ObjectRef {
+	obj := &ObjectArrayInt{intArray: make([]int, size)}
 	vm.addObject(obj)
 
-	ref := &VmObjectRef{data: obj}
+	ref := &ObjectRef{data: obj}
 
 	return ref
 }
 
-func (vm *VmVirtualMachine) createArrayDouble(size int) *VmObjectRef {
-	obj := &VmObjectArrayDouble{doubleArray: make([]float64, size)}
+func (vm *VirtualMachine) createArrayDouble(size int) *ObjectRef {
+	obj := &ObjectArrayDouble{doubleArray: make([]float64, size)}
 	vm.addObject(obj)
 
-	ref := &VmObjectRef{data: obj}
+	ref := &ObjectRef{data: obj}
 
 	return ref
 }
 
-func (vm *VmVirtualMachine) createArrayObject(size int) *VmObjectRef {
-	obj := &VmObjectArrayObject{objectArray: make([]*VmObjectRef, size)}
+func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
+	obj := &ObjectArrayObject{objectArray: make([]*ObjectRef, size)}
 	vm.addObject(obj)
 
-	ref := &VmObjectRef{data: obj}
+	ref := &ObjectRef{data: obj}
 
 	return ref
 }
@@ -180,18 +174,18 @@ func (vm *VmVirtualMachine) createArrayObject(size int) *VmObjectRef {
 //
 // class object
 //
-func (vm *VmVirtualMachine) createClassObject(classIndex int) *VmObjectRef {
-	obj := &VmObjectClassObject{}
+func (vm *VirtualMachine) createClassObject(classIndex int) *ObjectRef {
+	obj := &ObjectClassObject{}
 	vm.addObject(obj)
 
 	execClass := vm.classList[classIndex]
 
-	obj.fieldList = []VmValue{}
+	obj.fieldList = []Value{}
 	for _, typ := range execClass.fieldTypeList {
 		obj.fieldList = append(obj.fieldList, initializeValue(typ))
 	}
 
-	ref := &VmObjectRef{
+	ref := &ObjectRef{
 		vTable: execClass.classTable,
 		data:   obj,
 	}
@@ -202,7 +196,7 @@ func (vm *VmVirtualMachine) createClassObject(classIndex int) *VmObjectRef {
 // utils
 
 // 判断是否是引用类型
-func is_reference_type(typ *VmTypeSpecifier) bool {
+func isReferenceType(typ *TypeSpecifier) bool {
 	// 字符串, 类, 数组
 	if ((typ.BasicType == StringType || typ.BasicType == ClassType) && len(typ.DeriveList) == 0) || (typ.isArrayDerive()) {
 		return true
@@ -211,18 +205,18 @@ func is_reference_type(typ *VmTypeSpecifier) bool {
 }
 
 // 连接字符对象
-func (vm *VmVirtualMachine) chainStringObject(str1, str2 *VmObjectRef) *VmObjectRef {
+func (vm *VirtualMachine) chainStringObject(str1, str2 *ObjectRef) *ObjectRef {
 	var left, right string
 	if str1.data == nil {
 		left = "null"
 	} else {
-		left = str1.data.(*VmObjectString).stringValue
+		left = str1.data.(*ObjectString).stringValue
 	}
 
 	if str2.data == nil {
 		right = "null"
 	} else {
-		right = str2.data.(*VmObjectString).stringValue
+		right = str2.data.(*ObjectString).stringValue
 	}
 
 	str := left + right

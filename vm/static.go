@@ -5,17 +5,17 @@ package vm
 //
 // 虚拟机全局静态变量
 type Static struct {
-	variableList []VmValue
+	variableList []Value
 }
 
 func NewStatic() *Static {
 	s := &Static{
-		variableList: []VmValue{},
+		variableList: []Value{},
 	}
 	return s
 }
 
-func (s *Static) append(value VmValue) {
+func (s *Static) append(value Value) {
 	s.variableList = append(s.variableList, value)
 }
 
@@ -23,28 +23,28 @@ func (s *Static) append(value VmValue) {
 // get
 //
 func (s *Static) getInt(index int) int {
-	return s.variableList[index].(*VmIntValue).intValue
+	return s.variableList[index].(*IntValue).intValue
 }
 
 func (s *Static) getDouble(index int) float64 {
-	return s.variableList[index].(*VmDoubleValue).doubleValue
+	return s.variableList[index].(*DoubleValue).doubleValue
 }
 
-func (s *Static) getObject(index int) *VmObjectRef {
-	return s.variableList[index].(*VmObjectRef)
+func (s *Static) getObject(index int) *ObjectRef {
+	return s.variableList[index].(*ObjectRef)
 }
 
 //
 // set
 //
 func (s *Static) setInt(index int, value int) {
-	s.variableList[index].(*VmIntValue).intValue = value
+	s.variableList[index].(*IntValue).intValue = value
 }
 
 func (s *Static) setDouble(index int, value float64) {
-	s.variableList[index].(*VmDoubleValue).doubleValue = value
+	s.variableList[index].(*DoubleValue).doubleValue = value
 }
 
-func (s *Static) setObject(index int, value *VmObjectRef) {
+func (s *Static) setObject(index int, value *ObjectRef) {
 	s.variableList[index] = value
 }

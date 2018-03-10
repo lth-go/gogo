@@ -184,7 +184,7 @@ retry:
 				lit = "||"
 			default:
 				s.back()
-				err = fmt.Errorf(`Syntax Error "%s"`, string(ch))
+				err = fmt.Errorf(`syntax Error "%s"`, string(ch))
 				tok = int(ch)
 				lit = string(ch)
 			}
@@ -196,7 +196,7 @@ retry:
 				lit = "&&"
 			default:
 				s.back()
-				err = fmt.Errorf(`Syntax Error "%s"`, string(ch))
+				err = fmt.Errorf(`syntax Error "%s"`, string(ch))
 				tok = int(ch)
 				lit = string(ch)
 			}
@@ -204,7 +204,7 @@ retry:
 			tok = opName[string(ch)]
 			lit = string(ch)
 		default:
-			err = fmt.Errorf(`Syntax Error "%s"`, string(ch))
+			err = fmt.Errorf(`syntax Error "%s"`, string(ch))
 			tok = int(ch)
 			lit = string(ch)
 			return

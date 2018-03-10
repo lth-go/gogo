@@ -1,22 +1,22 @@
 package compiler
 
-const DEFAULT_PACKAGE = "gogogogo.lang"
+const defaultPackage = "gogogogo.lang"
 
-func setRequireList(require_list []*Require) {
+func setRequireList(requireList []*Require) {
 
 	compiler := getCurrentCompiler()
 
 	//current_package_name = strings.Join(compiler.packageNameList, '.')
 
 	// 添加默认包
-	//if current_package_name != DEFAULT_PACKAGE {
-	//    require_list = add_default_package(require_list)
+	//if current_package_name != defaultPackage {
+	//    requireLists = add_default_package(requireLists)
 	//}
 
-	compiler.requireList = require_list
+	compiler.requireList = requireList
 }
 
-func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameter_list []*Parameter, block *Block) *FunctionDefinition {
+func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameterLists []*Parameter, block *Block) *FunctionDefinition {
 	compiler := getCurrentCompiler()
 
 	fd := &FunctionDefinition{}
@@ -24,7 +24,7 @@ func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameter_l
 	fd.typeSpecifier = typ
 	fd.packageNameList = compiler.packageNameList
 	fd.name = identifier
-	fd.parameterList = parameter_list
+	fd.parameterList = parameterLists
 	fd.block = block
 
 	if block != nil {
@@ -36,7 +36,7 @@ func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameter_l
 	return fd
 }
 
-func create_function_derive_type(fd *FunctionDefinition) *TypeSpecifier {
+func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
 
 	ret := &TypeSpecifier{basicType: fd.typeSpecifier.basicType}
 
@@ -58,7 +58,7 @@ func startClassDefine(identifier string, extends []*Extend, pos Position) {
 
 	cd.packageNameList = compiler.packageNameList
 	cd.name = identifier
-	cd.extends = extends
+	cd.extendList = extends
 
 	cd.SetPosition(pos)
 
@@ -69,7 +69,7 @@ func startClassDefine(identifier string, extends []*Extend, pos Position) {
 	compiler.currentClassDefinition = cd
 }
 
-func endClassDefine(member_list []MemberDeclaration) {
+func endClassDefine(memberList []MemberDeclaration) {
 	compiler := getCurrentCompiler()
 
 	cd := compiler.currentClassDefinition
@@ -83,14 +83,14 @@ func endClassDefine(member_list []MemberDeclaration) {
 	}
 	compiler.classDefinitionList = append(compiler.classDefinitionList, cd)
 
-	cd.memberList = member_list
+	cd.memberList = memberList
 	compiler.currentClassDefinition = nil
 }
 
 // 类方法定义
-func methodFunctionDefine(typ *TypeSpecifier, identifier string, parameter_list []*Parameter, block *Block) *FunctionDefinition {
+func methodFunctionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) *FunctionDefinition {
 
-	fd := createFunctionDefinition(typ, identifier, parameter_list, block)
+	fd := createFunctionDefinition(typ, identifier, parameterList, block)
 
 	return fd
 }

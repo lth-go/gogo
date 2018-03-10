@@ -5,7 +5,7 @@ import (
 	"../vm"
 )
 
-const DEFAULT_CONSTRUCTOR_NAME = "init"
+const defaultConstructorName = "init"
 
 //
 // ClassDefinition
@@ -16,7 +16,7 @@ type ClassDefinition struct {
 	packageNameList []string
 	name            string
 
-	extends    []*Extend
+	extendList []*Extend
 	superClass *ClassDefinition
 
 	memberList []MemberDeclaration
@@ -32,25 +32,25 @@ func (cd *ClassDefinition) addToCurrentCompiler() int {
 
 	compiler := getCurrentCompiler()
 
-	src_package_name := cd.getPackageName()
+	srcPackageName := cd.getPackageName()
 
 	for i, vmClass := range compiler.vmClassList {
-		if (src_package_name == vmClass.PackageName) && (cd.name == vmClass.Name) {
+		if (srcPackageName == vmClass.PackageName) && (cd.name == vmClass.Name) {
 			return i
 		}
 	}
 
 	ret := len(compiler.vmClassList)
 
-	dest := &vm.VmClass{}
+	dest := &vm.Class{}
 	compiler.vmClassList = append(compiler.vmClassList, dest)
 
-	dest.PackageName = src_package_name
+	dest.PackageName = srcPackageName
 	dest.Name = cd.name
 	dest.IsImplemented = false
 
-	for _, sup_pos := range cd.extends {
-		search_class_and_add(cd.Position(), sup_pos.identifier, &dummy)
+	for _, extend := range cd.extendList {
+		searchClassAndAdd(cd.Position(), extend.identifier, &dummy)
 	}
 
 	return ret
@@ -123,10 +123,10 @@ func (cd *ClassDefinition) searchMember(memberName string) MemberDeclaration {
 }
 
 func (cd *ClassDefinition) fixExtends() {
-	var dummy_class_index int
+	var dummyClassIndex int
 
-	for _, extend := range cd.extends {
-		super := search_class_and_add(cd.Position(), extend.identifier, &dummy_class_index)
+	for _, extend := range cd.extendList {
+		super := searchClassAndAdd(cd.Position(), extend.identifier, &dummyClassIndex)
 
 		extend.classDefinition = super
 
@@ -184,19 +184,19 @@ type MethodMember struct {
 	methodIndex        int
 }
 
-func createMethodMember(function_definition *FunctionDefinition, pos Position) []MemberDeclaration {
+func createMethodMember(functionDefinition *FunctionDefinition, pos Position) []MemberDeclaration {
 	compiler := getCurrentCompiler()
 
 	ret := &MethodMember{}
 	ret.SetPosition(pos)
 
-	ret.functionDefinition = function_definition
+	ret.functionDefinition = functionDefinition
 
-	if function_definition.block == nil {
+	if functionDefinition.block == nil {
 		compileError(pos, CONCRETE_METHOD_HAS_NO_BODY_ERR)
 	}
 
-	function_definition.classDefinition = compiler.currentClassDefinition
+	functionDefinition.classDefinition = compiler.currentClassDefinition
 
 	return []MemberDeclaration{ret}
 }

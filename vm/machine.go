@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-var FUNCTION_NOT_FOUND = -1
-var CALL_FROM_NATIVE = -1
-var vmNullObjectRef *VmObjectRef = &VmObjectRef{}
+var functionNotFound = -1
+var callFromNative = -1
+var vmNullObjectRef = &ObjectRef{}
 
 //
 // 虚拟机
 //
-type VmVirtualMachine struct {
+type VirtualMachine struct {
 	// 栈
 	stack *Stack
 	// 堆
@@ -26,12 +26,9 @@ type VmVirtualMachine struct {
 	pc int
 
 	// 全局函数列表
-	function []Function
+	functionList []ExecFunction
 	// 全局类列表
 	classList []*ExecClass
-
-	// 从exe传来的数据
-	executableList *ExecutableList
 
 	// exe列表
 	executableEntryList []*ExecutableEntry
@@ -40,11 +37,11 @@ type VmVirtualMachine struct {
 	topLevel *ExecutableEntry
 }
 
-func NewVirtualMachine() *VmVirtualMachine {
-	vm := &VmVirtualMachine{
+func NewVirtualMachine() *VirtualMachine {
+	vm := &VirtualMachine{
 		stack:             NewStack(),
 		heap:              NewHeap(),
-		function:          []Function{},
+		functionList:      []ExecFunction{},
 		currentExecutable: nil,
 	}
 	setVirtualMachine(vm)
@@ -55,12 +52,12 @@ func NewVirtualMachine() *VmVirtualMachine {
 }
 
 // 设置全局vm
-var StVirtualMachine *VmVirtualMachine
+var StVirtualMachine *VirtualMachine
 
-func setVirtualMachine(vm *VmVirtualMachine) {
+func setVirtualMachine(vm *VirtualMachine) {
 	StVirtualMachine = vm
 }
-func getVirtualMachine() *VmVirtualMachine {
+func getVirtualMachine() *VirtualMachine {
 	return StVirtualMachine
 }
 
@@ -68,18 +65,16 @@ func getVirtualMachine() *VmVirtualMachine {
 // 虚拟机初始化操作
 //////////////////////////////
 
-// 添加executableList 到vm, 用户vm执行
-func (vm *VmVirtualMachine) SetExecutableList(exeList *ExecutableList) {
-	vm.executableList = exeList
-
+// 添加executableList
+func (vm *VirtualMachine) SetExecutableList(exeList *ExecutableList) {
 	for _, exe := range exeList.List {
-		vm.addExecutable(exe, (exe == exeList.TopLevel))
+		vm.addExecutable(exe, exe == exeList.TopLevel)
 	}
 
 }
 
 // 添加单个exe到vm
-func (vm *VmVirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
+func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 
 	newEntry := &ExecutableEntry{executable: exe}
 
@@ -109,7 +104,7 @@ func addStaticVariables(entry *ExecutableEntry, exe *Executable) {
 	}
 }
 
-func (vm *VmVirtualMachine) addFunctions(ee *ExecutableEntry) {
+func (vm *VirtualMachine) addFunctions(ee *ExecutableEntry) {
 	exe := ee.executable
 
 	for _, exeFunc := range exe.FunctionList {
@@ -117,7 +112,7 @@ func (vm *VmVirtualMachine) addFunctions(ee *ExecutableEntry) {
 			continue
 		}
 		// 不能添加重名函数
-		for _, vmFunc := range vm.function {
+		for _, vmFunc := range vm.functionList {
 			if vmFunc.getName() == exeFunc.Name {
 				panic("TODO")
 			}
@@ -129,41 +124,41 @@ func (vm *VmVirtualMachine) addFunctions(ee *ExecutableEntry) {
 			continue
 		}
 		newVmFunc := &GFunction{Name: exeFunc.Name, PackageName: exeFunc.PackageName, Executable: ee, Index: srcIdex}
-		vm.function = append(vm.function, newVmFunc)
+		vm.functionList = append(vm.functionList, newVmFunc)
 	}
 }
 
-func addFunctions(vm *VmVirtualMachine, ee *ExecutableEntry) {
+func addFunctions(vm *VirtualMachine, ee *ExecutableEntry) {
 
 	exe := ee.executable
 
 	for _, exeFunc := range exe.FunctionList {
-		for _, vmFunc := range vm.function {
+		for _, vmFunc := range vm.functionList {
 			if vmFunc.getName() == exeFunc.Name && vmFunc.getPackageName() == exeFunc.PackageName {
 				vmError(FUNCTION_MULTIPLE_DEFINE_ERR, vmFunc.getPackageName(), vmFunc.getName())
 			}
 		}
 	}
 
-	dest_idx := len(vm.function)
+	destIdx := len(vm.functionList)
 
-	for src_idx, exeFunc := range exe.FunctionList {
+	for srcIdx, exeFunc := range exe.FunctionList {
 		vmFunc := &GFunction{}
 
-		vm.function = append(vm.function, vmFunc)
+		vm.functionList = append(vm.functionList, vmFunc)
 
 		vmFunc.PackageName = exeFunc.PackageName
 		vmFunc.Name = exeFunc.Name
 
-		// implement function
-		vm.function[dest_idx].(*GFunction).Executable = ee
-		vm.function[dest_idx].(*GFunction).Index = src_idx
+		// implement functionList
+		vm.functionList[destIdx].(*GFunction).Executable = ee
+		vm.functionList[destIdx].(*GFunction).Index = srcIdx
 
-		dest_idx++
+		destIdx++
 	}
 }
 
-func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
+func (vm *VirtualMachine) addClasses(ee *ExecutableEntry) {
 	exe := ee.executable
 
 	// 循环判断有无重复定义
@@ -176,9 +171,9 @@ func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
 		}
 	}
 
-	old_class_count := len(vm.classList)
+	oldClassCount := len(vm.classList)
 
-	dest_idx := len(vm.classList)
+	destIdx := len(vm.classList)
 	for _, exeClass := range exe.ClassDefinitionList {
 
 		newVmClass := &ExecClass{}
@@ -187,7 +182,7 @@ func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
 		newVmClass.vmClass = exeClass
 		newVmClass.Executable = ee
 		newVmClass.name = exeClass.Name
-		newVmClass.classIndex = dest_idx
+		newVmClass.classIndex = destIdx
 
 		if exeClass.PackageName != "" {
 			newVmClass.packageName = exeClass.PackageName
@@ -197,132 +192,132 @@ func (vm *VmVirtualMachine) addClasses(ee *ExecutableEntry) {
 
 		vm.addClass(exe, exeClass, newVmClass)
 
-		dest_idx++
+		destIdx++
 	}
 
 	// 设置父类
-	set_super_class(vm, exe, old_class_count)
+	setSuperClass(vm, exe, oldClassCount)
 }
 
-func (vm *VmVirtualMachine) addClass(exe *Executable, src *VmClass, dest *ExecClass) {
-	add_fields(exe, src, dest)
-	add_methods(vm, exe, src, dest)
+func (vm *VirtualMachine) addClass(exe *Executable, src *Class, dest *ExecClass) {
+	addFields(exe, src, dest)
+	addMethods(vm, exe, src, dest)
 }
 
-func add_fields(exe *Executable, src *VmClass, dest *ExecClass) {
-	field_count := 0
+func addFields(exe *Executable, src *Class, dest *ExecClass) {
+	fieldCount := 0
 
 	for pos := src; ; {
-		field_count += len(pos.FieldList)
+		fieldCount += len(pos.FieldList)
 		if pos.SuperClass == nil {
 			break
 		}
-		pos = search_class_from_executable(exe, pos.SuperClass.Name)
+		pos = searchClassFromExecutable(exe, pos.SuperClass.Name)
 	}
 
-	dest.fieldTypeList = make([]*VmTypeSpecifier, field_count)
-	set_field_types(exe, src, dest.fieldTypeList, 0)
+	dest.fieldTypeList = make([]*TypeSpecifier, fieldCount)
+	setFieldTypes(exe, src, dest.fieldTypeList, 0)
 }
 
-func set_field_types(exe *Executable, pos *VmClass, field_type []*VmTypeSpecifier, index int) int {
+func setFieldTypes(exe *Executable, pos *Class, fieldTypes []*TypeSpecifier, index int) int {
 
 	if pos.SuperClass != nil {
-		next := search_class_from_executable(exe, pos.SuperClass.Name)
-		index = set_field_types(exe, next, field_type, index)
+		next := searchClassFromExecutable(exe, pos.SuperClass.Name)
+		index = setFieldTypes(exe, next, fieldTypes, index)
 	}
 	for _, field := range pos.FieldList {
-		field_type[index] = field.Typ
+		fieldTypes[index] = field.Typ
 		index++
 	}
 
 	return index
 }
 
-func add_methods(vm *VmVirtualMachine, exe *Executable, src *VmClass, dest *ExecClass) {
+func addMethods(vm *VirtualMachine, exe *Executable, src *Class, dest *ExecClass) {
 
-	v_table := &VmVTable{
+	vTable := &VTable{
 		execClass: dest,
 	}
-	add_method(vm, exe, src, v_table)
+	addMethod(vm, exe, src, vTable)
 	// TODO
-	dest.classTable = v_table
+	dest.classTable = vTable
 }
 
-func add_method(vm *VmVirtualMachine, exe *Executable, pos *VmClass, v_table *VmVTable) int {
+func addMethod(vm *VirtualMachine, exe *Executable, pos *Class, vTable *VTable) int {
 	var j int
 
 	// 父类方法数量
-	super_method_count := 0
+	superMethodCount := 0
 
 	if pos.SuperClass != nil {
-		next := search_class_from_executable(exe, pos.SuperClass.Name)
-		super_method_count = add_method(vm, exe, next, v_table)
+		next := searchClassFromExecutable(exe, pos.SuperClass.Name)
+		superMethodCount = addMethod(vm, exe, next, vTable)
 	}
 
-	method_count := super_method_count
+	methodCount := superMethodCount
 
 	for _, method := range pos.MethodList {
-		for j = 0; j < super_method_count; j++ {
+		for j = 0; j < superMethodCount; j++ {
 			// 如果有与父类相同的方法名, 覆盖之
-			if method.Name == v_table.table[j].name {
-				v_table.table[j] = set_v_table(vm, pos, method, false)
+			if method.Name == vTable.table[j].name {
+				vTable.table[j] = setVTable(vm, pos, method, false)
 				break
 			}
 		}
 		// 新增方法
-		if j == super_method_count {
-			v_table.table = append(v_table.table, set_v_table(vm, pos, method, true))
-			method_count++
+		if j == superMethodCount {
+			vTable.table = append(vTable.table, setVTable(vm, pos, method, true))
+			methodCount++
 		}
 	}
 
-	return method_count
+	return methodCount
 }
 
-func set_v_table(vm *VmVirtualMachine, class_p *VmClass, src *VmMethod, set_name bool) *VTableItem {
+func setVTable(vm *VirtualMachine, classP *Class, src *Method, setName bool) *VTableItem {
 	dest := &VTableItem{}
 
-	if set_name {
+	if setName {
 		dest.name = src.Name
 	}
 
-	func_name := createMethodFunctionName(class_p.Name, src.Name)
-	func_idx := search_function(vm, class_p.PackageName, func_name)
+	funcName := createMethodFunctionName(classP.Name, src.Name)
+	funcIdx := searchFunction(vm, classP.PackageName, funcName)
 
-	if func_idx == FUNCTION_NOT_FOUND {
-		vmError(FUNCTION_NOT_FOUND_ERR, func_name)
+	if funcIdx == functionNotFound {
+		vmError(FUNCTION_NOT_FOUND_ERR, funcName)
 	}
 
-	dest.index = func_idx
+	dest.index = funcIdx
 
 	return dest
 }
 
-func search_function(vm *VmVirtualMachine, package_name, name string) int {
+func searchFunction(vm *VirtualMachine, packageName, name string) int {
 
-	for i, function := range vm.function {
-		if function.getPackageName() == package_name && function.getName() == name {
+	for i, function := range vm.functionList {
+		if function.getPackageName() == packageName && function.getName() == name {
 			return i
 		}
 	}
-	return FUNCTION_NOT_FOUND
+	return functionNotFound
 }
 
-func set_super_class(vm *VmVirtualMachine, exe *Executable, old_class_count int) {
-	for class_idx := old_class_count; class_idx < len(vm.classList); class_idx++ {
-		vmClass := vm.classList[class_idx]
+func setSuperClass(vm *VirtualMachine, exe *Executable, oldClassCount int) {
+	for classIdx := oldClassCount; classIdx < len(vm.classList); classIdx++ {
+		vmClass := vm.classList[classIdx]
 
-		exeClass := search_class_from_executable(exe, vmClass.name)
+		exeClass := searchClassFromExecutable(exe, vmClass.name)
 		if exeClass.SuperClass == nil {
 			vmClass.superClass = nil
 		} else {
-			super_class_index := search_class(vm, exeClass.SuperClass.PackageName, exeClass.SuperClass.Name)
-			vmClass.superClass = vm.classList[super_class_index]
+			superClassIndex := searchClass(vm, exeClass.SuperClass.PackageName, exeClass.SuperClass.Name)
+			vmClass.superClass = vm.classList[superClassIndex]
 		}
 	}
 }
 
-func search_class_from_executable(exe *Executable, name string) *VmClass {
+func searchClassFromExecutable(exe *Executable, name string) *Class {
 
 	for _, exeClass := range exe.ClassDefinitionList {
 		if exeClass.Name == name {
@@ -332,10 +327,10 @@ func search_class_from_executable(exe *Executable, name string) *VmClass {
 	panic("TODO")
 }
 
-func search_class(vm *VmVirtualMachine, package_name string, name string) int {
+func searchClass(vm *VirtualMachine, packageName string, name string) int {
 
 	for i, vmClass := range vm.classList {
-		if vmClass.packageName == package_name && vmClass.name == name {
+		if vmClass.packageName == packageName && vmClass.name == name {
 			return i
 		}
 	}
@@ -346,7 +341,7 @@ func search_class(vm *VmVirtualMachine, package_name string, name string) int {
 //
 // 虚拟机执行入口
 //
-func (vm *VmVirtualMachine) Execute() {
+func (vm *VirtualMachine) Execute() {
 	vm.currentExecutable = vm.topLevel
 	vm.currentFunction = nil
 	vm.pc = 0
@@ -356,8 +351,8 @@ func (vm *VmVirtualMachine) Execute() {
 	vm.execute(nil, vm.topLevel.executable.CodeList)
 }
 
-func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
-	var ret VmValue
+func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
+	var ret Value
 	var base int
 
 	stack := vm.stack
@@ -365,90 +360,89 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 	ee := vm.currentExecutable
 	exe := vm.currentExecutable.executable
 
-
 	for pc := vm.pc; pc < len(codeList); {
 		static := ee.static
 
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:
-			stack.writeInt(0, int(codeList[pc+1]))
+			stack.setInt(0, int(codeList[pc+1]))
 			vm.stack.stackPointer++
 			pc += 2
 		case VM_PUSH_INT_2BYTE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeInt(0, index)
+			stack.setInt(0, index)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeInt(0, exe.ConstantPool.getInt(index))
+			stack.setInt(0, exe.ConstantPool.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_DOUBLE_0:
-			stack.writeDouble(0, 0.0)
+			stack.setDouble(0, 0.0)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE_1:
-			stack.writeDouble(0, 1.0)
+			stack.setDouble(0, 1.0)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeDouble(0, exe.ConstantPool.getDouble(index))
+			stack.setDouble(0, exe.ConstantPool.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STRING:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeObject(0, vm.createStringObject(exe.ConstantPool.getString(index)))
+			stack.setObject(0, vm.createStringObject(exe.ConstantPool.getString(index)))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_NULL:
-			stack.writeObject(0, vmNullObjectRef)
+			stack.setObject(0, vmNullObjectRef)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_STACK_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeInt(0, stack.getIntI(base+index))
+			stack.setInt(0, stack.getIntI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeDouble(0, stack.getDoubleI(base+index))
+			stack.setDouble(0, stack.getDoubleI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeObject(0, stack.getObjectI(base+index))
+			stack.setObject(0, stack.getObjectI(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STACK_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeIntI(base+index, stack.getInt(-1))
+			stack.setIntI(base+index, stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeDoubleI(base+index, stack.getDouble(-1))
+			stack.setDoubleI(base+index, stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeObjectI(base+index, stack.getObject(-1))
+			stack.setObjectI(base+index, stack.getObject(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_PUSH_STATIC_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeInt(0, static.getInt(index))
+			stack.setInt(0, static.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeDouble(0, static.getDouble(index))
+			stack.setDouble(0, static.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.writeObject(0, static.getObject(index))
+			stack.setObject(0, static.getObject(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STATIC_INT:
@@ -470,30 +464,30 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			array := stack.getArrayInt(-2)
 			index := stack.getInt(-1)
 
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			intValue := array.getInt(index)
 
-			stack.writeInt(-2, intValue)
+			stack.setInt(-2, intValue)
 			vm.stack.stackPointer--
 			pc++
 		case VM_PUSH_ARRAY_DOUBLE:
 			array := stack.getArrayDouble(-2)
 			index := stack.getInt(-1)
 
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			doubleValue := array.getDouble(index)
 
-			stack.writeDouble(-2, doubleValue)
+			stack.setDouble(-2, doubleValue)
 			vm.stack.stackPointer--
 			pc++
 		case VM_PUSH_ARRAY_OBJECT:
 			array := stack.getArrayObject(-2)
 			index := stack.getInt(-1)
 
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			object := array.getObject(index)
 
-			stack.writeObject(-2, object)
+			stack.setObject(-2, object)
 			vm.stack.stackPointer--
 			pc++
 		case VM_POP_ARRAY_INT:
@@ -501,7 +495,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			array := stack.getArrayInt(-2)
 			index := stack.getInt(-1)
 
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			array.setInt(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -510,7 +504,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			array := stack.getArrayDouble(-2)
 			index := stack.getInt(-1)
 
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			array.setDouble(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -519,7 +513,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			array := stack.getArrayObject(-2)
 			index := stack.getInt(-1)
 
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			array.setObject(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -528,28 +522,28 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			obj := stack.getClassObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(stack.getObject(-1))
-			stack.writeInt(-1, obj.getInt(index))
+			checkNullPointer(stack.getObject(-1))
+			stack.setInt(-1, obj.getInt(index))
 			pc += 3
 		case VM_PUSH_FIELD_DOUBLE:
 			obj := stack.getClassObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(stack.getObject(-1))
-			stack.writeDouble(-1, obj.getDouble(index))
+			checkNullPointer(stack.getObject(-1))
+			stack.setDouble(-1, obj.getDouble(index))
 			pc += 3
 		case VM_PUSH_FIELD_OBJECT:
 			obj := stack.getClassObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(stack.getObject(-1))
-			stack.writeObject(-1, obj.getObject(index))
+			checkNullPointer(stack.getObject(-1))
+			stack.setObject(-1, obj.getObject(index))
 			pc += 3
 		case VM_POP_FIELD_INT:
 			obj := stack.getClassObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(stack.getObject(-1))
+			checkNullPointer(stack.getObject(-1))
 			obj.writeInt(index, stack.getInt(-2))
 			stack.stackPointer -= 2
 			pc += 3
@@ -557,7 +551,7 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			obj := stack.getClassObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(stack.getObject(-1))
+			checkNullPointer(stack.getObject(-1))
 			obj.writeDouble(index, stack.getDouble(-2))
 			stack.stackPointer -= 2
 			pc += 3
@@ -565,170 +559,170 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			obj := stack.getClassObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(stack.getObject(-1))
+			checkNullPointer(stack.getObject(-1))
 			obj.writeObject(index, stack.getObject(-2))
 			stack.stackPointer -= 2
 			pc += 3
 		case VM_ADD_INT:
-			stack.writeInt(-2, stack.getInt(-2)+stack.getInt(-1))
+			stack.setInt(-2, stack.getInt(-2)+stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_DOUBLE:
-			stack.writeDouble(-2, stack.getDouble(-2)+stack.getDouble(-1))
+			stack.setDouble(-2, stack.getDouble(-2)+stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_STRING:
-			stack.writeObject(-2, vm.chainStringObject(stack.getObject(-2), stack.getObject(-1)))
+			stack.setObject(-2, vm.chainStringObject(stack.getObject(-2), stack.getObject(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_INT:
-			stack.writeInt(-2, stack.getInt(-2)-stack.getInt(-1))
+			stack.setInt(-2, stack.getInt(-2)-stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_DOUBLE:
-			stack.writeDouble(-2, stack.getDouble(-2)-stack.getDouble(-1))
+			stack.setDouble(-2, stack.getDouble(-2)-stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_INT:
-			stack.writeInt(-2, stack.getInt(-2)*stack.getInt(-1))
+			stack.setInt(-2, stack.getInt(-2)*stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_DOUBLE:
-			stack.writeDouble(-2, stack.getDouble(-2)*stack.getDouble(-1))
+			stack.setDouble(-2, stack.getDouble(-2)*stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_INT:
 			if stack.getInt(-1) == 0 {
 				vmError(DIVISION_BY_ZERO_ERR)
 			}
-			stack.writeInt(-2, stack.getInt(-2)/stack.getInt(-1))
+			stack.setInt(-2, stack.getInt(-2)/stack.getInt(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_DOUBLE:
-			stack.writeDouble(-2, stack.getDouble(-2)/stack.getDouble(-1))
+			stack.setDouble(-2, stack.getDouble(-2)/stack.getDouble(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MINUS_INT:
-			stack.writeInt(-1, -stack.getInt(-1))
+			stack.setInt(-1, -stack.getInt(-1))
 			pc++
 		case VM_MINUS_DOUBLE:
-			stack.writeDouble(-1, -stack.getDouble(-1))
+			stack.setDouble(-1, -stack.getDouble(-1))
 			pc++
 		case VM_CAST_INT_TO_DOUBLE:
-			stack.writeDouble(-1, float64(stack.getInt(-1)))
+			stack.setDouble(-1, float64(stack.getInt(-1)))
 			pc++
 		case VM_CAST_DOUBLE_TO_INT:
-			stack.writeInt(-1, int(stack.getDouble(-1)))
+			stack.setInt(-1, int(stack.getDouble(-1)))
 			pc++
 		case VM_CAST_BOOLEAN_TO_STRING:
 			if stack.getInt(-1) != 0 {
-				stack.writeObject(-1, vm.createStringObject("true"))
+				stack.setObject(-1, vm.createStringObject("true"))
 			} else {
-				stack.writeObject(-1, vm.createStringObject("false"))
+				stack.setObject(-1, vm.createStringObject("false"))
 			}
 			pc++
 		case VM_CAST_INT_TO_STRING:
 			// TODO 啥意思
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			buf := fmt.Sprintf("%d", stack.getInt(-1))
-			stack.writeObject(-1, vm.createStringObject(buf))
+			stack.setObject(-1, vm.createStringObject(buf))
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
 			// TODO 啥意思
-			vm.restore_pc(ee, gFunc, pc)
+			vm.restorePc(ee, gFunc, pc)
 			buf := fmt.Sprintf("%f", stack.getDouble(-1))
-			stack.writeObject(-1, vm.createStringObject(buf))
+			stack.setObject(-1, vm.createStringObject(buf))
 			pc++
 		case VM_EQ_INT:
-			stack.writeInt(-2, boolToInt(stack.getInt(-2) == stack.getInt(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) == stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_DOUBLE:
-			stack.writeInt(-2, boolToInt(stack.getDouble(-2) == stack.getDouble(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) == stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_OBJECT:
-			stack.writeInt(-2, boolToInt(stack.getObject(-2).data == stack.getObject(-1).data))
+			stack.setInt(-2, boolToInt(stack.getObject(-2).data == stack.getObject(-1).data))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
-			stack.writeInt(-2, boolToInt(!(stack.getString(-2) == stack.getString(-1))))
+			stack.setInt(-2, boolToInt(!(stack.getString(-2) == stack.getString(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
-			stack.writeInt(-2, boolToInt(stack.getInt(-2) > stack.getInt(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) > stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_DOUBLE:
-			stack.writeInt(-2, boolToInt(stack.getDouble(-2) > stack.getDouble(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) > stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
-			stack.writeInt(-2, boolToInt(stack.getString(-2) > stack.getString(-1)))
+			stack.setInt(-2, boolToInt(stack.getString(-2) > stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
-			stack.writeInt(-2, boolToInt(stack.getInt(-2) >= stack.getInt(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) >= stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_DOUBLE:
-			stack.writeInt(-2, boolToInt(stack.getDouble(-2) >= stack.getDouble(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) >= stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
-			stack.writeInt(-2, boolToInt(stack.getString(-2) >= stack.getString(-1)))
+			stack.setInt(-2, boolToInt(stack.getString(-2) >= stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
-			stack.writeInt(-2, boolToInt(stack.getInt(-2) < stack.getInt(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) < stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_DOUBLE:
-			stack.writeInt(-2, boolToInt(stack.getDouble(-2) < stack.getDouble(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) < stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
-			stack.writeInt(-2, boolToInt(stack.getString(-2) < stack.getString(-1)))
+			stack.setInt(-2, boolToInt(stack.getString(-2) < stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
-			stack.writeInt(-2, boolToInt(stack.getInt(-2) <= stack.getInt(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) <= stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_DOUBLE:
-			stack.writeInt(-2, boolToInt(stack.getDouble(-2) <= stack.getDouble(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) <= stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
-			stack.writeInt(-2, boolToInt(stack.getString(-2) <= stack.getString(-1)))
+			stack.setInt(-2, boolToInt(stack.getString(-2) <= stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
-			stack.writeInt(-2, boolToInt(stack.getInt(-2) != stack.getInt(-1)))
+			stack.setInt(-2, boolToInt(stack.getInt(-2) != stack.getInt(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_DOUBLE:
-			stack.writeInt(-2, boolToInt(stack.getDouble(-2) != stack.getDouble(-1)))
+			stack.setInt(-2, boolToInt(stack.getDouble(-2) != stack.getDouble(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_OBJECT:
-			stack.writeInt(-2, boolToInt(stack.getObject(-2).data != stack.getObject(-1).data))
+			stack.setInt(-2, boolToInt(stack.getObject(-2).data != stack.getObject(-1).data))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
-			stack.writeInt(-2, boolToInt(stack.getString(-2) != stack.getString(-1)))
+			stack.setInt(-2, boolToInt(stack.getString(-2) != stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:
-			stack.writeInt(-2, boolToInt(intToBool(stack.getInt(-2)) && intToBool(stack.getInt(-1))))
+			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) && intToBool(stack.getInt(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_OR:
-			stack.writeInt(-2, boolToInt(intToBool(stack.getInt(-2)) || intToBool(stack.getInt(-1))))
+			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) || intToBool(stack.getInt(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_NOT:
-			stack.writeInt(-1, boolToInt(!intToBool(stack.getInt(-1))))
+			stack.setInt(-1, boolToInt(!intToBool(stack.getInt(-1))))
 			pc++
 		case VM_POP:
 			vm.stack.stackPointer--
@@ -765,23 +759,23 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 			vm.stack.stackPointer--
 		case VM_PUSH_FUNCTION:
 			value := get2ByteInt(codeList[pc+1:])
-			stack.writeInt(0, value)
+			stack.setInt(0, value)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_METHOD:
 			obj := stack.getObject(-1)
 			index := get2ByteInt(codeList[pc+1:])
 
-			check_null_pointer(obj)
+			checkNullPointer(obj)
 
-			stack.writeInt(0, obj.vTable.table[index].index)
+			stack.setInt(0, obj.vTable.table[index].index)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_INVOKE:
 			funcIdx := stack.getInt(-1)
-			switch f := vm.function[funcIdx].(type) {
+			switch f := vm.functionList[funcIdx].(type) {
 			case *NativeFunction:
-				vm.restore_pc(ee, gFunc, pc)
+				vm.restorePc(ee, gFunc, pc)
 				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GFunction:
@@ -796,46 +790,46 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 				return ret
 			}
 		case VM_NEW:
-			class_index := get2ByteInt(codeList[pc+1:])
-			stack.writeObject(0, vm.createClassObject(class_index))
+			classIndex := get2ByteInt(codeList[pc+1:])
+			stack.setObject(0, vm.createClassObject(classIndex))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_NEW_ARRAY:
 			dim := int(codeList[pc+1])
 			typ := exe.TypeSpecifierList[get2ByteInt(codeList[pc+2:])]
 
-			vm.restore_pc(ee, gFunc, pc)
-			array := vm.create_array(dim, typ)
+			vm.restorePc(ee, gFunc, pc)
+			array := vm.createArray(dim, typ)
 			vm.stack.stackPointer -= dim
 
-			stack.writeObject(0, array)
+			stack.setObject(0, array)
 			vm.stack.stackPointer++
 			pc += 4
 		case VM_NEW_ARRAY_LITERAL_INT:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restore_pc(ee, gFunc, pc)
-			array := vm.create_array_literal_int(size)
+			vm.restorePc(ee, gFunc, pc)
+			array := vm.createArrayLiteralInt(size)
 			vm.stack.stackPointer -= size
-			stack.writeObject(0, array)
+			stack.setObject(0, array)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_NEW_ARRAY_LITERAL_DOUBLE:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restore_pc(ee, gFunc, pc)
-			array := vm.create_array_literal_double(size)
+			vm.restorePc(ee, gFunc, pc)
+			array := vm.createArrayLiteralDouble(size)
 			vm.stack.stackPointer -= size
-			stack.writeObject(0, array)
+			stack.setObject(0, array)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_NEW_ARRAY_LITERAL_OBJECT:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restore_pc(ee, gFunc, pc)
-			array := vm.create_array_literal_object(size)
+			vm.restorePc(ee, gFunc, pc)
+			array := vm.createArrayLiteralObject(size)
 			vm.stack.stackPointer -= size
-			stack.writeObject(0, array)
+			stack.setObject(0, array)
 			vm.stack.stackPointer++
 			pc += 3
 		default:
@@ -845,27 +839,27 @@ func (vm *VmVirtualMachine) execute(gFunc *GFunction, codeList []byte) VmValue {
 	return ret
 }
 
-func (vm *VmVirtualMachine) initializeLocalVariables(f *VmFunction, from_sp int) {
-	var i, sp_idx int
+func (vm *VirtualMachine) initializeLocalVariables(f *Function, fromSp int) {
+	var i, spIdx int
 
 	for i = 0; i < len(f.LocalVariableList); i++ {
 		vm.stack.stack[i].setPointer(false)
 	}
 
-	sp_idx = from_sp
+	spIdx = fromSp
 	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.stack[sp_idx] = initializeValue(f.LocalVariableList[i].TypeSpecifier)
+		vm.stack.stack[spIdx] = initializeValue(f.LocalVariableList[i].TypeSpecifier)
 
 		if f.LocalVariableList[i].TypeSpecifier.BasicType == StringType {
 			vm.stack.stack[i].setPointer(true)
 		}
-		sp_idx++
+		spIdx++
 	}
 }
 
 // 修正转换code
-func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmFunction) {
-	var dest_idx int
+func (vm *VirtualMachine) convertCode(exe *Executable, codeList []byte, f *Function) {
+	var destIdx int
 
 	for i := 0; i < len(codeList); i++ {
 		code := codeList[i]
@@ -875,36 +869,36 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
 			VM_PUSH_STACK_OBJECT, VM_POP_STACK_OBJECT:
 
-			var parameter_count int
+			var parameterCount int
 
 			if f == nil {
 				panic("can't find line, need debug!!!")
 			}
 
-            if f.IsMethod {
-                parameter_count = len(f.ParameterList) + 1 /* for this */
-            } else{
-                parameter_count = len(f.ParameterList)
-            }
+			if f.IsMethod {
+				parameterCount = len(f.ParameterList) + 1 /* for this */
+			} else {
+				parameterCount = len(f.ParameterList)
+			}
 
 			// 增加返回值的位置
-			src_idx := get2ByteInt(codeList[i+1:])
-			if src_idx >= parameter_count {
-				dest_idx = src_idx + 1
+			srcIdx := get2ByteInt(codeList[i+1:])
+			if srcIdx >= parameterCount {
+				destIdx = srcIdx + 1
 			} else {
-				dest_idx = src_idx
+				destIdx = srcIdx
 			}
-			set2ByteInt(codeList[i+1:], dest_idx)
+			set2ByteInt(codeList[i+1:], destIdx)
 
 		case VM_PUSH_FUNCTION:
 
-			idx_in_exe := get2ByteInt(codeList[i+1:])
-			funcIdx := vm.searchFunction(exe.FunctionList[idx_in_exe].PackageName, exe.FunctionList[idx_in_exe].Name)
+			idxInExe := get2ByteInt(codeList[i+1:])
+			funcIdx := vm.searchFunction(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
 			set2ByteInt(codeList[i+1:], funcIdx)
 		case VM_NEW:
-			idx_in_exe := get2ByteInt(codeList[i+1:])
-			class_idx := vm.searchClass(exe.ClassDefinitionList[idx_in_exe].PackageName, exe.ClassDefinitionList[idx_in_exe].Name)
-			set2ByteInt(codeList[i+1:], class_idx)
+			idxInExe := get2ByteInt(codeList[i+1:])
+			classIdx := vm.searchClass(exe.ClassDefinitionList[idxInExe].PackageName, exe.ClassDefinitionList[idxInExe].Name)
+			set2ByteInt(codeList[i+1:], classIdx)
 		}
 
 		info := &OpcodeInfo[code]
@@ -920,48 +914,49 @@ func (vm *VmVirtualMachine) convertCode(exe *Executable, codeList []byte, f *VmF
 		}
 	}
 }
-// 查找函数
-func (vm *VmVirtualMachine) searchFunction(packageName, name string) int {
 
-	for i, f := range vm.function {
+// 查找函数
+func (vm *VirtualMachine) searchFunction(packageName, name string) int {
+
+	for i, f := range vm.functionList {
 		if f.getPackageName() == packageName && f.getName() == name {
 			return i
 		}
 	}
-	return FUNCTION_NOT_FOUND
+	return functionNotFound
 }
 
-func (vm *VmVirtualMachine)searchClass(package_name, name string) int {
+func (vm *VirtualMachine) searchClass(packageName, name string) int {
 
 	for i, class := range vm.classList {
-		if class.packageName == package_name && class.name == name {
+		if class.packageName == packageName && class.name == name {
 			return i
 		}
 	}
 
-    vmError(CLASS_NOT_FOUND_ERR, name)
+	vmError(CLASS_NOT_FOUND_ERR, name)
 
-    return 0
+	return 0
 }
 
 //
 // 函数相关
 //
 // 执行原生函数
-func (vm *VmVirtualMachine) invokeNativeFunction(f *NativeFunction, sp_p *int) {
+func (vm *VirtualMachine) invokeNativeFunction(f *NativeFunction, spP *int) {
 
 	stack := vm.stack.stack
-	sp := *sp_p
+	sp := *spP
 
 	ret := f.proc(vm, f.argCount, stack[sp-f.argCount-1:])
 
 	stack[sp-f.argCount-1] = ret
 
-	*sp_p = sp - f.argCount
+	*spP = sp - f.argCount
 }
 
 // 函数执行
-func (vm *VmVirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction, code_p *[]byte, pc_p *int, sp_p *int, base_p *int, ee **ExecutableEntry, exe **Executable) {
+func (vm *VirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, ee **ExecutableEntry, exe **Executable) {
 	// caller 调用者, 当前所属的函数调用域
 
 	// callee 要调用的函数的基本信息
@@ -970,92 +965,92 @@ func (vm *VmVirtualMachine) invokeGFunction(caller **GFunction, callee *GFunctio
 	*exe = (*ee).executable
 
 	// 包含调用函数的全部信息
-	callee_p := (*exe).FunctionList[callee.Index]
+	calleeP := (*exe).FunctionList[callee.Index]
 
 	// 拓展栈大小
-	vm.stack.expand(callee_p.CodeList)
+	vm.stack.expand(calleeP.CodeList)
 
 	// 设置返回值信息
 	callInfo := &CallInfo{
 		caller:        *caller,
-		callerAddress: *pc_p,
-		base:          *base_p,
+		callerAddress: *pcP,
+		base:          *baseP,
 	}
 
 	// 栈上保存返回信息
-	vm.stack.stack[*sp_p-1] = callInfo
+	vm.stack.stack[*spP-1] = callInfo
 
 	// 设置base
-	*base_p = *sp_p - len(callee_p.ParameterList) - 1
-	if callee_p.IsMethod {
-		(*base_p)--
+	*baseP = *spP - len(calleeP.ParameterList) - 1
+	if calleeP.IsMethod {
+		*baseP--
 	}
 
 	// 设置调用者
 	*caller = callee
 
 	// 初始化参数
-	vm.initializeLocalVariables(callee_p, *sp_p)
+	vm.initializeLocalVariables(calleeP, *spP)
 
 	// 设置栈位置
-	*sp_p += len(callee_p.LocalVariableList)
-	*pc_p = 0
+	*spP += len(calleeP.LocalVariableList)
+	*pcP = 0
 
 	// 设置字节码为函数的字节码
-	*code_p = callee_p.CodeList
+	*codeP = calleeP.CodeList
 }
 
-func (vm *VmVirtualMachine) returnFunction(func_p **GFunction, code_p *[]byte, pc_p *int, base_p *int, ee **ExecutableEntry, exe **Executable) bool {
+func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, ee **ExecutableEntry, exe **Executable) bool {
 
-	return_value := vm.stack.stack[vm.stack.stackPointer-1]
+	returnValue := vm.stack.stack[vm.stack.stackPointer-1]
 	vm.stack.stackPointer--
 
-	callee_func := (*exe).FunctionList[(*func_p).Index]
+	calleeFunc := (*exe).FunctionList[(*funcP).Index]
 
-	ret := do_return(vm, func_p, code_p, pc_p, base_p, ee, exe)
+	ret := doReturn(vm, funcP, codeP, pcP, baseP, ee, exe)
 
-	vm.stack.stack[vm.stack.stackPointer] = return_value
-	vm.stack.stack[vm.stack.stackPointer].setPointer(is_reference_type(callee_func.TypeSpecifier))
+	vm.stack.stack[vm.stack.stackPointer] = returnValue
+	vm.stack.stack[vm.stack.stackPointer].setPointer(isReferenceType(calleeFunc.TypeSpecifier))
 	vm.stack.stackPointer++
 
 	return ret
 }
 
-func do_return(vm *VmVirtualMachine, func_p **GFunction, code_p *[]byte, pc_p *int, base_p *int, ee_p **ExecutableEntry, exe_p **Executable) bool {
+func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, eeP **ExecutableEntry, exeP **Executable) bool {
 
-	callee_p := (*exe_p).FunctionList[(*func_p).Index]
+	calleeP := (*exeP).FunctionList[(*funcP).Index]
 
-	arg_count := len(callee_p.ParameterList)
-	if callee_p.IsMethod {
-		arg_count++ /* for this */
+	argCount := len(calleeP.ParameterList)
+	if calleeP.IsMethod {
+		argCount++ /* for this */
 	}
-	call_info := vm.stack.stack[*base_p+arg_count].(*CallInfo)
+	callInfo := vm.stack.stack[*baseP+argCount].(*CallInfo)
 
-	if call_info.caller != nil {
-		*ee_p = call_info.caller.Executable
-		*exe_p = (*ee_p).executable
-		caller_p := (*exe_p).FunctionList[call_info.caller.Index]
-		*code_p = caller_p.CodeList
+	if callInfo.caller != nil {
+		*eeP = callInfo.caller.Executable
+		*exeP = (*eeP).executable
+		callerP := (*exeP).FunctionList[callInfo.caller.Index]
+		*codeP = callerP.CodeList
 	} else {
-		*ee_p = vm.topLevel
-		*exe_p = vm.topLevel.executable
-		*code_p = vm.topLevel.executable.CodeList
+		*eeP = vm.topLevel
+		*exeP = vm.topLevel.executable
+		*codeP = vm.topLevel.executable.CodeList
 	}
-	*func_p = call_info.caller
+	*funcP = callInfo.caller
 
-	vm.stack.stackPointer = *base_p
-	*pc_p = call_info.callerAddress + 1
-	*base_p = call_info.base
+	vm.stack.stackPointer = *baseP
+	*pcP = callInfo.callerAddress + 1
+	*baseP = callInfo.base
 
-	return call_info.callerAddress == CALL_FROM_NATIVE
+	return callInfo.callerAddress == callFromNative
 }
 
-func (vm *VmVirtualMachine) create_array_sub(dim int, dim_index int, typ *VmTypeSpecifier) *VmObjectRef {
-	var ret *VmObjectRef
+func (vm *VirtualMachine) createArraySub(dim int, dimIndex int, typ *TypeSpecifier) *ObjectRef {
+	var ret *ObjectRef
 
 	size := vm.stack.getInt(-dim)
 
-	if dim_index == (len(typ.DeriveList) - 1) {
+	if dimIndex == (len(typ.DeriveList) - 1) {
 		switch typ.BasicType {
 		case VoidType:
 			panic("TODO")
@@ -1070,18 +1065,18 @@ func (vm *VmVirtualMachine) create_array_sub(dim int, dim_index int, typ *VmType
 		default:
 			panic("TODO")
 		}
-	} else if _, ok := typ.DeriveList[dim_index].(*VmFunctionDerive); ok {
+	} else if _, ok := typ.DeriveList[dimIndex].(*FunctionDerive); ok {
 		// BUG ?
 		ret = nil
 	} else {
 		ret = vm.createArrayObject(size)
-		if dim_index < dim-1 {
-			vm.stack.writeObject(0, ret)
+		if dimIndex < dim-1 {
+			vm.stack.setObject(0, ret)
 			vm.stack.stackPointer++
 
 			for i := 0; i < size; i++ {
-				child := vm.create_array_sub(dim, dim_index+1, typ)
-				ret.data.(*VmObjectArrayObject).setObject(i, child)
+				child := vm.createArraySub(dim, dimIndex+1, typ)
+				ret.data.(*ObjectArrayObject).setObject(i, child)
 			}
 			vm.stack.stackPointer--
 		}
@@ -1089,41 +1084,41 @@ func (vm *VmVirtualMachine) create_array_sub(dim int, dim_index int, typ *VmType
 	return ret
 }
 
-func (vm *VmVirtualMachine) create_array(dim int, typ *VmTypeSpecifier) *VmObjectRef {
-	return vm.create_array_sub(dim, 0, typ)
+func (vm *VirtualMachine) createArray(dim int, typ *TypeSpecifier) *ObjectRef {
+	return vm.createArraySub(dim, 0, typ)
 }
 
-func (vm *VmVirtualMachine) create_array_literal_int(size int) *VmObjectRef {
+func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 
 	array := vm.createArrayInt(size)
 	for i := 0; i < size; i++ {
-		array.data.(*VmObjectArrayInt).intArray[i] = vm.stack.getInt(-size + i)
+		array.data.(*ObjectArrayInt).intArray[i] = vm.stack.getInt(-size + i)
 	}
 
 	return array
 }
 
-func (vm *VmVirtualMachine) create_array_literal_double(size int) *VmObjectRef {
+func (vm *VirtualMachine) createArrayLiteralDouble(size int) *ObjectRef {
 
 	array := vm.createArrayDouble(size)
 	for i := 0; i < size; i++ {
-		array.data.(*VmObjectArrayDouble).doubleArray[i] = vm.stack.getDouble(-size + i)
+		array.data.(*ObjectArrayDouble).doubleArray[i] = vm.stack.getDouble(-size + i)
 	}
 
 	return array
 }
 
-func (vm *VmVirtualMachine) create_array_literal_object(size int) *VmObjectRef {
+func (vm *VirtualMachine) createArrayLiteralObject(size int) *ObjectRef {
 	array := vm.createArrayObject(size)
 	for i := 0; i < size; i++ {
-		array.data.(*VmObjectArrayObject).objectArray[i] = vm.stack.getObject(-size + i)
+		array.data.(*ObjectArrayObject).objectArray[i] = vm.stack.getObject(-size + i)
 	}
 
 	return array
 }
 
 // TODO 待研究
-func (vm *VmVirtualMachine) restore_pc(ee *ExecutableEntry, function *GFunction, pc int) {
+func (vm *VirtualMachine) restorePc(ee *ExecutableEntry, function *GFunction, pc int) {
 	vm.currentExecutable = ee
 	vm.currentFunction = function
 	vm.pc = pc

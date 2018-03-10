@@ -1,27 +1,27 @@
 package vm
 
 //
-// VmValue
+// Value
 //
 // 虚拟机基本值接口
-type VmValue interface {
+type Value interface {
 	isPointer() bool
 	setPointer(bool)
 }
 
 //
-// VmValueImpl
+// ValueImpl
 //
-type VmValueImpl struct {
+type ValueImpl struct {
 	// 是否是指针
 	pointerFlags bool
 }
 
-func (v *VmValueImpl) isPointer() bool {
+func (v *ValueImpl) isPointer() bool {
 	return v.pointerFlags
 }
 
-func (v *VmValueImpl) setPointer(b bool) {
+func (v *ValueImpl) setPointer(b bool) {
 	v.pointerFlags = b
 }
 
@@ -29,7 +29,7 @@ func (v *VmValueImpl) setPointer(b bool) {
 // CallInfo 函数返回体
 //
 type CallInfo struct {
-	VmValueImpl
+	ValueImpl
 
 	// 调用的函数
 	caller *GFunction
@@ -40,77 +40,71 @@ type CallInfo struct {
 }
 
 //
-// VmIntValue
+// IntValue
 //
-type VmIntValue struct {
-	VmValueImpl
+type IntValue struct {
+	ValueImpl
 	intValue int
 }
 
-func NewIntValue(value int) *VmIntValue {
-	return &VmIntValue{
+func NewIntValue(value int) *IntValue {
+	return &IntValue{
 		intValue: value,
 	}
 }
 
 //
-// VmDoubleValue
+// DoubleValue
 //
-type VmDoubleValue struct {
-	VmValueImpl
+type DoubleValue struct {
+	ValueImpl
 	doubleValue float64
 }
 
-func NewDoubleValue(value float64) *VmDoubleValue {
-	return &VmDoubleValue{
+func NewDoubleValue(value float64) *DoubleValue {
+	return &DoubleValue{
 		doubleValue: value,
 	}
 }
 
 //
-// VmObjectRef
+// ObjectRef
 //
 // 引用对象
-type VmObjectRef struct {
-	VmValueImpl
+type ObjectRef struct {
+	ValueImpl
 
-	vTable *VmVTable
-	data VmObject
-} 
-
-func NewObjectRefValue(value VmObject) *VmObjectRef {
-	return &VmObjectRef{
-		data: value,
-	}
+	vTable *VTable
+	data   Object
 }
 
 //
-// VmObject
+// Object
 //
 // 虚拟机对象接口, 包含string,
-type VmObject interface {
+type Object interface {
 	isMarked() bool
 	setMark(bool)
 }
 
-type VmObjectImpl struct {
+type ObjectImpl struct {
 	// gc用
 	marked bool
 }
 
-func (obj *VmObjectImpl) isMarked() bool {
+func (obj *ObjectImpl) isMarked() bool {
 	return obj.marked
 }
 
-func (obj *VmObjectImpl) setMark(m bool) {
+func (obj *ObjectImpl) setMark(m bool) {
 	obj.marked = m
 }
 
 //
 // object string
 //
-type VmObjectString struct {
-	VmObjectImpl
+type ObjectString struct {
+	ObjectImpl
 
 	stringValue string
 }
@@ -118,128 +112,128 @@ type VmObjectString struct {
 //
 // object array interface
 //
-type VmObjectArray interface {
+type ObjectArray interface {
 	getArraySize() int
 }
 
 // array int
-type VmObjectArrayInt struct {
-	VmObjectImpl
+type ObjectArrayInt struct {
+	ObjectImpl
 	intArray []int
 }
 
-func (obj *VmObjectArrayInt) getArraySize() int {
-	if obj.intArray == nil {
+func (array *ObjectArrayInt) getArraySize() int {
+	if array.intArray == nil {
 		return -1
 	}
-	return len(obj.intArray)
+	return len(array.intArray)
 }
 
-func (array *VmObjectArrayInt) getInt(index int) int {
+func (array *ObjectArrayInt) getInt(index int) int {
 	checkArray(array, index)
 
 	return array.intArray[index]
 }
 
-func (array *VmObjectArrayInt) setInt(index int, value int) {
+func (array *ObjectArrayInt) setInt(index int, value int) {
 	checkArray(array, index)
 
 	array.intArray[index] = value
 }
 
 // array double
-type VmObjectArrayDouble struct {
-	VmObjectImpl
+type ObjectArrayDouble struct {
+	ObjectImpl
 	doubleArray []float64
 }
 
-func (obj *VmObjectArrayDouble) getArraySize() int {
+func (obj *ObjectArrayDouble) getArraySize() int {
 	if obj.doubleArray == nil {
 		return -1
 	}
 	return len(obj.doubleArray)
 }
 
-func (array *VmObjectArrayDouble) getDouble(index int) float64 {
-	checkArray(array, index)
+func (obj *ObjectArrayDouble) getDouble(index int) float64 {
+	checkArray(obj, index)
 
-	return array.doubleArray[index]
+	return obj.doubleArray[index]
 }
-func (array *VmObjectArrayDouble) setDouble(index int, value float64) {
-	checkArray(array, index)
+func (obj *ObjectArrayDouble) setDouble(index int, value float64) {
+	checkArray(obj, index)
 
-	array.doubleArray[index] = value
+	obj.doubleArray[index] = value
 }
 
 // array object
-type VmObjectArrayObject struct {
-	VmObjectImpl
-	objectArray []*VmObjectRef
+type ObjectArrayObject struct {
+	ObjectImpl
+	objectArray []*ObjectRef
 }
 
-func (obj *VmObjectArrayObject) getArraySize() int {
+func (obj *ObjectArrayObject) getArraySize() int {
 	if obj.objectArray == nil {
 		return -1
 	}
 	return len(obj.objectArray)
 }
 
-func (array *VmObjectArrayObject) getObject(index int) *VmObjectRef {
-	checkArray(array, index)
+func (obj *ObjectArrayObject) getObject(index int) *ObjectRef {
+	checkArray(obj, index)
 
-	return array.objectArray[index]
+	return obj.objectArray[index]
 }
 
-func (array *VmObjectArrayObject) setObject(index int, value *VmObjectRef) {
-	checkArray(array, index)
+func (obj *ObjectArrayObject) setObject(index int, value *ObjectRef) {
+	checkArray(obj, index)
 
-	array.objectArray[index] = value
+	obj.objectArray[index] = value
 }
 
 //
-// VmObjectClassObject
+// ObjectClassObject
 //
-type VmObjectClassObject struct {
-	VmObjectImpl
+type ObjectClassObject struct {
+	ObjectImpl
 
-	fieldList []VmValue
+	fieldList []Value
 }
 
-func (obj *VmObjectClassObject) getInt(index int) int {
-	value := obj.fieldList[index].(*VmIntValue)
+func (obj *ObjectClassObject) getInt(index int) int {
+	value := obj.fieldList[index].(*IntValue)
 	return value.intValue
 }
 
-func (obj *VmObjectClassObject) getDouble(index int) float64 {
-	value := obj.fieldList[index].(*VmDoubleValue)
+func (obj *ObjectClassObject) getDouble(index int) float64 {
+	value := obj.fieldList[index].(*DoubleValue)
 	return value.doubleValue
 }
 
-func (obj *VmObjectClassObject) getObject(index int) *VmObjectRef {
-	value := obj.fieldList[index].(*VmObjectRef)
+func (obj *ObjectClassObject) getObject(index int) *ObjectRef {
+	value := obj.fieldList[index].(*ObjectRef)
 	return value
 }
 
-func (obj *VmObjectClassObject) writeInt(sp int, value int) {
+func (obj *ObjectClassObject) writeInt(sp int, value int) {
 	v := NewIntValue(value)
 	v.setPointer(false)
 
 	obj.fieldList[sp] = v
 }
-func (obj *VmObjectClassObject) writeDouble(sp int, value float64) {
+func (obj *ObjectClassObject) writeDouble(sp int, value float64) {
 	v := NewDoubleValue(value)
 	v.setPointer(false)
 
 	obj.fieldList[sp] = v
 }
-func (obj *VmObjectClassObject) writeObject(sp int, value *VmObjectRef) {
+func (obj *ObjectClassObject) writeObject(sp int, value *ObjectRef) {
 	value.setPointer(true)
 
 	obj.fieldList[sp] = value
 }
 
 // utils
-func checkArray(array VmObjectArray, index int) {
+func checkArray(array ObjectArray, index int) {
 
 	if array == nil {
 		vmError(NULL_POINTER_ERR)

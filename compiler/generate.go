@@ -6,32 +6,32 @@ import (
 	"../vm"
 )
 
-type OpcodeBuf struct {
+type OpCodeBuf struct {
 	codeList       []byte
 	labelTableList []*LabelTable
-	lineNumberList []*vm.VmLineNumber
+	lineNumberList []*vm.LineNumber
 }
 
 type LabelTable struct {
 	labelAddress int
 }
 
-func newCodeBuf() *OpcodeBuf {
-	ob := &OpcodeBuf{
+func newCodeBuf() *OpCodeBuf {
+	ob := &OpCodeBuf{
 		codeList:       []byte{},
 		labelTableList: []*LabelTable{},
-		lineNumberList: []*vm.VmLineNumber{},
+		lineNumberList: []*vm.LineNumber{},
 	}
 	return ob
 }
 
-func (ob *OpcodeBuf) getLabel() int {
+func (ob *OpCodeBuf) getLabel() int {
 	// 返回栈顶位置
 	ob.labelTableList = append(ob.labelTableList, &LabelTable{})
 	return len(ob.labelTableList) - 1
 }
 
-func (ob *OpcodeBuf) setLabel(label int) {
+func (ob *OpCodeBuf) setLabel(label int) {
 	// 设置跳转
 	ob.labelTableList[label].labelAddress = len(ob.codeList)
 }
@@ -39,7 +39,7 @@ func (ob *OpcodeBuf) setLabel(label int) {
 //
 // generateCode
 //
-func (ob *OpcodeBuf) generateCode(pos Position, code byte, rest ...int) {
+func (ob *OpCodeBuf) generateCode(pos Position, code byte, rest ...int) {
 	// 获取参数类型
 	paramList := []byte(vm.OpcodeInfo[int(code)].Parameter)
 
@@ -69,10 +69,10 @@ func (ob *OpcodeBuf) generateCode(pos Position, code byte, rest ...int) {
 	ob.addLineNumber(pos.Line, startPc)
 }
 
-func (ob *OpcodeBuf) addLineNumber(lineNumber int, startPc int) {
+func (ob *OpCodeBuf) addLineNumber(lineNumber int, startPc int) {
 
 	if len(ob.lineNumberList) == 0 || ob.lineNumberList[len(ob.lineNumberList)-1].LineNumber != lineNumber {
-		newLineNumber := &vm.VmLineNumber{
+		newLineNumber := &vm.LineNumber{
 			LineNumber: lineNumber,
 			StartPc:    startPc,
 			PcCount:    len(ob.codeList) - startPc,
@@ -88,7 +88,7 @@ func (ob *OpcodeBuf) addLineNumber(lineNumber int, startPc int) {
 //
 // FIX
 //
-func (ob *OpcodeBuf) fixOpcodeBuf() []byte {
+func (ob *OpCodeBuf) fixOpcodeBuf() []byte {
 
 	ob.fixLabels()
 	ob.labelTableList = nil
@@ -97,7 +97,7 @@ func (ob *OpcodeBuf) fixOpcodeBuf() []byte {
 }
 
 // 修正label, 将正确的跳转地址填入
-func (ob *OpcodeBuf) fixLabels() {
+func (ob *OpCodeBuf) fixLabels() {
 
 	for i := 0; i < len(ob.codeList); i++ {
 		if ob.codeList[i] == vm.VM_JUMP ||
@@ -125,7 +125,7 @@ func (ob *OpcodeBuf) fixLabels() {
 //
 // generateStatementList
 //
-func generateStatementList(exe *vm.Executable, currentBlock *Block, statementList []Statement, ob *OpcodeBuf) {
+func generateStatementList(exe *vm.Executable, currentBlock *Block, statementList []Statement, ob *OpCodeBuf) {
 	for _, stmt := range statementList {
 		stmt.generate(exe, currentBlock, ob)
 	}
@@ -134,38 +134,38 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 //
 // COPY
 //
-func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.VmTypeSpecifier) {
+func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
 
 	dest.BasicType = src.basicType
-	dest.DeriveList = []vm.VmTypeDerive{}
+	dest.DeriveList = []vm.TypeDerive{}
 
 	for _, derive := range src.deriveList {
 		switch realDerive := derive.(type) {
 		case *FunctionDerive:
-			newDerive := &vm.VmFunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
+			newDerive := &vm.FunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
 			dest.AppendDerive(newDerive)
 		case *ArrayDerive:
-			dest.AppendDerive(&vm.VmArrayDerive{})
+			dest.AppendDerive(&vm.ArrayDerive{})
 		default:
 			panic("TODO")
 		}
 	}
 }
 
-func copyTypeSpecifier(src *TypeSpecifier) *vm.VmTypeSpecifier {
+func copyTypeSpecifier(src *TypeSpecifier) *vm.TypeSpecifier {
 
-	dest := &vm.VmTypeSpecifier{}
+	dest := &vm.TypeSpecifier{}
 
 	copyTypeSpecifierNoAlloc(src, dest)
 
 	return dest
 }
 
-func copyParameterList(src []*Parameter) []*vm.VmLocalVariable {
-	dest := []*vm.VmLocalVariable{}
+func copyParameterList(src []*Parameter) []*vm.LocalVariable {
+	dest := []*vm.LocalVariable{}
 
 	for _, param := range src {
-		v := &vm.VmLocalVariable{
+		v := &vm.LocalVariable{
 			Name:          param.name,
 			TypeSpecifier: copyTypeSpecifier(param.typeSpecifier),
 		}
@@ -174,25 +174,14 @@ func copyParameterList(src []*Parameter) []*vm.VmLocalVariable {
 	return dest
 }
 
-func copyFunction(src *FunctionDefinition, dest *vm.VmFunction) {
-	dest.TypeSpecifier = copyTypeSpecifier(src.typeSpecifier)
-	dest.Name = src.name
-	dest.ParameterList = copyParameterList(src.parameterList)
-	if src.block != nil {
-		dest.LocalVariableList = copyLocalVariables(src)
-	} else {
-		dest.LocalVariableList = nil
-	}
-}
-
-func copyLocalVariables(fd *FunctionDefinition) []*vm.VmLocalVariable {
+func copyLocalVariables(fd *FunctionDefinition) []*vm.LocalVariable {
 	// TODO 形参占用位置
-	var dest []*vm.VmLocalVariable = []*vm.VmLocalVariable{}
+	var dest = []*vm.LocalVariable{}
 
 	localVariableCount := len(fd.localVariableList) - len(fd.parameterList)
 
 	for _, v := range fd.localVariableList[0:localVariableCount] {
-		vmV := &vm.VmLocalVariable{
+		vmV := &vm.LocalVariable{
 			Name:          v.name,
 			TypeSpecifier: copyTypeSpecifier(v.typeSpecifier),
 		}
@@ -206,14 +195,14 @@ func copyLocalVariables(fd *FunctionDefinition) []*vm.VmLocalVariable {
 func AddTypeSpecifier(src *TypeSpecifier, exe *vm.Executable) int {
 	ret := len(exe.TypeSpecifierList)
 
-	newType := &vm.VmTypeSpecifier{}
+	newType := &vm.TypeSpecifier{}
 	copyTypeSpecifierNoAlloc(src, newType)
 	exe.TypeSpecifierList = append(exe.TypeSpecifierList, newType)
 
 	return ret
 }
 
-func generate_pop_to_lvalue(exe *vm.Executable, block *Block, expr Expression, ob *OpcodeBuf) {
+func generatePopToLvalue(exe *vm.Executable, block *Block, expr Expression, ob *OpCodeBuf) {
 
 	switch e := expr.(type) {
 	case *IdentifierExpression:
@@ -227,7 +216,7 @@ func generate_pop_to_lvalue(exe *vm.Executable, block *Block, expr Expression, o
 	}
 }
 
-func generatePopToMember(exe *vm.Executable,block *Block, expr *MemberExpression ,ob  *OpcodeBuf ) {
+func generatePopToMember(exe *vm.Executable,block *Block, expr *MemberExpression ,ob  *OpCodeBuf) {
 	
 	switch member := expr.declaration.(type) {
 	case *FieldMember:
@@ -240,7 +229,7 @@ func generatePopToMember(exe *vm.Executable,block *Block, expr *MemberExpression
 	}
 }
 
-func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
+func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	var code byte
 
 	offset := getOpcodeTypeOffset(decl.typeSpecifier)
@@ -252,17 +241,17 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpcodeBuf) {
 	ob.generateCode(pos, code+offset, decl.variableIndex)
 }
 
-func generatePushArgument(argList []Expression, exe *vm.Executable, currentBlock *Block, ob *OpcodeBuf) {
+func generatePushArgument(argList []Expression, exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	for _, arg := range argList {
 		arg.generate(exe, currentBlock, ob)
 	}
 }
 
-func generate_method_call_expression(expr *FunctionCallExpression, exe *vm.Executable, block *Block, ob *OpcodeBuf) {
+func generateMethodCallExpression(expr *FunctionCallExpression, exe *vm.Executable, block *Block, ob *OpCodeBuf) {
 
 	member := expr.function.(*MemberExpression)
 
-	methodIndex := get_method_index(member)
+	methodIndex := getMethodIndex(member)
 
 	generatePushArgument(expr.argumentList, exe, block, ob)
 	member.expression.generate(exe, block, ob)
@@ -270,7 +259,7 @@ func generate_method_call_expression(expr *FunctionCallExpression, exe *vm.Execu
 	ob.generateCode(expr.Position(), vm.VM_INVOKE)
 }
 
-func get_method_index(member *MemberExpression) int {
+func getMethodIndex(member *MemberExpression) int {
 	methodIndex := member.declaration.(*MethodMember).methodIndex
 
 	return methodIndex

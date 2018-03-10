@@ -11,29 +11,31 @@ import (
     parameter_list       []*Parameter
     argument_list        []Expression
 
-statement            Statement
+    statement            Statement
     statement_list       []Statement
 
-expression           Expression
+    expression           Expression
     expression_list      []Expression
 
-block                *Block
+    block                *Block
     elif_list            []*Elif
 
-basic_type_specifier *TypeSpecifier
+    basic_type_specifier *TypeSpecifier
     type_specifier       *TypeSpecifier
 
-array_dimension      *ArrayDimension
+    array_dimension      *ArrayDimension
     array_dimension_list []*ArrayDimension
 
-package_name         []string
+    package_name         []string
     require_list         []*Require
 
-extends_list         []*Extend
+    extends_list         []*Extend
     member_declaration   []MemberDeclaration
     function_definition  *FunctionDefinition
 
-tok                  Token
+    class_name           []string
+
+    tok                  Token
 }
 
 %token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
@@ -52,6 +54,7 @@ tok                  Token
         REQUIRE
         CLASS_T THIS_T
 
+%type   <class_name> class_name
 %type   <package_name> package_name
 %type   <require_list> require_list require_declaration
 
@@ -419,21 +422,23 @@ primary_no_new_array
         {
             $$ = createThisExpression($1.Position())
         }
-        | NEW IDENTIFIER LP RP
+        | NEW class_name LP RP
         {
-            $$ = createNewExpression($2.Lit, "", nil, $1.Position())
+            $$ = createNewExpression($2, nil, $1.Position())
         }
-        | NEW IDENTIFIER LP argument_list RP
+        | NEW class_name LP argument_list RP
         {
-            $$ = createNewExpression($2.Lit, "", $4, $1.Position())
+            $$ = createNewExpression($2, $4, $1.Position())
         }
-        | NEW IDENTIFIER DOT IDENTIFIER LP RP
+        ;
+class_name
+        : IDENTIFIER
         {
-            $$ = createNewExpression($2.Lit, $4.Lit, nil, $1.Position())
+            $$ = []string{$1.Lit}
         }
-        | NEW IDENTIFIER DOT IDENTIFIER LP argument_list RP
+        | class_name DOT IDENTIFIER
         {
-            $$ = createNewExpression($2.Lit, $4.Lit, $6, $1.Position())
+            $$ = append($1, $3.Lit)
         }
         ;
 array_literal

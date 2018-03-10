@@ -228,6 +228,7 @@ func searchModule(name string) *Module {
 	return nil
 }
 
+// 根据名字在当前compiler, 及required里搜索类定义
 func searchClass(identifier string) *ClassDefinition {
 
 	compiler := getCurrentCompiler()

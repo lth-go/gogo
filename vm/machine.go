@@ -108,32 +108,11 @@ func (vm *VirtualMachine) addFunctions(ee *ExecutableEntry) {
 	exe := ee.executable
 
 	for _, exeFunc := range exe.FunctionList {
-		if !exeFunc.IsImplemented {
-			continue
-		}
-		// 不能添加重名函数
 		for _, vmFunc := range vm.functionList {
-			if vmFunc.getName() == exeFunc.Name {
-				panic("TODO")
+			// TODO 实现默认函数后去除
+			if !exeFunc.IsImplemented {
+				continue
 			}
-		}
-	}
-
-	for srcIdex, exeFunc := range exe.FunctionList {
-		if !exeFunc.IsImplemented {
-			continue
-		}
-		newVmFunc := &GFunction{Name: exeFunc.Name, PackageName: exeFunc.PackageName, Executable: ee, Index: srcIdex}
-		vm.functionList = append(vm.functionList, newVmFunc)
-	}
-}
-
-func addFunctions(vm *VirtualMachine, ee *ExecutableEntry) {
-
-	exe := ee.executable
-
-	for _, exeFunc := range exe.FunctionList {
-		for _, vmFunc := range vm.functionList {
 			if vmFunc.getName() == exeFunc.Name && vmFunc.getPackageName() == exeFunc.PackageName {
 				vmError(FUNCTION_MULTIPLE_DEFINE_ERR, vmFunc.getPackageName(), vmFunc.getName())
 			}
@@ -150,7 +129,6 @@ func addFunctions(vm *VirtualMachine, ee *ExecutableEntry) {
 		vmFunc.PackageName = exeFunc.PackageName
 		vmFunc.Name = exeFunc.Name
 
-		// implement functionList
 		vm.functionList[destIdx].(*GFunction).Executable = ee
 		vm.functionList[destIdx].(*GFunction).Index = srcIdx
 
@@ -166,7 +144,11 @@ func (vm *VirtualMachine) addClasses(ee *ExecutableEntry) {
 		for _, vmClass := range vm.classList {
 			// 有重复定义
 			if vmClass.name == exeClass.Name && vmClass.packageName == exeClass.PackageName {
-				vmError(CLASS_MULTIPLE_DEFINE_ERR, vmClass.packageName, vmClass.name)
+				if exeClass.IsImplemented {
+					vmError(CLASS_MULTIPLE_DEFINE_ERR, vmClass.packageName, vmClass.name)
+				}
+				// 如果类是导入的, 则未实现
+				vm.addClass(exe, exeClass, vmClass)
 			}
 		}
 	}

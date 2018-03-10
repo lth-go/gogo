@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"strings"
+
 	"../vm"
 )
 
@@ -42,12 +43,13 @@ func (cd *ClassDefinition) addToCurrentCompiler() int {
 
 	ret := len(compiler.vmClassList)
 
-	dest := &vm.Class{}
-	compiler.vmClassList = append(compiler.vmClassList, dest)
+	dest := &vm.Class{
+		PackageName:   srcPackageName,
+		Name:          cd.name,
+		IsImplemented: false,
+	}
 
-	dest.PackageName = srcPackageName
-	dest.Name = cd.name
-	dest.IsImplemented = false
+	compiler.vmClassList = append(compiler.vmClassList, dest)
 
 	for _, extend := range cd.extendList {
 		searchClassAndAdd(cd.Position(), extend.identifier, &dummy)

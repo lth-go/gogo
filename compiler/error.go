@@ -11,6 +11,7 @@ func compileError(pos Position, errorNumber int, a ...interface{}) {
 	//fmt.Printf(errMessageMap[errorNumber], a...)
 	println(errorNumber)
 	println(errMessageList[errorNumber])
+	panic("TODO")
 	os.Exit(1)
 }
 

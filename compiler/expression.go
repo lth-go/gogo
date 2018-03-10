@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"strings"
+
 	"../vm"
 )
 
@@ -10,7 +12,7 @@ import (
 type BinaryOperatorKind int
 
 const (
-	LogicalOrOperator  BinaryOperatorKind = iota
+	LogicalOrOperator BinaryOperatorKind = iota
 	LogicalAndOperator
 	EqOperator
 	NeOperator
@@ -43,7 +45,7 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 type CastType int
 
 const (
-	IntToStringCast     CastType = iota
+	IntToStringCast CastType = iota
 	BooleanToStringCast
 	DoubleToStringCast
 	IntToDoubleCast
@@ -1116,6 +1118,9 @@ func createIndexExpression(array, index Expression, pos Position) *IndexExpressi
 type NewExpression struct {
 	ExpressionImpl
 
+	// 包名
+	packageName string
+
 	// 类名
 	className       string
 	classDefinition *ClassDefinition
@@ -1130,6 +1135,21 @@ type NewExpression struct {
 }
 
 func (expr *NewExpression) fix(currentBlock *Block) Expression {
+	// 判断包是否已导入
+	if expr.packageName != "" {
+		currentCompiler := getCurrentCompiler()
+		found := false
+		for _, requiredCompiler := range currentCompiler.requiredList {
+			if expr.packageName == requiredCompiler.getPackageName() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			panic("TODO, 包没有导入")
+		}
+	}
+
 	expr.classDefinition = searchClassAndAdd(expr.Position(), expr.className, &expr.classIndex)
 
 	if expr.methodName == "" {
@@ -1146,8 +1166,6 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 	if !ok {
 		compileError(expr.Position(), CONSTRUCTOR_IS_FIELD_ERR, expr.methodName)
 	}
-
-	//check_member_accessibility(expr.Position(), expr.classDefinition, member, expr.methodName)
 
 	if !(methodMember.functionDefinition.typeS().deriveList == nil && methodMember.functionDefinition.typeS().basicType == vm.VoidType) {
 		panic("TODO")
@@ -1184,10 +1202,16 @@ func (expr *NewExpression) generate(exe *vm.Executable, currentBlock *Block, ob 
 	ob.generateCode(expr.Position(), vm.VM_POP)
 }
 
-func createNewExpression(className, memthodName string, argumentList []Expression, pos Position) *NewExpression {
+func createNewExpression(fullyClassName []string, argumentList []Expression, pos Position) *NewExpression {
+	className := fullyClassName[len(fullyClassName)-1]
+
+	packageNameList := fullyClassName[0 : len(fullyClassName)-1]
+	packageName := strings.Join(packageNameList, ".")
+
 	expr := &NewExpression{
-		className:    className,
-		methodName:   memthodName,
+		packageName: packageName,
+		className:   className,
+		//methodName:   memthodName,
 		argumentList: argumentList,
 	}
 
@@ -1196,6 +1220,7 @@ func createNewExpression(className, memthodName string, argumentList []Expressio
 	return expr
 }
 
+//
 // TODO Module
 type Module struct {
 	typ      *TypeSpecifier

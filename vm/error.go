@@ -56,6 +56,7 @@ func vmError(errorNumber int, a ...interface{}) {
 	//fmt.Printf("Line: %d\n", getLineNumberByPc(exe, functionList, pc))
 	println(errorNumber)
 	println(errMessageList[errorNumber])
+	panic("TODO")
 	//fmt.Printf(errMessageMap[errorNumber], a...)
 	os.Exit(1)
 }

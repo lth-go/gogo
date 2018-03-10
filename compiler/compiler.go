@@ -104,6 +104,7 @@ func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, paramet
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
 		name:              identifier,
+		packageNameList:   c.packageNameList,
 		parameterList:     parameterList,
 		block:             block,
 		index:             len(c.funcList),
@@ -267,7 +268,7 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 	vmFuncName := src.getVmFuncName()
 
 	for i, vmFunction := range c.vmFunctionList {
-		if (srcPackageName == vmFunction.PackageName) && (vmFuncName == vmFunction.Name) {
+		if srcPackageName == vmFunction.PackageName && vmFuncName == vmFunction.Name {
 			return i
 		}
 	}

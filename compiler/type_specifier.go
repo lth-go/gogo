@@ -40,7 +40,6 @@ type TypeSpecifier struct {
 }
 
 func (t *TypeSpecifier) fix() {
-	compiler := getCurrentCompiler()
 
 	for _, deriveIfs := range t.deriveList {
 		derive, ok := deriveIfs.(*FunctionDerive)
@@ -58,9 +57,7 @@ func (t *TypeSpecifier) fix() {
 			compileError(t.Position(), TYPE_NAME_NOT_FOUND_ERR, t.classRef.identifier)
 			return
 		}
-		if cd.getPackageName() != compiler.getPackageName() {
-			compileError(t.Position(), PACKAGE_CLASS_ACCESS_ERR, cd.name)
-		}
+
 		t.classRef.classDefinition = cd
 		t.classRef.classIndex = cd.addToCurrentCompiler()
 		return
@@ -81,6 +78,7 @@ func createClassTypeSpecifier(identifier string, pos Position) *TypeSpecifier {
 		basicType: vm.ClassType,
 		classRef: classRef{
 			identifier: identifier,
+			classDefinition: nil,
 		},
 	}
 	typ.SetPosition(pos)

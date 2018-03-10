@@ -1,3 +1,5 @@
+require func;
+
 int print(string str);
 int println(string str) {
     print(str + "\n");
@@ -597,3 +599,5 @@ if (null == null) {
 } else {
     print("NG\n");
 }
+
+func.printTest("TODO");

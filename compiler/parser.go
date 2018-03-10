@@ -1001,7 +1001,7 @@ yydefault:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		//line parser.go.y:368
 		{
-			yyVAL.expression = createMemberExpression(yyDollar[1].expression, yyDollar[3].tok.Lit, yyDollar[1].expression.Position())
+			yyVAL.expression = createMemberExpression(yyDollar[1].expression, yyDollar[3].tok.Lit)
 		}
 	case 67:
 		yyDollar = yyS[yypt-4 : yypt+1]

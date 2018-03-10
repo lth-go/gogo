@@ -16,7 +16,7 @@ type Statement interface {
 	fix(*Block, *FunctionDefinition)
 	generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf)
 
-	show(ident int)
+	show(indent int)
 }
 
 type StatementImpl struct {
@@ -33,12 +33,12 @@ type ExpressionStatement struct {
 	expression Expression
 }
 
-func (stmt *ExpressionStatement) show(ident int) {
-	printWithIndent("ExprStmt", ident)
+func (stmt *ExpressionStatement) show(indent int) {
+	printWithIndent("ExprStmt", indent)
 
-	subIdent := ident + 2
+	subIndent := indent + 2
 
-	stmt.expression.show(subIdent)
+	stmt.expression.show(subIndent)
 }
 
 func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
@@ -79,22 +79,22 @@ type IfStatement struct {
 	elseBlock *Block
 }
 
-func (stmt *IfStatement) show(ident int) {
-	printWithIndent("IfStmt", ident)
+func (stmt *IfStatement) show(indent int) {
+	printWithIndent("IfStmt", indent)
 
-	subIdent := ident + 2
-	stmt.condition.show(subIdent)
+	subIndent := indent + 2
+	stmt.condition.show(subIndent)
 	if stmt.thenBlock != nil {
-		stmt.thenBlock.show(subIdent)
+		stmt.thenBlock.show(subIndent)
 	}
 	for _, elif := range stmt.elifList {
-		printWithIndent("Elif", subIdent)
-		elif.condition.show(subIdent + 2)
-		elif.block.show(subIdent + 2)
+		printWithIndent("Elif", subIndent)
+		elif.condition.show(subIndent + 2)
+		elif.block.show(subIndent + 2)
 	}
 
 	if stmt.elseBlock != nil {
-		stmt.elseBlock.show(subIdent)
+		stmt.elseBlock.show(subIndent)
 	}
 }
 
@@ -182,22 +182,22 @@ type ForStatement struct {
 	block     *Block
 }
 
-func (stmt *ForStatement) show(ident int) {
-	printWithIndent("ForStmt", ident)
-	subIdent := ident + 2
+func (stmt *ForStatement) show(indent int) {
+	printWithIndent("ForStmt", indent)
+	subIndent := indent + 2
 
 	if stmt.init != nil {
-		stmt.init.show(subIdent)
+		stmt.init.show(subIndent)
 	}
 	if stmt.condition != nil {
-		stmt.condition.show(subIdent)
+		stmt.condition.show(subIndent)
 	}
 	if stmt.post != nil {
-		stmt.post.show(subIdent)
+		stmt.post.show(subIndent)
 	}
 
 	if stmt.block != nil {
-		stmt.block.show(subIdent)
+		stmt.block.show(subIndent)
 	}
 }
 
@@ -280,11 +280,11 @@ type ReturnStatement struct {
 	returnValue Expression
 }
 
-func (stmt *ReturnStatement) show(ident int) {
-	printWithIndent("ReturnStmt", ident)
-	subIdent := ident + 2
+func (stmt *ReturnStatement) show(indent int) {
+	printWithIndent("ReturnStmt", indent)
+	subIndent := indent + 2
 
-	stmt.returnValue.show(subIdent)
+	stmt.returnValue.show(subIndent)
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
@@ -357,8 +357,8 @@ type BreakStatement struct {
 	StatementImpl
 }
 
-func (stmt *BreakStatement) show(ident int) {
-	printWithIndent("BreakStmt", ident)
+func (stmt *BreakStatement) show(indent int) {
+	printWithIndent("BreakStmt", indent)
 }
 
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
@@ -386,8 +386,8 @@ type ContinueStatement struct {
 	StatementImpl
 }
 
-func (stmt *ContinueStatement) show(ident int) {
-	printWithIndent("ContinueStmt", ident)
+func (stmt *ContinueStatement) show(indent int) {
+	printWithIndent("ContinueStmt", indent)
 }
 
 func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
@@ -425,12 +425,12 @@ type Declaration struct {
 	isLocal bool
 }
 
-func (stmt *Declaration) show(ident int) {
-	printWithIndent("DeclStmt", ident)
+func (stmt *Declaration) show(indent int) {
+	printWithIndent("DeclStmt", indent)
 
-	subIdent := ident + 2
+	subIndent := indent + 2
 	if stmt.initializer != nil {
-		stmt.initializer.show(subIdent)
+		stmt.initializer.show(subIndent)
 	}
 }
 

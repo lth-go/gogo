@@ -27,5 +27,8 @@ const (
 
 	// array
 	BaseType
+
+	// module
+	ModuleType
 )
 

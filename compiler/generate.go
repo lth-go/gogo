@@ -218,7 +218,7 @@ func generatePopToLvalue(exe *vm.Executable, block *Block, expr Expression, ob *
 
 func generatePopToMember(exe *vm.Executable,block *Block, expr *MemberExpression ,ob  *OpCodeBuf) {
 	
-	switch member := expr.declaration.(type) {
+	switch member := expr.memberDeclaration.(type) {
 	case *FieldMember:
 		expr.expression.generate(exe, block, ob)
 		ob.generateCode(expr.Position(),vm.VM_POP_FIELD_INT + getOpcodeTypeOffset(member.typeSpecifier), member.fieldIndex)
@@ -260,7 +260,7 @@ func generateMethodCallExpression(expr *FunctionCallExpression, exe *vm.Executab
 }
 
 func getMethodIndex(member *MemberExpression) int {
-	methodIndex := member.declaration.(*MethodMember).methodIndex
+	methodIndex := member.memberDeclaration.(*MethodMember).methodIndex
 
 	return methodIndex
 }

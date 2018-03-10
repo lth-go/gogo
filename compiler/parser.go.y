@@ -156,23 +156,23 @@ basic_type_specifier
 class_type_specifier
         : IDENTIFIER
         {
-            $$ = create_class_type_specifier($1.Lit, $1.Position())
+            $$ = createClassTypeSpecifier($1.Lit, $1.Position())
         }
         ;
 array_type_specifier
         : basic_type_specifier LB RB
         {
-            $$ = create_array_type_specifier($1)
+            $$ = createArrayTypeSpecifier($1)
             $$.SetPosition($1.Position())
         }
         | IDENTIFIER LB RB
         {
-            class_type := create_class_type_specifier($1.Lit, $1.Position())
-            $$ = create_array_type_specifier(class_type)
+            class_type := createClassTypeSpecifier($1.Lit, $1.Position())
+            $$ = createArrayTypeSpecifier(class_type)
         }
         | array_type_specifier LB RB
         {
-            $$ = create_array_type_specifier($1)
+            $$ = createArrayTypeSpecifier($1)
         }
         ;
 type_specifier
@@ -366,7 +366,7 @@ primary_no_new_array
         }
         | primary_expression DOT IDENTIFIER
         {
-            $$ = createMemberExpression($1, $3.Lit, $1.Position())
+            $$ = createMemberExpression($1, $3.Lit)
         }
         | primary_expression LP argument_list RP
         {

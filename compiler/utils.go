@@ -25,6 +25,7 @@ func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
 func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
 func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
 func isClass(t *TypeSpecifier) bool   { return t.basicType == vm.ClassType }
+func isModule(t *TypeSpecifier) bool  { return t.basicType == vm.ModuleType }
 func isObject(t *TypeSpecifier) bool  { return isString(t) || isArray(t) }
 func isArray(t *TypeSpecifier) bool {
 	if t.deriveList == nil || len(t.deriveList) == 0 {
@@ -188,7 +189,7 @@ func searchDeclaration(name string, currentBlock *Block) *Declaration {
 	return nil
 }
 
-func SearchFunction(name string) *FunctionDefinition {
+func searchFunction(name string) *FunctionDefinition {
 	compiler := getCurrentCompiler()
 
 	// 当前compiler查找
@@ -207,6 +208,23 @@ func SearchFunction(name string) *FunctionDefinition {
 		}
 	}
 
+	return nil
+}
+
+func searchModule(name string) *Module {
+	compiler := getCurrentCompiler()
+
+	for _, requiredCompiler := range compiler.requiredList {
+		// 暂无处理重名
+		lastName := requiredCompiler.packageNameList[len(requiredCompiler.packageNameList)-1]
+		if name == lastName {
+			return &Module{
+				compiler: requiredCompiler,
+				typ: &TypeSpecifier{basicType: vm.ModuleType},
+			}
+		}
+
+	}
 	return nil
 }
 

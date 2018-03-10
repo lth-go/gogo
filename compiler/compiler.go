@@ -97,7 +97,7 @@ func (c *Compiler) addLexerByPath(path string) {
 //////////////////////////////
 func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
 	// 定义重复
-	if SearchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {
+	if searchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {
 		compileError(typ.Position(), FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
 	}
 
@@ -274,7 +274,7 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 
 	dest := &vm.Function{
 		PackageName: srcPackageName,
-		Name: vmFuncName,
+		Name:        vmFuncName,
 	}
 
 	c.vmFunctionList = append(c.vmFunctionList, dest)
@@ -332,7 +332,7 @@ func addClass(cd *ClassDefinition, dest *vm.Class) {
 
 	if cd.superClass != nil {
 		dest.SuperClass = &vm.ClassIdentifier{
-			Name: cd.superClass.name,
+			Name:        cd.superClass.name,
 			PackageName: cd.superClass.getPackageName(),
 		}
 	} else {
@@ -380,7 +380,7 @@ func (c *Compiler) addFunctions(exe *vm.Executable) {
 			continue
 		}
 
-		fd := SearchFunction(vmFunc.Name)
+		fd := searchFunction(vmFunc.Name)
 		addFunction(exe, fd, vmFunc, false)
 	}
 }
@@ -450,6 +450,29 @@ func (c *Compiler) searchVmClass(src *ClassDefinition) *vm.Class {
 		}
 	}
 	panic("TODO")
+}
+
+func (c *Compiler) searchFunction(name string) *FunctionDefinition {
+
+	// 当前compiler查找
+	for _, pos := range c.funcList {
+		if pos.name == name {
+			return pos
+		}
+	}
+
+	return nil
+}
+
+func (c *Compiler) searchClass(identifier string) *ClassDefinition {
+
+	for _, cd := range c.classDefinitionList {
+		if cd.name == identifier {
+			return cd
+		}
+	}
+
+	return nil
 }
 
 // ==============================

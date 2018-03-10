@@ -104,6 +104,10 @@ func (t *TypeSpecifier) isArrayDerive() bool {
 	return isArray(t)
 }
 
+func (t *TypeSpecifier) isModule() bool {
+	return isModule(t)
+}
+
 // utils
 func cloneTypeSpecifier(src *TypeSpecifier) *TypeSpecifier {
 	typ := &TypeSpecifier{}

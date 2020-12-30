@@ -3,7 +3,7 @@ package compiler
 import (
 	"strings"
 
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 const defaultConstructorName = "init"

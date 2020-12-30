@@ -1,15 +1,18 @@
 package main
 
 import (
+	"os"
 	"testing"
 
-	"./compiler"
-	"./vm"
+	"github.com/lth-go/gogogogo/compiler"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 var testFile = "test/test.4g"
 
 func TestVmMachine(t *testing.T) {
+	os.Setenv("REQUIRE_SEARCH_PATH", "./test")
+
 	exeList := compiler.CompileFile(testFile)
 
 	//// 打印字节码

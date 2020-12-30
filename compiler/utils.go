@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 func printWithIndent(a string, indent int) {

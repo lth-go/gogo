@@ -2,7 +2,7 @@
 package compiler
 
 import (
-    "../vm"
+    "github.com/lth-go/gogogogo/vm"
     "strconv"
 )
 %}

@@ -5,7 +5,7 @@ import __yyfmt__ "fmt"
 
 //line parser.go.y:2
 import (
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 	"strconv"
 )
 

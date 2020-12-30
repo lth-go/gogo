@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 // 全局compiler列表

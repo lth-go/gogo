@@ -3,7 +3,7 @@ package compiler
 import (
 	"strconv"
 
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expression {

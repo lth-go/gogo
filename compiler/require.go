@@ -40,11 +40,11 @@ func (r *Require) getRelativePath() string {
 
 func (r *Require) getFullPath() string {
 	// TODO 暂时写死, 方便测试
-	//searchBasePath := os.Getenv("REQUIRE_SEARCH_PATH")
-	//if searchBasePath == "" {
-	//    searchBasePath = "."
-	//}
-	searchBasePath := "/home/lth/toy/gogogogo/test"
+	searchBasePath := os.Getenv("REQUIRE_SEARCH_PATH")
+	if searchBasePath == "" {
+	   searchBasePath = "."
+	}
+	// searchBasePath := "/home/lth/toy/gogogogo/test"
 
 	relativePath := r.getRelativePath()
 

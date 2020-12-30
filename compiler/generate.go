@@ -3,7 +3,7 @@ package compiler
 import (
 	"encoding/binary"
 
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 type OpCodeBuf struct {

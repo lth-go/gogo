@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"../vm"
+	"github.com/lth-go/gogogogo/vm"
 )
 
 func createCastExpression(castType CastType, expr Expression) Expression {

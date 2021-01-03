@@ -53,10 +53,11 @@ import (
         NEW
         IMPORT
         CLASS_T THIS_T
+        VAR
 
-%type   <class_name> class_name
-%type   <import_spec> import_declaration
-%type   <import_spec_list> import_list
+%type <class_name> class_name
+%type <import_spec> import_declaration
+%type <import_spec_list> import_list
 
 %type <expression> expression expression_opt
       assignment_expression
@@ -65,7 +66,7 @@ import (
       additive_expression multiplicative_expression
       unary_expression postfix_expression primary_expression primary_no_new_array
       array_literal array_creation
-%type   <expression_list> expression_list
+%type <expression_list> expression_list
 
 %type <statement> statement
       if_statement for_statement
@@ -82,9 +83,9 @@ import (
 %type <array_dimension> dimension_expression
 %type <array_dimension_list> dimension_expression_list dimension_list
 
-%type   <extends_list> extends_list extends
-%type   <member_declaration> member_declaration member_declaration_list method_member field_member
-%type   <function_definition> method_function_definition
+%type <extends_list> extends_list extends
+%type <member_declaration> member_declaration member_declaration_list method_member field_member
+%type <function_definition> method_function_definition
 
 %%
 
@@ -586,14 +587,14 @@ continue_statement
         }
         ;
 declaration_statement
-        : type_specifier IDENTIFIER SEMICOLON
+        : VAR type_specifier IDENTIFIER SEMICOLON
         {
-            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit, variableIndex: -1}
+            $$ = &Declaration{typeSpecifier: $2, name: $3.Lit, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
-        | type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
+        | VAR type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
         {
-            $$ = &Declaration{typeSpecifier: $1, name: $2.Lit, initializer: $4, variableIndex: -1}
+            $$ = &Declaration{typeSpecifier: $2, name: $3.Lit, initializer: $5, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
         ;

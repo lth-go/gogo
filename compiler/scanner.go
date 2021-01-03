@@ -37,6 +37,7 @@ var opName = map[string]int{
 	"import":   IMPORT,
 	"class":    CLASS_T,
 	"this":     THIS_T,
+	"var":      VAR,
 	"(":        LP,
 	")":        RP,
 	"[":        LB,

@@ -13,4 +13,6 @@ go get -u golang.org/x/tools/cmd/goyacc
 + syntax: require to import
 + syntax: elif to else if
 + syntax: var
++ syntax: function decl
++ syntax: double to float
 + type

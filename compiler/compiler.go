@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"strings"
+	"log"
 
 	"github.com/lth-go/gogogogo/vm"
 )
@@ -126,7 +127,7 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 
 	// 开始解析文件
 	if yyParse(c.lexer) != 0 {
-		panic(c.lexer.e)
+		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
 	}
 
 	for _, import_ := range c.importList {

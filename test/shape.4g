@@ -36,7 +36,7 @@ class Line : Shape {
     }
 }
 
-Line l = new Line(10, 10, 20, 20);
+var Line l = new Line(10, 10, 20, 20);
 
 l.draw();
 l.print();

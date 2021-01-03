@@ -27,7 +27,7 @@ type Compiler struct {
 	// 源文件路径
 	path string
 	// 依赖的包
-	requireList []*Require
+	requireList []*ImportSpec
 
 	// 函数列表
 	funcList []*FunctionDefinition
@@ -62,7 +62,7 @@ type Compiler struct {
 func newCompiler() *Compiler {
 	compilerBackup := getCurrentCompiler()
 	c := &Compiler{
-		requireList:         []*Require{},
+		requireList:         []*ImportSpec{},
 		funcList:            []*FunctionDefinition{},
 		vmFunctionList:      []*vm.Function{},
 		vmClassList:         []*vm.Class{},

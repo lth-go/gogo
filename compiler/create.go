@@ -2,7 +2,7 @@ package compiler
 
 const defaultPackage = "gogogogo.lang"
 
-func setRequireList(requireList []*Require) {
+func setRequireList(requireList []*ImportSpec) {
 
 	compiler := getCurrentCompiler()
 

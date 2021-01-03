@@ -26,8 +26,8 @@ import (
     array_dimension      *ArrayDimension
     array_dimension_list []*ArrayDimension
 
-    import_              *Require
-    import_list          []*Require
+    import_spec              *ImportSpec
+    import_spec_list          []*ImportSpec
 
     extends_list         []*Extend
     member_declaration   []MemberDeclaration
@@ -55,8 +55,8 @@ import (
         CLASS_T THIS_T
 
 %type   <class_name> class_name
-%type   <import_> import_declaration
-%type   <import_list> import_list
+%type   <import_spec> import_declaration
+%type   <import_spec_list> import_list
 
 %type <expression> expression expression_opt
       assignment_expression
@@ -105,7 +105,7 @@ initial_declaration
 import_list
         : import_declaration
         {
-            $$ = []*Require{$1}
+            $$ = createImportSpecList($1)
         }
         | import_list import_declaration
         {
@@ -115,7 +115,7 @@ import_list
 import_declaration
         : IMPORT STRING_LITERAL SEMICOLON
         {
-            $$ = createImport($2.Lit)
+            $$ = createImportSpec($2.Lit)
         }
         ;
 definition_or_statement

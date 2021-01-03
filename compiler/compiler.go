@@ -132,7 +132,7 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 
 	for _, require := range c.requireList {
 		// 判断是否已经被解析过
-		requireCompiler := searchCompiler(stCompilerList, require.packageNameList)
+		requireCompiler := searchCompiler(stCompilerList, require.getPackageNameList())
 		if requireCompiler != nil {
 			c.requiredList = append(c.requiredList, requireCompiler)
 			continue
@@ -140,7 +140,7 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 
 		requireCompiler = newCompiler()
 
-		requireCompiler.packageNameList = require.packageNameList
+		requireCompiler.packageNameList = require.getPackageNameList()
 
 		c.requiredList = append(c.requiredList, requireCompiler)
 		stCompilerList = append(stCompilerList, requireCompiler)

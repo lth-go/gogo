@@ -3,6 +3,7 @@ package compiler
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -11,16 +12,12 @@ const (
 
 type Require struct {
 	PosImpl
-
-	packageNameList []string // remove
-	packageName     string
+	packageName string
 }
 
 // 获取导入文件的相对路径
 func (r *Require) getRelativePath() string {
-	path := filepath.Join(r.packageNameList...)
-	path = path + requireSuffix
-	return path
+	return r.packageName + requireSuffix
 }
 
 func (r *Require) getFullPath() string {
@@ -42,9 +39,12 @@ func (r *Require) getFullPath() string {
 	return fullPath
 }
 
+func (r *Require) getPackageNameList() []string {
+	return strings.Split(r.packageName, "/")
+}
+
 func createImport(packageName string) *Require {
 	return &Require{
-		packageName:     packageName,
-		packageNameList: []string{packageName},
+		packageName: packageName,
 	}
 }

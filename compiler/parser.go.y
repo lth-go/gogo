@@ -49,7 +49,7 @@ import (
         NULL_T
         IDENTIFIER
         EXCLAMATION DOT
-        VOID_T BOOLEAN_T INT_T FLOAT_T STRING_T
+        VOID_T BOOL_T INT_T FLOAT_T STRING_T
         NEW
         IMPORT
         CLASS_T THIS_T
@@ -134,7 +134,7 @@ basic_type_specifier
         {
             $$ = createTypeSpecifier(vm.VoidType, $1.Position())
         }
-        | BOOLEAN_T
+        | BOOL_T
         {
             $$ = createTypeSpecifier(vm.BooleanType, $1.Position())
         }

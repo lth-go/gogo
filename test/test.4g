@@ -273,7 +273,7 @@ func func_with_local_variable(a float) int {
 }
 
 println("boolean_func.." + boolean_func(true));
-func boolean_func(b boolean) boolean {
+func boolean_func(b bool) bool {
     return b;
 }
 
@@ -312,9 +312,9 @@ func recursive(count int) int {
 
 
 #
-# Check boolean operations
+# Check booln operations
 #
-var boolean_value boolean;
+var boolean_value bool;
 
 boolean_value = true;
 print("boolean_value.." + boolean_value + "\n");
@@ -350,7 +350,7 @@ if (!false) {
     print("! operator good.\n");
 }
 
-var true_value boolean;
+var true_value bool;
 true_value = true;
 
 if (true_value == true) {
@@ -368,7 +368,7 @@ if (true_value != false) {
 if (!true_value) {
     print("! operator bad.\n");
 }
-var false_value boolean;
+var false_value bool;
 false_value = false;
 
 if (!false_value) {

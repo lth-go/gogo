@@ -28,7 +28,7 @@ var opName = map[string]int{
 	"true":     TRUE_T,
 	"false":    FALSE_T,
 	"void":     VOID_T,
-	"boolean":  BOOLEAN_T,
+	"bool":     BOOL_T,
 	"int":      INT_T,
 	"float":    FLOAT_T,
 	"string":   STRING_T,

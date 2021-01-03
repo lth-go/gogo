@@ -54,6 +54,7 @@ import (
         IMPORT
         CLASS_T THIS_T
         VAR
+        FUNC
 
 %type <class_name> class_name
 %type <import_spec> import_declaration
@@ -181,25 +182,25 @@ type_specifier
         | class_type_specifier
         ;
 function_definition
-        : type_specifier IDENTIFIER LP parameter_list RP block
+        : FUNC IDENTIFIER LP parameter_list RP type_specifier block
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, $4, $6)
+            l.compiler.functionDefine($6, $2.Lit, $4, $7)
         }
-        | type_specifier IDENTIFIER LP RP block
+        | FUNC IDENTIFIER LP RP type_specifier block
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, $5)
+            l.compiler.functionDefine($5, $2.Lit, []*Parameter{}, $6)
         }
-        | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
+        | FUNC IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, $4, nil)
+            l.compiler.functionDefine($6, $2.Lit, $4, nil)
         }
-        | type_specifier IDENTIFIER LP RP SEMICOLON
+        | FUNC IDENTIFIER LP RP type_specifier SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($1, $2.Lit, []*Parameter{}, nil)
+            l.compiler.functionDefine($5, $2.Lit, []*Parameter{}, nil)
         }
         ;
 parameter_list

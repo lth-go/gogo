@@ -1,6 +1,6 @@
-int print(string str);
+func print(string str) int;
 
-int println(string str) {
+func println(string str) int {
     print(str + "\n");
 }
 

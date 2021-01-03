@@ -2,21 +2,18 @@ package compiler
 
 import (
 	"fmt"
-	"os"
+	"log"
 )
 
 func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	//fmt.Printf(errMessageMap[errorNumber], a...)
-	println(errorNumber)
-	println(errMessageList[errorNumber])
-	panic("TODO")
-	os.Exit(1)
+	log.Fatalf("%d\n%s", errorNumber, errMessageList[errorNumber])
 }
 
 const (
-	PARSE_ERR                                int = iota
+	PARSE_ERR int = iota
 	CHARACTER_INVALID_ERR
 	FUNCTION_MULTIPLE_DEFINE_ERR
 	BAD_MULTIBYTE_CHARACTER_ERR

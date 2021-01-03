@@ -1,5 +1,0 @@
-int print(string str);
-
-int printTest(string str) {
-    print(str + " ========" + "\n");
-}

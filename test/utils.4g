@@ -1,0 +1,4 @@
+func print(string str) int;
+func printTest(string str) int {
+    print(str + " ========" + "\n");
+}

@@ -1,8 +1,8 @@
-import "func";
+import "utils";
 import "shape";
 
-int print(string str);
-int println(string str) {
+func print(string str) int;
+func println(string str) int {
     print(str + "\n");
 }
 
@@ -242,8 +242,7 @@ double_val = 0.0;
 print("double_val.." + double_val + "\n");
 
 func_cast(3.0, 4);
-int func_cast(int a, float b)
-{
+func func_cast(int a, float b) int {
     print("a.." + a + ", b.." + b + "\n");
 }
 
@@ -251,19 +250,19 @@ int func_cast(int a, float b)
 # Check function
 #
 func_no_arg();
-int func_no_arg() {
+func func_no_arg() int {
     print("no_arg\n");
 
     return;
 }
 
 func_2_arg(13, 15);
-int func_2_arg(int a, int b) {
+func func_2_arg(int a, int b) int {
     print("a + b.." + (a + b) + "\n");
 }
 
 func_with_local_variable(3.0);
-int func_with_local_variable(float a) {
+func func_with_local_variable(float a) int {
     var b int;
     var c float;
 
@@ -274,23 +273,23 @@ int func_with_local_variable(float a) {
 }
 
 println("boolean_func.." + boolean_func(true));
-boolean boolean_func(boolean b) {
+func boolean_func(boolean b) boolean {
     return b;
 }
 
 println("int_func.." + int_func(3));
-int int_func(float d) {
+func int_func(float d) int {
     return d;
 }
 
 println("double_func.." + double_func(3));
-float double_func(int i2) {
+func double_func(int i2) float {
     return i2;
 }
 
 println("string_func.." + string_func("hoge"));
 
-string string_func(string s) {
+func string_func(string s) string {
     return s;
 }
 
@@ -298,7 +297,7 @@ println("********** recursive call **********");
 recursive(10);
 print("\n");
 
-int recursive(int count) {
+func recursive(int count) int {
     var a int;
     a = count;
 
@@ -595,7 +594,7 @@ if (null == null) {
     print("NG\n");
 }
 
-func.printTest("TODO");
+utils.printTest("TODO");
 
 var l Line = new shape.Line(10, 10, 20, 20);
 

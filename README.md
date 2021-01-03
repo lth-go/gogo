@@ -2,9 +2,14 @@
 
 Simple language writen by go.
 
-# TODO
+## Require
 
-+ 编译错误修缮
+```sh
+go get -u golang.org/x/tools/cmd/goyacc
+```
 
-+ 面向对象支持
-+ 异常支持
+## TODO
+
+### syntax
+
++ require to import

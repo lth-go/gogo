@@ -34,7 +34,7 @@ var opName = map[string]int{
 	"string":   STRING_T,
 	"null":     NULL_T,
 	"new":      NEW,
-	"require":  REQUIRE,
+	"import":   IMPORT,
 	"class":    CLASS_T,
 	"this":     THIS_T,
 	"(":        LP,

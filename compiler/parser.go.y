@@ -27,7 +27,7 @@ import (
     array_dimension_list []*ArrayDimension
 
     package_name         []string
-    require_list         []*Require
+    import_list         []*Require
 
     extends_list         []*Extend
     member_declaration   []MemberDeclaration
@@ -51,12 +51,12 @@ import (
         EXCLAMATION DOT
         VOID_T BOOLEAN_T INT_T DOUBLE_T STRING_T
         NEW
-        REQUIRE
+        IMPORT
         CLASS_T THIS_T
 
 %type   <class_name> class_name
 %type   <package_name> package_name
-%type   <require_list> require_list require_declaration
+%type   <import_list> import_list import_declaration
 
 %type <expression> expression expression_opt
       assignment_expression
@@ -97,20 +97,20 @@ initial_declaration
         {
             setRequireList(nil)
         }
-        | require_list
+        | import_list
         {
             setRequireList($1)
         }
         ;
-require_list
-        : require_declaration
-        | require_list require_declaration
+import_list
+        : import_declaration
+        | import_list import_declaration
         {
             $$ = chainRequireList($1, $2)
         }
         ;
-require_declaration
-        : REQUIRE package_name SEMICOLON
+import_declaration
+        : IMPORT package_name SEMICOLON
         {
             $$ = createRequireList($2)
         }

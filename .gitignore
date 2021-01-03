@@ -13,9 +13,7 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-src/compiler/parser.go
-src/compiler/y.output
+compiler/parser.go
+compiler/y.output
 tags
 .idea
-
-single.4g

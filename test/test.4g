@@ -40,7 +40,7 @@ print("3.0 / 5.." + (3.0 / 5) + "\n");
 
 #
 var int int_val;
-var double double_val;
+var float double_val;
 
 int_val = 3;
 print("3 + 5.." + (int_val + 5) + "\n");
@@ -242,7 +242,7 @@ double_val = 0.0;
 print("double_val.." + double_val + "\n");
 
 func_cast(3.0, 4);
-int func_cast(int a, double b)
+int func_cast(int a, float b)
 {
     print("a.." + a + ", b.." + b + "\n");
 }
@@ -263,9 +263,9 @@ int func_2_arg(int a, int b) {
 }
 
 func_with_local_variable(3.0);
-int func_with_local_variable(double a) {
+int func_with_local_variable(float a) {
     var int b;
-    var double c;
+    var float c;
 
     b = 3;
     c = 4.0;
@@ -279,12 +279,12 @@ boolean boolean_func(boolean b) {
 }
 
 println("int_func.." + int_func(3));
-int int_func(double d) {
+int int_func(float d) {
     return d;
 }
 
 println("double_func.." + double_func(3));
-double double_func(int i2) {
+float double_func(int i2) {
     return i2;
 }
 
@@ -528,7 +528,7 @@ for (i = 0; i < 9; i = i + 1) {
     print("\n");
 }
 
-var double[] darray = new double[10];
+var float[] darray = new float[10];
 
 for (i = 0; i < 10; i = i + 1) {
     darray[i] = i;

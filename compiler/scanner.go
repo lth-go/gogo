@@ -30,7 +30,7 @@ var opName = map[string]int{
 	"void":     VOID_T,
 	"boolean":  BOOLEAN_T,
 	"int":      INT_T,
-	"double":   DOUBLE_T,
+	"float":    FLOAT_T,
 	"string":   STRING_T,
 	"null":     NULL_T,
 	"new":      NEW,
@@ -103,7 +103,7 @@ retry:
 		}
 		// 判断lit中有无 `.`
 		if strings.Contains(lit, ".") {
-			tok = DOUBLE_LITERAL
+			tok = FLOAT_LITERAL
 		} else {
 			tok = INT_LITERAL
 		}

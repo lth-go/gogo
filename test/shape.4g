@@ -15,10 +15,10 @@ class Shape : Printable {
 }
 
 class Line : Shape {
-    double  start_x;
-    double  start_y;
-    double  end_x;
-    double  end_y;
+    float  start_x;
+    float  start_y;
+    float  end_x;
+    float  end_y;
 
     void draw() {
         println("draw Line!");
@@ -28,7 +28,7 @@ class Line : Shape {
         println("(" + this.start_x + ", " + this.end_x + ")-(" + this.end_x + ", " + this.end_y + ")");
     }
 
-    void init(double start_x, double start_y, double end_x, double end_y) {
+    void init(float start_x, float start_y, float end_x, float end_y) {
         this.start_x = start_x;
         this.start_y = start_y;
         this.end_x = end_x;

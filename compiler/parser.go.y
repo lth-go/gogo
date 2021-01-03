@@ -45,11 +45,11 @@ import (
         LOGICAL_AND LOGICAL_OR
         EQ NE GT GE LT LE
         ADD SUB MUL DIV
-        INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRUE_T FALSE_T
+        INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE_T FALSE_T
         NULL_T
         IDENTIFIER
         EXCLAMATION DOT
-        VOID_T BOOLEAN_T INT_T DOUBLE_T STRING_T
+        VOID_T BOOLEAN_T INT_T FLOAT_T STRING_T
         NEW
         IMPORT
         CLASS_T THIS_T
@@ -141,7 +141,7 @@ basic_type_specifier
         {
             $$ = createTypeSpecifier(vm.IntType, $1.Position())
         }
-        | DOUBLE_T
+        | FLOAT_T
         {
             $$ = createTypeSpecifier(vm.DoubleType, $1.Position())
         }
@@ -385,7 +385,7 @@ primary_no_new_array
             $$ = &IntExpression{intValue: value}
             $$.SetPosition($1.Position())
         }
-        | DOUBLE_LITERAL
+        | FLOAT_LITERAL
         {
             value, _ := strconv.ParseFloat($1.Lit, 64)
             $$ = &DoubleExpression{doubleValue: value}

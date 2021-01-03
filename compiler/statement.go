@@ -62,9 +62,9 @@ func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Bloc
 // ==============================
 
 //
-// Elif
+// ElseIf
 //
-type Elif struct {
+type ElseIf struct {
 	condition Expression
 	block     *Block
 }
@@ -75,7 +75,7 @@ type IfStatement struct {
 
 	condition Expression
 	thenBlock *Block
-	elifList  []*Elif
+	elifList  []*ElseIf
 	elseBlock *Block
 }
 
@@ -88,7 +88,7 @@ func (stmt *IfStatement) show(indent int) {
 		stmt.thenBlock.show(subIndent)
 	}
 	for _, elif := range stmt.elifList {
-		printWithIndent("Elif", subIndent)
+		printWithIndent("ElseIf", subIndent)
 		elif.condition.show(subIndent + 2)
 		elif.block.show(subIndent + 2)
 	}

@@ -18,7 +18,7 @@ import (
     expression_list      []Expression
 
     block                *Block
-    elif_list            []*Elif
+    else_if              []*ElseIf
 
     basic_type_specifier *TypeSpecifier
     type_specifier       *TypeSpecifier
@@ -26,8 +26,8 @@ import (
     array_dimension      *ArrayDimension
     array_dimension_list []*ArrayDimension
 
-    import_spec              *ImportSpec
-    import_spec_list          []*ImportSpec
+    import_spec          *ImportSpec
+    import_spec_list     []*ImportSpec
 
     extends_list         []*Extend
     member_declaration   []MemberDeclaration
@@ -75,7 +75,7 @@ import (
 %type <parameter_list> parameter_list
 %type <argument_list> argument_list
 %type <block> block
-%type <elif_list> elif_list
+%type <else_if> else_if
 
 %type <type_specifier> basic_type_specifier type_specifier class_type_specifier array_type_specifier
 
@@ -520,33 +520,33 @@ statement
 if_statement
         : IF expression block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*Elif{}, elseBlock: nil}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*ElseIf{}, elseBlock: nil}
             $$.SetPosition($1.Position())
         }
         | IF expression block ELSE block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*Elif{}, elseBlock: $5}
+            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*ElseIf{}, elseBlock: $5}
             $$.SetPosition($1.Position())
         }
-        | IF expression block elif_list
+        | IF expression block else_if
         {
             $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: $4, elseBlock: nil}
             $$.SetPosition($1.Position())
         }
-        | IF expression block elif_list ELSE block
+        | IF expression block else_if ELSE block
         {
             $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: $4, elseBlock: $6}
             $$.SetPosition($1.Position())
         }
         ;
-elif_list
+else_if
         : ELIF expression block
         {
-            $$ = []*Elif{&Elif{condition: $2, block: $3}}
+            $$ = []*ElseIf{&ElseIf{condition: $2, block: $3}}
         }
-        | elif_list ELIF expression block
+        | else_if ELIF expression block
         {
-            $$ = append($1, &Elif{condition: $3, block: $4})
+            $$ = append($1, &ElseIf{condition: $3, block: $4})
         }
         ;
 for_statement

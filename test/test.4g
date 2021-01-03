@@ -241,7 +241,6 @@ double_val = 0.0;
 print("double_val.." + double_val + "\n");
 
 func_cast(3.0, 4);
-
 int func_cast(int a, double b)
 {
     print("a.." + a + ", b.." + b + "\n");
@@ -251,7 +250,6 @@ int func_cast(int a, double b)
 # Check function
 #
 func_no_arg();
-
 int func_no_arg() {
     print("no_arg\n");
 
@@ -259,13 +257,11 @@ int func_no_arg() {
 }
 
 func_2_arg(13, 15);
-
 int func_2_arg(int a, int b) {
     print("a + b.." + (a + b) + "\n");
 }
 
 func_with_local_variable(3.0);
-
 int func_with_local_variable(double a) {
     int	b;
     double	c;
@@ -277,19 +273,16 @@ int func_with_local_variable(double a) {
 }
 
 println("boolean_func.." + boolean_func(true));
-
 boolean boolean_func(boolean b) {
     return b;
 }
 
 println("int_func.." + int_func(3));
-
 int int_func(double d) {
     return d;
 }
 
 println("double_func.." + double_func(3));
-
 double double_func(int i2) {
     return i2;
 }

@@ -39,6 +39,8 @@ var opName = map[string]int{
 	"this":     THIS_T,
 	"var":      VAR,
 	"func":     FUNC,
+	"type":     TYPE,
+	"struct":   STRUCT,
 	"(":        LP,
 	")":        RP,
 	"[":        LB,

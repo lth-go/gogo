@@ -55,6 +55,8 @@ import (
         CLASS_T THIS_T
         VAR
         FUNC
+        TYPE
+        STRUCT
 
 %type <class_name> class_name
 %type <import_spec> import_declaration

@@ -16,4 +16,5 @@ go get -u golang.org/x/tools/cmd/goyacc
 + syntax: double to float
 + syntax: var type
 + syntax: function decl
++ syntax: var array type
 + type

@@ -39,8 +39,8 @@ print("3.0 * 5.." + (3.0 * 5) + "\n");
 print("3.0 / 5.." + (3.0 / 5) + "\n");
 
 #
-var int int_val;
-var float double_val;
+var int_val int;
+var double_val float;
 
 int_val = 3;
 print("3 + 5.." + (int_val + 5) + "\n");
@@ -180,7 +180,7 @@ if ("abc" >= "abd") {
     print(">= bad.\n");
 }
 
-var string str_val;
+var str_val string;
 
 str_val = "abc";
 
@@ -264,8 +264,8 @@ int func_2_arg(int a, int b) {
 
 func_with_local_variable(3.0);
 int func_with_local_variable(float a) {
-    var int b;
-    var float c;
+    var b int;
+    var c float;
 
     b = 3;
     c = 4.0;
@@ -299,7 +299,7 @@ recursive(10);
 print("\n");
 
 int recursive(int count) {
-    var int a;
+    var a int;
     a = count;
 
     print(" a.." + a);
@@ -315,7 +315,7 @@ int recursive(int count) {
 #
 # Check boolean operations
 #
-var boolean boolean_value;
+var boolean_value boolean;
 
 boolean_value = true;
 print("boolean_value.." + boolean_value + "\n");
@@ -351,7 +351,7 @@ if (!false) {
     print("! operator good.\n");
 }
 
-var boolean true_value;
+var true_value boolean;
 true_value = true;
 
 if (true_value == true) {
@@ -369,7 +369,7 @@ if (true_value != false) {
 if (!true_value) {
     print("! operator bad.\n");
 }
-var boolean false_value;
+var false_value boolean;
 false_value = false;
 
 if (!false_value) {
@@ -409,7 +409,7 @@ if (false) {
     print("good\n");
 }
 
-var int i;
+var i int;
 
 print("\n");
 println("********** for statement **********");
@@ -441,7 +441,7 @@ for (i = 0; i < 10; i = i + 1) {
 }
 println("\ni.." + i);
 
-var int j;
+var j int;
 for (i = 0; i < 5; i = i + 1) {
     print("*** i.." + i + "***\n");
     if (i == 0) {
@@ -472,14 +472,14 @@ i = 10;
 i = i = i + 1;
 println("i.." + i);
 
-var int ii = 10;
+var ii int = 10;
 
 println("ii = 10.." + (ii = 10));
 
 #
 # Check array
 #
-var int[][] array;
+var array int[][];
 array = null;
 
 array = new int[5][];
@@ -502,14 +502,14 @@ for (i = 0; i < 9; i = i + 1) {
     print("\n");
 }
 
-var int[] array2 = {1, 2, 3, 4, 5.0};
+var array2 int[] = {1, 2, 3, 4, 5.0};
 
 
 for (i = 0; i < 5; i = i + 1) {
     print("array2[" + i + "].." + array2[i] + "\n");
 }
 
-var int[][] a99 = {
+var a99 int[][] = {
     {1, 2, 3, 4, 5, 6, 7, 8, 9},
     {2, 4, 6, 8, 10, 12, 14, 16, 18},
     {3, 6, 9, 12, 15, 18, 21, 24, 27},
@@ -528,7 +528,7 @@ for (i = 0; i < 9; i = i + 1) {
     print("\n");
 }
 
-var float[] darray = new float[10];
+var darray float[] = new float[10];
 
 for (i = 0; i < 10; i = i + 1) {
     darray[i] = i;
@@ -543,7 +543,7 @@ for (i = 0; i < 6; i = i + 1) {
     println("darray[" + i + "].." + darray[i]);
 }
 
-var string[] sarray = new string[10];
+var sarray string[] = new string[10];
 
 for (i = 0; i < 10; i = i + 1) {
     sarray[i] = "str" + i;
@@ -560,11 +560,11 @@ for (i = 0; i < 4; i = i + 1) {
 #
 # Check null
 #
-var string null_str = null;
+var null_str string = null;
 
 str_val = "abc";
 
-var int[] array_val = {1, 2, 3};
+var array_val int[] = {1, 2, 3};
 
 print("null_str.." + null_str + "\n");
 print(str_val + null_str + "\n");
@@ -597,7 +597,7 @@ if (null == null) {
 
 func.printTest("TODO");
 
-var Line l = new shape.Line(10, 10, 20, 20);
+var l Line = new shape.Line(10, 10, 20, 20);
 
 l.draw();
 l.print();

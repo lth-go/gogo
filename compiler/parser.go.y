@@ -587,14 +587,14 @@ continue_statement
         }
         ;
 declaration_statement
-        : VAR type_specifier IDENTIFIER SEMICOLON
+        : VAR IDENTIFIER type_specifier SEMICOLON
         {
-            $$ = &Declaration{typeSpecifier: $2, name: $3.Lit, variableIndex: -1}
+            $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
-        | VAR type_specifier IDENTIFIER ASSIGN_T expression SEMICOLON
+        | VAR IDENTIFIER type_specifier ASSIGN_T expression SEMICOLON
         {
-            $$ = &Declaration{typeSpecifier: $2, name: $3.Lit, initializer: $5, variableIndex: -1}
+            $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, initializer: $5, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
         ;

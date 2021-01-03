@@ -1,5 +1,5 @@
-import func;
-import shape;
+import "func";
+import "shape";
 
 int print(string str);
 int println(string str) {

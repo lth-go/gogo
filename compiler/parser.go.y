@@ -26,8 +26,8 @@ import (
     array_dimension      *ArrayDimension
     array_dimension_list []*ArrayDimension
 
-    package_name         []string
-    import_list         []*Require
+    import_              *Require
+    import_list          []*Require
 
     extends_list         []*Extend
     member_declaration   []MemberDeclaration
@@ -55,8 +55,8 @@ import (
         CLASS_T THIS_T
 
 %type   <class_name> class_name
-%type   <package_name> package_name
-%type   <import_list> import_list import_declaration
+%type   <import_> import_declaration
+%type   <import_list> import_list
 
 %type <expression> expression expression_opt
       assignment_expression
@@ -104,25 +104,18 @@ initial_declaration
         ;
 import_list
         : import_declaration
+        {
+            $$ = []*Require{$1}
+        }
         | import_list import_declaration
         {
-            $$ = chainRequireList($1, $2)
+            $$ = append($1, $2)
         }
         ;
 import_declaration
-        : IMPORT package_name SEMICOLON
+        : IMPORT STRING_LITERAL SEMICOLON
         {
-            $$ = createRequireList($2)
-        }
-        ;
-package_name
-        : IDENTIFIER
-        {
-            $$ = createPackageName($1.Lit)
-        }
-        | package_name DOT IDENTIFIER
-        {
-            $$ = chainPackageName($1, $3.Lit)
+            $$ = createImport($2.Lit)
         }
         ;
 definition_or_statement

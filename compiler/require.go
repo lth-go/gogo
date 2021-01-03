@@ -12,23 +12,8 @@ const (
 type Require struct {
 	PosImpl
 
-	packageNameList []string
-}
-
-func createRequire(packageNameList []string) *Require {
-	return &Require{
-		packageNameList: packageNameList,
-	}
-}
-
-func createRequireList(packageNameList []string) []*Require {
-	req := createRequire(packageNameList)
-
-	return []*Require{req}
-}
-
-func chainRequireList(requireList1, requireList2 []*Require) []*Require {
-	return append(requireList1, requireList2...)
+	packageNameList []string // remove
+	packageName     string
 }
 
 // 获取导入文件的相对路径
@@ -42,7 +27,7 @@ func (r *Require) getFullPath() string {
 	// TODO 暂时写死, 方便测试
 	searchBasePath := os.Getenv("REQUIRE_SEARCH_PATH")
 	if searchBasePath == "" {
-	   searchBasePath = "."
+		searchBasePath = "."
 	}
 	// searchBasePath := "/home/lth/toy/gogogogo/test"
 
@@ -57,10 +42,9 @@ func (r *Require) getFullPath() string {
 	return fullPath
 }
 
-func createPackageName(lit string) []string {
-	return []string{lit}
-}
-
-func chainPackageName(list []string, lit string) []string {
-	return append(list, lit)
+func createImport(packageName string) *Require {
+	return &Require{
+		packageName:     packageName,
+		packageNameList: []string{packageName},
+	}
 }

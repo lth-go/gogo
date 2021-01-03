@@ -10,12 +10,16 @@ import (
 // 全局compiler列表
 var stCompilerList []*Compiler
 
-// 设置全局compiler
+// 全局compiler
 var stCurrentCompiler *Compiler
 
-func getCurrentCompiler() *Compiler { return stCurrentCompiler }
+func getCurrentCompiler() *Compiler {
+	return stCurrentCompiler
+}
 
-func setCurrentCompiler(c *Compiler) { stCurrentCompiler = c }
+func setCurrentCompiler(c *Compiler) {
+	stCurrentCompiler = c
+}
 
 // Compiler 编译器
 type Compiler struct {
@@ -23,11 +27,12 @@ type Compiler struct {
 	lexer *Lexer
 
 	// 包名
-	packageNameList []string
+	packageNameList []string // TODO: remove
+	packageName     string
 	// 源文件路径
 	path string
 	// 依赖的包
-	requireList []*ImportSpec
+	importList []*ImportSpec
 
 	// 函数列表
 	funcList []*FunctionDefinition
@@ -43,14 +48,8 @@ type Compiler struct {
 	// 当前类
 	currentClassDefinition *ClassDefinition
 
-	//current_try_statement *TryStatement
-	//current_catch_clause *CatchClause
-
 	// 已加载compiler列表
-	requiredList []*Compiler
-
-	// arrayMethodList  []*FunctionDefinition
-	// stringMethodList []*FunctionDefinition
+	importedList []*Compiler
 
 	// TODO 能否去掉
 	// vm函数列表
@@ -62,14 +61,14 @@ type Compiler struct {
 func newCompiler() *Compiler {
 	compilerBackup := getCurrentCompiler()
 	c := &Compiler{
-		requireList:         []*ImportSpec{},
+		importList:          []*ImportSpec{},
 		funcList:            []*FunctionDefinition{},
 		vmFunctionList:      []*vm.Function{},
 		vmClassList:         []*vm.Class{},
 		declarationList:     []*Declaration{},
 		statementList:       []Statement{},
 		classDefinitionList: []*ClassDefinition{},
-		requiredList:        []*Compiler{},
+		importedList:        []*Compiler{},
 	}
 	setCurrentCompiler(c)
 	// TODO 添加默认函数
@@ -104,7 +103,7 @@ func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, paramet
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
 		name:              identifier,
-		packageNameList:   c.packageNameList,
+		packageNameList:   c.GetPackageNameList(),
 		parameterList:     parameterList,
 		block:             block,
 		index:             len(c.funcList),
@@ -130,23 +129,24 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 		panic(c.lexer.e)
 	}
 
-	for _, require := range c.requireList {
+	for _, import_ := range c.importList {
 		// 判断是否已经被解析过
-		requireCompiler := searchCompiler(stCompilerList, require.getPackageNameList())
+		requireCompiler := searchCompiler(stCompilerList, import_.getPackageNameList())
 		if requireCompiler != nil {
-			c.requiredList = append(c.requiredList, requireCompiler)
+			c.importedList = append(c.importedList, requireCompiler)
 			continue
 		}
 
 		requireCompiler = newCompiler()
 
-		requireCompiler.packageNameList = require.getPackageNameList()
+		requireCompiler.packageNameList = import_.getPackageNameList()
+		requireCompiler.packageName = import_.packageName
 
-		c.requiredList = append(c.requiredList, requireCompiler)
+		c.importedList = append(c.importedList, requireCompiler)
 		stCompilerList = append(stCompilerList, requireCompiler)
 
 		// 获取要导入的全路径
-		foundPath := require.getFullPath()
+		foundPath := import_.getFullPath()
 
 		// 编译导入的包
 		requireCompiler.addLexerByPath(foundPath)
@@ -504,4 +504,8 @@ func (c *Compiler) Compile() *vm.ExecutableList {
 	exeList.TopLevel = exe
 
 	return exeList
+}
+
+func (c *Compiler) GetPackageNameList() []string {
+	return strings.Split(c.packageName, "/")
 }

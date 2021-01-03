@@ -28,13 +28,10 @@ type classRef struct {
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
 	PosImpl
-
 	// 基本类型
 	basicType vm.BasicType
-
 	// 类引用
 	classRef classRef
-
 	// 派生类型
 	deriveList []TypeDerive
 }
@@ -73,7 +70,6 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 	return typ
 }
 func createClassTypeSpecifier(identifier string, pos Position) *TypeSpecifier {
-
 	typ := &TypeSpecifier{
 		basicType: vm.ClassType,
 		classRef: classRef{

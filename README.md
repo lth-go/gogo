@@ -10,6 +10,5 @@ go get -u golang.org/x/tools/cmd/goyacc
 
 ## TODO
 
-### syntax
-
-+ require to import
++ syntax: require to import
++ type

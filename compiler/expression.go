@@ -1139,7 +1139,7 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 	if expr.packageName != "" {
 		currentCompiler := getCurrentCompiler()
 		found := false
-		for _, requiredCompiler := range currentCompiler.requiredList {
+		for _, requiredCompiler := range currentCompiler.importedList {
 			if expr.packageName == requiredCompiler.getPackageName() {
 				found = true
 				break

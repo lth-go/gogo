@@ -11,7 +11,7 @@ import (
 var testFile = "test/test.4g"
 
 func TestVmMachine(t *testing.T) {
-	os.Setenv("REQUIRE_SEARCH_PATH", "./test")
+	os.Setenv("IMPORT_SEARCH_PATH", "./test")
 
 	exeList := compiler.CompileFile(testFile)
 

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	requireSuffix = ".4g"
+	importSuffix = ".4g"
 )
 
 type ImportSpec struct {
@@ -17,16 +17,14 @@ type ImportSpec struct {
 
 // 获取导入文件的相对路径
 func (i *ImportSpec) getRelativePath() string {
-	return i.packageName + requireSuffix
+	return i.packageName + importSuffix
 }
 
 func (i *ImportSpec) getFullPath() string {
-	// TODO 暂时写死, 方便测试
-	searchBasePath := os.Getenv("REQUIRE_SEARCH_PATH")
+	searchBasePath := os.Getenv("IMPORT_SEARCH_PATH")
 	if searchBasePath == "" {
 		searchBasePath = "."
 	}
-	// searchBasePath := "/home/lth/toy/gogogogo/test"
 
 	relativePath := i.getRelativePath()
 

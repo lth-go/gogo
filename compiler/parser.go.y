@@ -95,11 +95,11 @@ translation_unit
 initial_declaration
         : /* empty */
         {
-            setRequireList(nil)
+            setImportList(nil)
         }
         | import_list
         {
-            setRequireList($1)
+            setImportList($1)
         }
         ;
 import_list

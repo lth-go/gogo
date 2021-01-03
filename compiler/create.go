@@ -2,7 +2,7 @@ package compiler
 
 const defaultPackage = "gogogogo.lang"
 
-func setRequireList(requireList []*ImportSpec) {
+func setImportList(importList []*ImportSpec) {
 
 	compiler := getCurrentCompiler()
 
@@ -13,7 +13,7 @@ func setRequireList(requireList []*ImportSpec) {
 	//    requireLists = add_default_package(requireLists)
 	//}
 
-	compiler.requireList = requireList
+	compiler.importList = importList
 }
 
 func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameterLists []*Parameter, block *Block) *FunctionDefinition {
@@ -22,7 +22,7 @@ func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameterLi
 	fd := &FunctionDefinition{}
 
 	fd.typeSpecifier = typ
-	fd.packageNameList = compiler.packageNameList
+	fd.packageNameList = compiler.GetPackageNameList()
 	fd.name = identifier
 	fd.parameterList = parameterLists
 	fd.block = block
@@ -56,7 +56,7 @@ func startClassDefine(identifier string, extends []*Extend, pos Position) {
 
 	cd := &ClassDefinition{}
 
-	cd.packageNameList = compiler.packageNameList
+	cd.packageNameList = compiler.GetPackageNameList()
 	cd.name = identifier
 	cd.extendList = extends
 

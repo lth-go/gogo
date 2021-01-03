@@ -1,4 +1,4 @@
-func print(string str) int;
-func printTest(string str) int {
+func print(str string) int;
+func printTest(str string) int {
     print(str + " ========" + "\n");
 }

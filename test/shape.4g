@@ -1,6 +1,6 @@
-func print(string str) int;
+func print(str string) int;
 
-func println(string str) int {
+func println(str string) int {
     print(str + "\n");
 }
 
@@ -28,7 +28,7 @@ class Line : Shape {
         println("(" + this.start_x + ", " + this.end_x + ")-(" + this.end_x + ", " + this.end_y + ")");
     }
 
-    void init(float start_x, float start_y, float end_x, float end_y) {
+    void init(start_x float, start_y float, end_x float, end_y float) {
         this.start_x = start_x;
         this.start_y = start_y;
         this.end_x = end_x;

@@ -17,5 +17,6 @@ go get -u golang.org/x/tools/cmd/goyacc
 + syntax: var type
 + syntax: function decl
 + syntax: function params type decl
++ syntax: boolean to bool
 + syntax: var array type
 + type

@@ -204,14 +204,14 @@ function_definition
         }
         ;
 parameter_list
-        : type_specifier IDENTIFIER
+        : IDENTIFIER type_specifier
         {
-            parameter := &Parameter{typeSpecifier: $1, name: $2.Lit}
+            parameter := &Parameter{typeSpecifier: $2, name: $1.Lit}
             $$ = []*Parameter{parameter}
         }
-        | parameter_list COMMA type_specifier IDENTIFIER
+        | parameter_list COMMA IDENTIFIER type_specifier
         {
-            $$ = append($1, &Parameter{typeSpecifier: $3, name: $4.Lit})
+            $$ = append($1, &Parameter{typeSpecifier: $4, name: $3.Lit})
         }
         ;
 argument_list

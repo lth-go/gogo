@@ -38,7 +38,7 @@ import (
     tok                  Token
 }
 
-%token<tok> IF ELSE ELIF FOR RETURN_T BREAK CONTINUE
+%token<tok> IF ELSE FOR RETURN_T BREAK CONTINUE
         LP RP LC RC LB RB
         SEMICOLON COMMA COLON
         ASSIGN_T
@@ -544,13 +544,13 @@ if_statement
         }
         ;
 else_if
-        : ELIF expression block
+        : ELSE IF expression block
         {
-            $$ = []*ElseIf{&ElseIf{condition: $2, block: $3}}
+            $$ = []*ElseIf{&ElseIf{condition: $3, block: $4}}
         }
-        | else_if ELIF expression block
+        | else_if ELSE IF expression block
         {
-            $$ = append($1, &ElseIf{condition: $3, block: $4})
+            $$ = append($1, &ElseIf{condition: $4, block: $5})
         }
         ;
 for_statement

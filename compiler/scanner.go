@@ -20,7 +20,6 @@ const (
 var opName = map[string]int{
 	"if":       IF,
 	"else":     ELSE,
-	"elif":     ELIF,
 	"for":      FOR,
 	"return":   RETURN_T,
 	"break":    BREAK,

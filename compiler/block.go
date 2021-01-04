@@ -50,6 +50,7 @@ func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition,
 	if b != nil {
 		b.declarationList = append(b.declarationList, declaration)
 	}
+
 	if fd != nil {
 		declaration.isLocal = true
 		fd.addLocalVariable(declaration)
@@ -62,7 +63,7 @@ func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition,
 
 func (b *Block) getCurrentFunction() *FunctionDefinition {
 
-	for block := b; ; block = block.outerBlock {
+	for block := b; block != nil; block = block.outerBlock {
 		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)
 		if ok {
 			return fdBlockInfo.function

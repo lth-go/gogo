@@ -13,13 +13,9 @@ const defaultConstructorName = "init"
 //
 type ClassDefinition struct {
 	PosImpl
-
 	packageNameList []string
 	name            string
-
-	superClass *ClassDefinition
-
-	memberList []MemberDeclaration
+	memberList      []MemberDeclaration
 }
 
 func (cd *ClassDefinition) getPackageName() string {
@@ -51,46 +47,7 @@ func (cd *ClassDefinition) addToCurrentCompiler() int {
 	return ret
 }
 
-func (cd *ClassDefinition) getSuperFieldMethodCount() (int, int) {
-	fieldIndex := -1
-	methodIndex := -1
-
-	for superCd := cd.superClass; superCd != nil; superCd = superCd.superClass {
-		for _, memberIfs := range superCd.memberList {
-			switch member := memberIfs.(type) {
-			case *MethodMember:
-				if member.methodIndex > methodIndex {
-					methodIndex = member.methodIndex
-				}
-			case *FieldMember:
-				if member.fieldIndex > fieldIndex {
-					fieldIndex = member.fieldIndex
-				}
-			default:
-				panic("TODO")
-			}
-		}
-	}
-	return fieldIndex + 1, methodIndex + 1
-}
-
-func (cd *ClassDefinition) searchMemberInSuper(memberName string) MemberDeclaration {
-	var member MemberDeclaration
-
-	if cd.superClass == nil {
-		return nil
-	}
-
-	member = cd.superClass.searchMember(memberName)
-	if member != nil {
-		return member
-	}
-
-	return nil
-}
-
 func (cd *ClassDefinition) searchMember(memberName string) MemberDeclaration {
-
 	for _, md := range cd.memberList {
 		switch member := md.(type) {
 		case *MethodMember:
@@ -103,14 +60,6 @@ func (cd *ClassDefinition) searchMember(memberName string) MemberDeclaration {
 			}
 		default:
 			panic("TODO")
-		}
-	}
-
-	// 递归查找
-	if cd.superClass != nil {
-		member := cd.superClass.searchMember(memberName)
-		if member != nil {
-			return member
 		}
 	}
 
@@ -133,7 +82,6 @@ func chainMemberDeclaration(list []MemberDeclaration, add []MemberDeclaration) [
 //
 type MethodMember struct {
 	PosImpl
-
 	functionDefinition *FunctionDefinition
 	methodIndex        int
 }
@@ -160,7 +108,6 @@ func createMethodMember(functionDefinition *FunctionDefinition, pos Position) []
 //
 type FieldMember struct {
 	PosImpl
-
 	name          string
 	typeSpecifier *TypeSpecifier
 	fieldIndex    int

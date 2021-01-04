@@ -11,13 +11,11 @@ type ExecClass struct {
 	// 所属包名
 	packageName string
 	// 类名
-	name        string
+	name string
 
 	// 虚拟机中的类下标
 	classIndex int
 
-	// 父类
-	superClass *ExecClass
 	// 虚表
 	classTable *VTable
 

@@ -265,7 +265,6 @@ type Class struct {
 	Name        string
 
 	IsImplemented bool
-	SuperClass    *ClassIdentifier
 
 	FieldList  []*Field
 	MethodList []*Method

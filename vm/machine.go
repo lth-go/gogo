@@ -153,8 +153,6 @@ func (vm *VirtualMachine) addClasses(ee *ExecutableEntry) {
 		}
 	}
 
-	oldClassCount := len(vm.classList)
-
 	destIdx := len(vm.classList)
 	for _, exeClass := range exe.ClassDefinitionList {
 
@@ -176,9 +174,6 @@ func (vm *VirtualMachine) addClasses(ee *ExecutableEntry) {
 
 		destIdx++
 	}
-
-	// 设置父类
-	setSuperClass(vm, exe, oldClassCount)
 }
 
 func (vm *VirtualMachine) addClass(exe *Executable, src *Class, dest *ExecClass) {
@@ -191,10 +186,7 @@ func addFields(exe *Executable, src *Class, dest *ExecClass) {
 
 	for pos := src; ; {
 		fieldCount += len(pos.FieldList)
-		if pos.SuperClass == nil {
 			break
-		}
-		pos = searchClassFromExecutable(exe, pos.SuperClass.Name)
 	}
 
 	dest.fieldTypeList = make([]*TypeSpecifier, fieldCount)
@@ -203,10 +195,6 @@ func addFields(exe *Executable, src *Class, dest *ExecClass) {
 
 func setFieldTypes(exe *Executable, pos *Class, fieldTypes []*TypeSpecifier, index int) int {
 
-	if pos.SuperClass != nil {
-		next := searchClassFromExecutable(exe, pos.SuperClass.Name)
-		index = setFieldTypes(exe, next, fieldTypes, index)
-	}
 	for _, field := range pos.FieldList {
 		fieldTypes[index] = field.Typ
 		index++
@@ -230,11 +218,6 @@ func addMethod(vm *VirtualMachine, exe *Executable, pos *Class, vTable *VTable) 
 
 	// 父类方法数量
 	superMethodCount := 0
-
-	if pos.SuperClass != nil {
-		next := searchClassFromExecutable(exe, pos.SuperClass.Name)
-		superMethodCount = addMethod(vm, exe, next, vTable)
-	}
 
 	methodCount := superMethodCount
 
@@ -283,20 +266,6 @@ func searchFunction(vm *VirtualMachine, packageName, name string) int {
 		}
 	}
 	return functionNotFound
-}
-
-func setSuperClass(vm *VirtualMachine, exe *Executable, oldClassCount int) {
-	for classIdx := oldClassCount; classIdx < len(vm.classList); classIdx++ {
-		vmClass := vm.classList[classIdx]
-
-		exeClass := searchClassFromExecutable(exe, vmClass.name)
-		if exeClass.SuperClass == nil {
-			vmClass.superClass = nil
-		} else {
-			superClassIndex := searchClass(vm, exeClass.SuperClass.PackageName, exeClass.SuperClass.Name)
-			vmClass.superClass = vm.classList[superClassIndex]
-		}
-	}
 }
 
 func searchClassFromExecutable(exe *Executable, name string) *Class {

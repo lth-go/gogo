@@ -222,37 +222,21 @@ func (c *Compiler) fixClassList() {
 
 		c.currentClassDefinition = cd
 
-		fieldIndex, methodIndex := cd.getSuperFieldMethodCount()
+		var fieldIndex int
+		var methodIndex int
 
 		for _, memberIfs := range cd.memberList {
 			switch member := memberIfs.(type) {
 			case *MethodMember:
 				member.functionDefinition.fix()
 
-				superMember := cd.searchMemberInSuper(member.functionDefinition.name)
-
-				if superMember != nil {
-					superMethodMember, ok := superMember.(*MethodMember)
-					if !ok {
-						compileError(member.Position(), FIELD_OVERRIDED_ERR, member.functionDefinition.name)
-					}
-					member.methodIndex = superMethodMember.methodIndex
-				} else {
-					member.methodIndex = methodIndex
-					methodIndex++
-				}
+				member.methodIndex = methodIndex
+				methodIndex++
 			case *FieldMember:
 				member.typeSpecifier.fix()
 
-				superMember := cd.searchMemberInSuper(member.name)
-
-				// 不允许重复定义字段
-				if superMember != nil {
-					compileError(member.Position(), FIELD_NAME_DUPLICATE_ERR, member.name)
-				} else {
-					member.fieldIndex = fieldIndex
-					fieldIndex++
-				}
+				member.fieldIndex = fieldIndex
+				fieldIndex++
 			default:
 				panic("TODO")
 			}
@@ -330,16 +314,6 @@ func (c *Compiler) addClasses(exe *vm.Executable) {
 // TODO 改名
 // 完善vmClass信息
 func addClass(cd *ClassDefinition, dest *vm.Class) {
-
-	if cd.superClass != nil {
-		dest.SuperClass = &vm.ClassIdentifier{
-			Name:        cd.superClass.name,
-			PackageName: cd.superClass.getPackageName(),
-		}
-	} else {
-		dest.SuperClass = nil
-	}
-
 	for _, memberIfs := range cd.memberList {
 		switch member := memberIfs.(type) {
 		case *MethodMember:

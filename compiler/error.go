@@ -8,7 +8,6 @@ import (
 func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
-	//fmt.Printf(errMessageMap[errorNumber], a...)
 	log.Fatalf("%d\n%s", errorNumber, errMessageList[errorNumber])
 }
 

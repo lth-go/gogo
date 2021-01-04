@@ -12,11 +12,11 @@ func createCastExpression(castType CastType, expr Expression) Expression {
 
 	switch castType {
 	case IntToDoubleCast:
-		typ = &TypeSpecifier{basicType: vm.DoubleType}
+		typ = newTypeSpecifier(vm.DoubleType)
 	case DoubleToIntCast:
-		typ = &TypeSpecifier{basicType: vm.IntType}
+		typ = newTypeSpecifier(vm.IntType)
 	case BooleanToStringCast, IntToStringCast, DoubleToStringCast:
-		typ = &TypeSpecifier{basicType: vm.StringType}
+		typ = newTypeSpecifier(vm.StringType)
 	}
 	castExpr.setType(typ)
 

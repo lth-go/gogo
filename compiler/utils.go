@@ -99,6 +99,7 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 func get2ByteInt(b []byte) int {
 	return int(binary.BigEndian.Uint16(b))
 }
+
 func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
@@ -220,7 +221,7 @@ func searchModule(name string) *Module {
 		if name == lastName {
 			return &Module{
 				compiler: requiredCompiler,
-				typ: &TypeSpecifier{basicType: vm.ModuleType},
+				typ:      newTypeSpecifier(vm.ModuleType),
 			}
 		}
 

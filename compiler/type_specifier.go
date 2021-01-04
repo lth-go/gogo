@@ -59,6 +59,13 @@ func (t *TypeSpecifier) fix() {
 	}
 }
 
+// TODO: 临时使用
+func newTypeSpecifier(basicType vm.BasicType) *TypeSpecifier {
+	return &TypeSpecifier{
+		basicType: basicType,
+	}
+}
+
 //
 // create
 //
@@ -67,6 +74,7 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 	typ.SetPosition(pos)
 	return typ
 }
+
 func createClassTypeSpecifier(identifier string, pos Position) *TypeSpecifier {
 	typ := &TypeSpecifier{
 		basicType: vm.ClassType,

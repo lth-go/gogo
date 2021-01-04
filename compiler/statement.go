@@ -10,12 +10,9 @@ import (
 
 // Statement 语句接口
 type Statement interface {
-	// Pos接口
 	Pos
-
 	fix(*Block, *FunctionDefinition)
 	generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf)
-
 	show(indent int)
 }
 
@@ -72,7 +69,6 @@ type ElseIf struct {
 // IfStatement if表达式
 type IfStatement struct {
 	StatementImpl
-
 	condition Expression
 	thenBlock *Block
 	elifList  []*ElseIf
@@ -99,7 +95,6 @@ func (stmt *IfStatement) show(indent int) {
 }
 
 func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-
 	stmt.condition = stmt.condition.fix(currentBlock)
 
 	if !isBoolean(stmt.condition.typeS()) {

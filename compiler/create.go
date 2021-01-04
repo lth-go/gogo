@@ -38,7 +38,7 @@ func createFunctionDefinition(typ *TypeSpecifier, identifier string, parameterLi
 
 func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
 
-	ret := &TypeSpecifier{basicType: fd.typeSpecifier.basicType}
+	ret := newTypeSpecifier(fd.typeSpecifier.basicType)
 
 	*ret = *(fd.typeSpecifier)
 

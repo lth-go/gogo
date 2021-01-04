@@ -103,7 +103,7 @@ func (expr *BooleanExpression) show(indent int) {
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	expr.setType(newTypeSpecifier(vm.BooleanType))
 	expr.typeS().fix()
 	return expr
 }
@@ -139,7 +139,7 @@ func (expr *IntExpression) show(indent int) {
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.IntType})
+	expr.setType(newTypeSpecifier(vm.IntType))
 	expr.typeS().fix()
 	return expr
 }
@@ -180,7 +180,7 @@ func (expr *DoubleExpression) show(indent int) {
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+	expr.setType(newTypeSpecifier(vm.DoubleType))
 	expr.typeS().fix()
 	return expr
 }
@@ -222,7 +222,7 @@ func (expr *StringExpression) show(indent int) {
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.StringType})
+	expr.setType(newTypeSpecifier(vm.StringType))
 	expr.typeS().fix()
 	return expr
 }
@@ -254,7 +254,7 @@ func (expr *NullExpression) show(indent int) {
 }
 
 func (expr *NullExpression) fix(currentBlock *Block) Expression {
-	expr.setType(&TypeSpecifier{basicType: vm.NullType})
+	expr.setType(newTypeSpecifier(vm.NullType))
 	expr.typeS().fix()
 	return expr
 }
@@ -710,7 +710,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	fd.checkArgument(currentBlock, expr.argumentList, arrayBase)
 
-	expr.setType(&TypeSpecifier{basicType: fd.typeS().basicType})
+	expr.setType(newTypeSpecifier(fd.typeS().basicType))
 
 	expr.typeSpecifier.deriveList = fd.typeS().deriveList
 
@@ -835,7 +835,7 @@ func (expr *ThisExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), THIS_OUT_OF_CLASS_ERR)
 	}
 
-	typ := &TypeSpecifier{basicType: vm.ClassType}
+	typ := newTypeSpecifier(vm.ClassType)
 	typ.classRef = classRef{
 		identifier:      cd.name,
 		classDefinition: cd,
@@ -928,7 +928,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 		expr.arrayLiteral[i] = createAssignCast(expr.arrayLiteral[i], elemType)
 	}
 
-	expr.setType(&TypeSpecifier{basicType: elemType.basicType})
+	expr.setType(newTypeSpecifier(elemType.basicType))
 
 	expr.typeS().deriveList = []TypeDerive{&ArrayDerive{}}
 	expr.typeS().deriveList = append(expr.typeS().deriveList, elemType.deriveList...)
@@ -1170,12 +1170,11 @@ func (expr *NewExpression) fix(currentBlock *Block) Expression {
 	methodMember.functionDefinition.checkArgument(currentBlock, expr.argumentList, nil)
 
 	expr.methodDeclaration = member
-	typ := &TypeSpecifier{
-		basicType: vm.ClassType,
-		classRef: classRef{
-			identifier:      expr.classDefinition.name,
-			classDefinition: expr.classDefinition,
-		},
+
+	typ := newTypeSpecifier(vm.ClassType)
+	typ.classRef = classRef{
+		identifier:      expr.classDefinition.name,
+		classDefinition: expr.classDefinition,
 	}
 	expr.setType(typ)
 

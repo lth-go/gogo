@@ -63,7 +63,7 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 	}
 
 	newExpr := &IntExpression{intValue: value}
-	newExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+	newExpr.setType(newTypeSpecifier(vm.IntType))
 
 	return newExpr
 }
@@ -86,7 +86,7 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
 	newExpr := &DoubleExpression{doubleValue: value}
-	newExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+	newExpr.setType(newTypeSpecifier(vm.DoubleType))
 
 	return newExpr
 }
@@ -103,7 +103,7 @@ func chainBinaryExpressionString(binaryExpr *BinaryExpression) Expression {
 	newStr := leftStringExpr.stringValue + rightStr
 
 	newExpr := &StringExpression{stringValue: newStr}
-	newExpr.setType(&TypeSpecifier{basicType: vm.StringType})
+	newExpr.setType(newTypeSpecifier(vm.StringType))
 
 	return newExpr
 }
@@ -172,7 +172,7 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 		switch binaryExpr.right.(type) {
 		case *NullExpression:
 			newExpr := &BooleanExpression{booleanValue: true}
-			newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+			newExpr.setType(newTypeSpecifier(vm.BooleanType))
 			return newExpr
 		}
 	}
@@ -193,7 +193,7 @@ func evalCompareExpressionBoolean(binaryExpr *BinaryExpression, left, right bool
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	newExpr.setType(newTypeSpecifier(vm.BooleanType))
 
 	return newExpr
 }
@@ -219,7 +219,7 @@ func evalCompareExpressionInt(binaryExpr *BinaryExpression, left, right int) Exp
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	newExpr.setType(newTypeSpecifier(vm.BooleanType))
 	return newExpr
 }
 
@@ -244,7 +244,7 @@ func evalCompareExpressionDouble(binaryExpr *BinaryExpression, left, right float
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	newExpr.setType(newTypeSpecifier(vm.BooleanType))
 	return newExpr
 }
 
@@ -269,7 +269,7 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 	}
 
 	newExpr := &BooleanExpression{booleanValue: value}
-	newExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	newExpr.setType(newTypeSpecifier(vm.BooleanType))
 
 	return newExpr
 }
@@ -292,15 +292,15 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	newBinaryExprRightType := newBinaryExpr.right.typeS()
 
 	if isInt(newBinaryExprLeftType) && isInt(newBinaryExprRightType) {
-		newBinaryExpr.setType(&TypeSpecifier{basicType: vm.IntType})
+		newBinaryExpr.setType(newTypeSpecifier(vm.IntType))
 
 	} else if isDouble(newBinaryExprLeftType) && isDouble(newBinaryExprRightType) {
-		newBinaryExpr.setType(&TypeSpecifier{basicType: vm.DoubleType})
+		newBinaryExpr.setType(newTypeSpecifier(vm.DoubleType))
 
 	} else if expr.operator == AddOperator {
 		if (isString(newBinaryExprLeftType) && isString(newBinaryExprRightType)) ||
 			(isString(newBinaryExprLeftType) && isNull(newBinaryExpr.left)) {
-			newBinaryExpr.setType(&TypeSpecifier{basicType: vm.StringType})
+			newBinaryExpr.setType(newTypeSpecifier(vm.StringType))
 		}
 	} else {
 		compileError(expr.Position(), MATH_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
@@ -331,7 +331,7 @@ func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 		compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, getTypeName(newBinaryExprLeftType), getTypeName(newBinaryExprRightType))
 	}
 
-	newBinaryExpr.setType(&TypeSpecifier{basicType: vm.BooleanType})
+	newBinaryExpr.setType(newTypeSpecifier(vm.BooleanType))
 
 	return newBinaryExpr
 }
@@ -341,7 +341,7 @@ func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	expr.right = expr.right.fix(currentBlock)
 
 	if isBoolean(expr.left.typeS()) && isBoolean(expr.right.typeS()) {
-		expr.typeSpecifier = &TypeSpecifier{basicType: vm.BooleanType}
+		expr.typeSpecifier = newTypeSpecifier(vm.BooleanType)
 		expr.typeS().fix()
 		return expr
 	}

@@ -4,17 +4,7 @@ func println(str string) int {
     print(str + "\n");
 }
 
-class Printable {
-    void print() {}
-}
-
-class Shape : Printable {
-    int color;
-
-    void draw() {}
-}
-
-class Line : Shape {
+class Line {
     float  start_x;
     float  start_y;
     float  end_x;

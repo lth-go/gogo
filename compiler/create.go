@@ -51,14 +51,13 @@ func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
 }
 
 // yacc类创建
-func startClassDefine(identifier string, extends []*Extend, pos Position) {
+func startClassDefine(identifier string, pos Position) {
 	compiler := getCurrentCompiler()
 
 	cd := &ClassDefinition{}
 
 	cd.packageNameList = compiler.GetPackageNameList()
 	cd.name = identifier
-	cd.extendList = extends
 
 	cd.SetPosition(pos)
 

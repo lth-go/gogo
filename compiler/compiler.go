@@ -215,7 +215,6 @@ func (c *Compiler) fixClassList() {
 	// 修正继承
 	for _, cd := range c.classDefinitionList {
 		cd.addToCurrentCompiler()
-		cd.fixExtends()
 	}
 
 	// 修正方法和属性, 搜索父类, 设置索引

@@ -27,7 +27,6 @@ import (
     import_spec          *ImportSpec
     import_spec_list     []*ImportSpec
 
-    extends_list         []*Extend
     member_declaration   []MemberDeclaration
     function_definition  *FunctionDefinition
 
@@ -83,7 +82,6 @@ import (
 %type <array_dimension> dimension_expression
 %type <array_dimension_list> dimension_expression_list dimension_list
 
-%type <extends_list> extends_list extends
 %type <member_declaration> member_declaration member_declaration_list method_member field_member
 %type <function_definition> method_function_definition
 
@@ -625,41 +623,21 @@ block
         }
         ;
 class_definition
-        : CLASS_T IDENTIFIER extends LC
+        : CLASS_T IDENTIFIER LC
         {
-            startClassDefine($2.Lit, $3, $1.Position())
+            startClassDefine($2.Lit, $1.Position())
         }
           member_declaration_list RC
         {
-            endClassDefine($6)
+            endClassDefine($5)
         }
-        | CLASS_T IDENTIFIER extends LC
+        | CLASS_T IDENTIFIER LC
         {
-            startClassDefine($2.Lit, $3, $1.Position())
+            startClassDefine($2.Lit, $1.Position())
         }
           RC
         {
             endClassDefine(nil)
-        }
-        ;
-extends
-        : /* empty */
-        {
-            $$ = nil;
-        }
-        | COLON extends_list
-        {
-            $$ = $2;
-        }
-        ;
-extends_list
-        : IDENTIFIER
-        {
-            $$ = createExtendList($1.Lit)
-        }
-        | extends_list COMMA IDENTIFIER
-        {
-            $$ = chainExtendList($1, $3.Lit)
         }
         ;
 member_declaration_list

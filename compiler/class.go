@@ -17,7 +17,6 @@ type ClassDefinition struct {
 	packageNameList []string
 	name            string
 
-	extendList []*Extend
 	superClass *ClassDefinition
 
 	memberList []MemberDeclaration
@@ -29,8 +28,6 @@ func (cd *ClassDefinition) getPackageName() string {
 
 // 添加类到当前compiler
 func (cd *ClassDefinition) addToCurrentCompiler() int {
-	var dummy int
-
 	compiler := getCurrentCompiler()
 
 	srcPackageName := cd.getPackageName()
@@ -50,10 +47,6 @@ func (cd *ClassDefinition) addToCurrentCompiler() int {
 	}
 
 	compiler.vmClassList = append(compiler.vmClassList, dest)
-
-	for _, extend := range cd.extendList {
-		searchClassAndAdd(cd.Position(), extend.identifier, &dummy)
-	}
 
 	return ret
 }
@@ -122,47 +115,6 @@ func (cd *ClassDefinition) searchMember(memberName string) MemberDeclaration {
 	}
 
 	return nil
-}
-
-func (cd *ClassDefinition) fixExtends() {
-	var dummyClassIndex int
-
-	for _, extend := range cd.extendList {
-		super := searchClassAndAdd(cd.Position(), extend.identifier, &dummyClassIndex)
-
-		extend.classDefinition = super
-
-		if cd.superClass != nil {
-			compileError(cd.Position(), MULTIPLE_INHERITANCE_ERR, super.name)
-		}
-
-		cd.superClass = super
-	}
-}
-
-// ==============================
-// Extend
-// ==============================
-// 继承
-type Extend struct {
-	identifier      string
-	classDefinition *ClassDefinition
-}
-
-func createExtendList(identifier string) []*Extend {
-	extend := &Extend{
-		identifier: identifier,
-	}
-
-	return []*Extend{extend}
-}
-
-func chainExtendList(list []*Extend, add string) []*Extend {
-	newExtendList := createExtendList(add)
-
-	list = append(list, newExtendList...)
-
-	return list
 }
 
 // ==============================

@@ -24,6 +24,14 @@ type BaseType struct {
 	// MethodSet   map[string]string
 }
 
+func (t *BaseType) GetIdentifier() string {
+	return t.Name
+}
+
+func (t *BaseType) GetPackageName() string {
+	return t.PackageName
+}
+
 type BoolType struct {
 	BaseType
 }

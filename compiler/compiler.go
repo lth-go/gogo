@@ -77,9 +77,11 @@ func newCompiler() *Compiler {
 	setCurrentCompiler(compilerBackup)
 	return c
 }
+
 func (c *Compiler) getPackageName() string {
 	return strings.Join(c.packageNameList, ".")
 }
+
 func (c *Compiler) addLexer(lexer *Lexer) {
 	lexer.compiler = c
 	c.lexer = lexer

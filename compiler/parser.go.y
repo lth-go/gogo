@@ -8,6 +8,7 @@ import (
 %}
 
 %union{
+    parameter            *Parameter
     parameter_list       []*Parameter
 
     statement            Statement
@@ -73,6 +74,8 @@ import (
       return_statement break_statement continue_statement
       declaration_statement
 %type <statement_list> statement_list
+/* TODO: 临时处理 */
+%type <parameter> receiver_or_nil
 %type <parameter_list> parameter_list
 %type <block> block
 %type <else_if> else_if
@@ -182,25 +185,25 @@ type_specifier
         | class_type_specifier
         ;
 function_definition
-        : FUNC IDENTIFIER LP parameter_list RP type_specifier block
+        : FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier block
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($6, $2.Lit, $4, $7)
+            l.compiler.functionDefine($7, $3.Lit, $5, $8)
         }
-        | FUNC IDENTIFIER LP RP type_specifier block
+        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier block
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($5, $2.Lit, []*Parameter{}, $6)
+            l.compiler.functionDefine($6, $3.Lit, []*Parameter{}, $7)
         }
-        | FUNC IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
+        | FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($6, $2.Lit, $4, nil)
+            l.compiler.functionDefine($7, $3.Lit, $5, nil)
         }
-        | FUNC IDENTIFIER LP RP type_specifier SEMICOLON
+        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($5, $2.Lit, []*Parameter{}, nil)
+            l.compiler.functionDefine($6, $3.Lit, []*Parameter{}, nil)
         }
         ;
 parameter_list
@@ -658,27 +661,37 @@ method_member
         }
         ;
 method_function_definition
-        : FUNC IDENTIFIER LP parameter_list RP type_specifier block
+        : FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier block
         {
-            $$ = methodFunctionDefine($6, $2.Lit, $4, $7);
+            $$ = methodFunctionDefine($7, $3.Lit, $5, $8);
         }
-        | FUNC IDENTIFIER LP RP type_specifier block
+        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier block
         {
-            $$ = methodFunctionDefine($5, $2.Lit, nil, $6);
+            $$ = methodFunctionDefine($6, $3.Lit, nil, $7);
         }
-        | FUNC IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
+        | FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
         {
-            $$ = methodFunctionDefine($6, $2.Lit, $4, nil);
+            $$ = methodFunctionDefine($7, $3.Lit, $5, nil);
         }
-        | FUNC IDENTIFIER LP RP type_specifier SEMICOLON
+        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier SEMICOLON
         {
-            $$ = methodFunctionDefine($5, $2.Lit, nil, nil);
+            $$ = methodFunctionDefine($6, $3.Lit, nil, nil);
         }
         ;
 field_member
         : IDENTIFIER type_specifier SEMICOLON
         {
             $$ = createFieldMember($2, $1.Lit, $1.Position())
+        }
+        ;
+receiver_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | LP IDENTIFIER type_specifier RP
+        {
+            $$ = &Parameter{typeSpecifier: $3, name: $2.Lit}
         }
         ;
 %%

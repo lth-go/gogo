@@ -88,7 +88,6 @@ func endClassDefine(memberList []MemberDeclaration) {
 
 // 类方法定义
 func methodFunctionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) *FunctionDefinition {
-
 	fd := createFunctionDefinition(typ, identifier, parameterList, block)
 
 	return fd

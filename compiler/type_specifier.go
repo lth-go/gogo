@@ -16,22 +16,11 @@ type FunctionDerive struct {
 
 type ArrayDerive struct{}
 
-//
-// TypeSpecifier
-//
-type classRef struct {
-	identifier      string
-	classDefinition *ClassDefinition
-	classIndex      int
-}
-
 // TypeSpecifier 表达式类型, 包括基本类型和派生类型
 type TypeSpecifier struct {
 	PosImpl
 	// 基本类型
 	basicType vm.BasicType
-	// 类引用
-	classRef classRef
 	// 派生类型
 	deriveList []TypeDerive
 }
@@ -44,18 +33,6 @@ func (t *TypeSpecifier) fix() {
 				parameter.typeSpecifier.fix()
 			}
 		}
-	}
-
-	if t.basicType == vm.ClassType && t.classRef.classDefinition == nil {
-		cd := searchClass(t.classRef.identifier)
-		if cd == nil {
-			compileError(t.Position(), TYPE_NAME_NOT_FOUND_ERR, t.classRef.identifier)
-			return
-		}
-
-		t.classRef.classDefinition = cd
-		t.classRef.classIndex = cd.addToCurrentCompiler()
-		return
 	}
 }
 
@@ -72,19 +49,6 @@ func newTypeSpecifier(basicType vm.BasicType) *TypeSpecifier {
 func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 	typ := &TypeSpecifier{basicType: basicType}
 	typ.SetPosition(pos)
-	return typ
-}
-
-func createClassTypeSpecifier(identifier string, pos Position) *TypeSpecifier {
-	typ := &TypeSpecifier{
-		basicType: vm.ClassType,
-		classRef: classRef{
-			identifier:      identifier,
-			classDefinition: nil,
-		},
-	}
-	typ.SetPosition(pos)
-
 	return typ
 }
 

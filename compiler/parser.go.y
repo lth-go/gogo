@@ -22,16 +22,10 @@ import (
 
     type_specifier       *TypeSpecifier
 
-    array_dimension      *ArrayDimension
-    array_dimension_list []*ArrayDimension
-
     import_spec          *ImportSpec
     import_spec_list     []*ImportSpec
 
-    member_declaration   []MemberDeclaration
     function_definition  *FunctionDefinition
-
-    class_name           []string
 
     tok                  Token
 }
@@ -48,15 +42,12 @@ import (
         IDENTIFIER
         EXCLAMATION DOT
         VOID_T BOOL_T INT_T FLOAT_T STRING_T
-        NEW
         IMPORT
-        CLASS_T THIS_T
         VAR
         FUNC
         TYPE
         STRUCT
 
-%type <class_name> class_name
 %type <import_spec> import_declaration
 %type <import_spec_list> import_list
 
@@ -66,7 +57,7 @@ import (
       equality_expression relational_expression
       additive_expression multiplicative_expression
       unary_expression postfix_expression primary_expression primary_no_new_array
-      array_literal array_creation
+      array_literal
 %type <expression_list> expression_list argument_list
 
 %type <statement> statement
@@ -79,14 +70,7 @@ import (
 %type <parameter_list> parameter_list
 %type <block> block
 %type <else_if> else_if
-
-%type <type_specifier> basic_type_specifier type_specifier class_type_specifier array_type_specifier
-
-%type <array_dimension> dimension_expression
-%type <array_dimension_list> dimension_expression_list dimension_list
-
-%type <member_declaration> member_declaration member_declaration_list method_member field_member
-%type <function_definition> method_function_definition
+%type <type_specifier> basic_type_specifier type_specifier array_type_specifier
 
 %%
 
@@ -122,7 +106,6 @@ import_declaration
         ;
 definition_or_statement
         : function_definition
-        | class_definition
         | statement
         {
             l := yylex.(*Lexer)
@@ -151,25 +134,12 @@ basic_type_specifier
             $$ = createTypeSpecifier(vm.StringType, $1.Position())
         }
         ;
-/* TODO: class 转type */
-/* IDENTIFIER "." IDENTIFIER */
-class_type_specifier
-        : IDENTIFIER
-        {
-            $$ = createClassTypeSpecifier($1.Lit, $1.Position())
-        }
-        ;
 /* TODO: LB RB type_specifier */
 array_type_specifier
         : LB RB basic_type_specifier
         {
             $$ = createArrayTypeSpecifier($3)
             $$.SetPosition($1.Position())
-        }
-        | LB RB IDENTIFIER
-        {
-            class_type := createClassTypeSpecifier($3.Lit, $1.Position())
-            $$ = createArrayTypeSpecifier(class_type)
         }
         | LB RB array_type_specifier
         {
@@ -182,7 +152,6 @@ type_specifier
             $$ = $1
         }
         | array_type_specifier
-        | class_type_specifier
         ;
 function_definition
         : FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier block
@@ -204,6 +173,16 @@ function_definition
         {
             l := yylex.(*Lexer)
             l.compiler.functionDefine($6, $3.Lit, []*Parameter{}, nil)
+        }
+        ;
+receiver_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | LP IDENTIFIER type_specifier RP
+        {
+            $$ = &Parameter{typeSpecifier: $3, name: $2.Lit}
         }
         ;
 parameter_list
@@ -349,7 +328,6 @@ postfix_expression
         ;
 primary_expression
         : primary_no_new_array
-        | array_creation
         | IDENTIFIER
         {
             $$ = createIdentifierExpression($1.Lit, $1.Position());
@@ -416,28 +394,6 @@ primary_no_new_array
             $$.SetPosition($1.Position())
         }
         | array_literal
-        | THIS_T
-        {
-            $$ = createThisExpression($1.Position())
-        }
-        | NEW class_name LP RP
-        {
-            $$ = createNewExpression($2, nil, $1.Position())
-        }
-        | NEW class_name LP argument_list RP
-        {
-            $$ = createNewExpression($2, $4, $1.Position())
-        }
-        ;
-class_name
-        : IDENTIFIER
-        {
-            $$ = []string{$1.Lit}
-        }
-        | class_name DOT IDENTIFIER
-        {
-            $$ = append($1, $3.Lit)
-        }
         ;
 array_literal
         : LC expression_list RC
@@ -449,50 +405,6 @@ array_literal
         {
             $$ = &ArrayLiteralExpression{arrayLiteral: $2}
             $$.SetPosition($1.Position())
-        }
-        ;
-array_creation
-        : NEW basic_type_specifier dimension_expression_list
-        {
-            $$ = createBasicArrayCreation($2, $3, nil, $1.Position())
-        }
-        | NEW basic_type_specifier dimension_expression_list dimension_list
-        {
-            $$ = createBasicArrayCreation($2, $3, $4, $1.Position())
-        }
-        | NEW class_type_specifier dimension_expression_list
-        {
-            $$ = createClassArrayCreation($2, $3, nil, $1.Position())
-        }
-        | NEW class_type_specifier dimension_expression_list dimension_list
-        {
-            $$ = createClassArrayCreation($2, $3, $4, $1.Position())
-        }
-        ;
-dimension_expression_list
-        : dimension_expression
-        {
-            $$ = []*ArrayDimension{$1}
-        }
-        | dimension_expression_list dimension_expression
-        {
-            $$ = append($1, $2)
-        }
-        ;
-dimension_expression
-        : LB expression RB
-        {
-            $$ = &ArrayDimension{expression: $2}
-        }
-        ;
-dimension_list
-        : LB RB
-        {
-            $$ = []*ArrayDimension{&ArrayDimension{}}
-        }
-        | LB RB dimension_list
-        {
-            $$ = append($3, &ArrayDimension{})
         }
         ;
 expression_list
@@ -623,75 +535,6 @@ block
         {
             l := yylex.(*Lexer)
             $<block>$ = &Block{outerBlock: l.compiler.currentBlock}
-        }
-        ;
-class_definition
-        : CLASS_T IDENTIFIER LC
-        {
-            startClassDefine($2.Lit, $1.Position())
-        }
-          member_declaration_list RC
-        {
-            endClassDefine($5)
-        }
-        | CLASS_T IDENTIFIER LC
-        {
-            startClassDefine($2.Lit, $1.Position())
-        }
-          RC
-        {
-            endClassDefine(nil)
-        }
-        ;
-member_declaration_list
-        : member_declaration
-        | member_declaration_list member_declaration
-        {
-            $$ = chainMemberDeclaration($1, $2);
-        }
-        ;
-member_declaration
-        : method_member
-        | field_member
-        ;
-method_member
-        : method_function_definition
-        {
-            $$ = createMethodMember($1, $1.typeSpecifier.Position())
-        }
-        ;
-method_function_definition
-        : FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier block
-        {
-            $$ = methodFunctionDefine($7, $3.Lit, $5, $8);
-        }
-        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier block
-        {
-            $$ = methodFunctionDefine($6, $3.Lit, nil, $7);
-        }
-        | FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
-        {
-            $$ = methodFunctionDefine($7, $3.Lit, $5, nil);
-        }
-        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier SEMICOLON
-        {
-            $$ = methodFunctionDefine($6, $3.Lit, nil, nil);
-        }
-        ;
-field_member
-        : IDENTIFIER type_specifier SEMICOLON
-        {
-            $$ = createFieldMember($2, $1.Lit, $1.Position())
-        }
-        ;
-receiver_or_nil
-        :
-        {
-            $$ = nil
-        }
-        | LP IDENTIFIER type_specifier RP
-        {
-            $$ = &Parameter{typeSpecifier: $3, name: $2.Lit}
         }
         ;
 %%

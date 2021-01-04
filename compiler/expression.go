@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"strings"
-
 	"github.com/lth-go/gogogogo/vm"
 )
 
@@ -714,14 +712,10 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	expr.typeSpecifier.deriveList = fd.typeS().deriveList
 
-	if expr.typeS().basicType == vm.ClassType {
-		expr.typeS().classRef.identifier = fd.typeS().classRef.identifier
-		expr.typeS().fix()
-	}
-
 	expr.typeS().fix()
 	return expr
 }
+
 func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
 	switch memberExpr := expr.function.(type) {
@@ -782,9 +776,6 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	typ := expr.expression.typeS()
 
 	switch {
-	case isClass(typ):
-		newExpr = fixClassMemberExpression(expr, expr.memberName)
-		// 目前仅限函数
 	case typ.isModule():
 		newExpr = fixModuleMemberExpression(expr, expr.memberName)
 	default:
@@ -812,52 +803,6 @@ func createMemberExpression(expression Expression, memberName string) *MemberExp
 		memberName: memberName,
 	}
 	expr.SetPosition(expression.Position())
-
-	return expr
-}
-
-// ==============================
-// ThisExpression
-// ==============================
-type ThisExpression struct {
-	ExpressionImpl
-}
-
-func (expr *ThisExpression) show(indent int) {
-	printWithIndent("ThisExpr", indent)
-}
-
-func (expr *ThisExpression) fix(currentBlock *Block) Expression {
-
-	cd := getCurrentCompiler().currentClassDefinition
-
-	if cd == nil {
-		compileError(expr.Position(), THIS_OUT_OF_CLASS_ERR)
-	}
-
-	typ := newTypeSpecifier(vm.ClassType)
-	typ.classRef = classRef{
-		identifier:      cd.name,
-		classDefinition: cd,
-	}
-	expr.setType(typ)
-
-	expr.typeS().fix()
-
-	return expr
-}
-
-func (expr *ThisExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-
-	fd := currentBlock.getCurrentFunction()
-	paramCount := len(fd.parameterList)
-	ob.generateCode(expr.Position(), vm.VM_PUSH_STACK_OBJECT, paramCount)
-}
-
-func createThisExpression(pos Position) *ThisExpression {
-	expr := &ThisExpression{}
-
-	expr.SetPosition(pos)
 
 	return expr
 }
@@ -963,94 +908,6 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 }
 
 // ==============================
-// ArrayCreation
-// ==============================
-
-//
-// ArrayDimension
-//
-// 列表后面的括号
-type ArrayDimension struct {
-	expression Expression
-}
-
-// 列表创建
-type ArrayCreation struct {
-	ExpressionImpl
-
-	dimensionList []*ArrayDimension
-}
-
-func (expr *ArrayCreation) show(indent int) {
-	printWithIndent("ArrayCreationExpr", indent)
-}
-
-func (expr *ArrayCreation) fix(currentBlock *Block) Expression {
-	expr.typeS().fix()
-
-	deriveList := []TypeDerive{}
-
-	for _, dim := range expr.dimensionList {
-		if dim.expression != nil {
-			dim.expression = dim.expression.fix(currentBlock)
-
-			if !isInt(dim.expression.typeS()) {
-				compileError(expr.Position(), ARRAY_SIZE_NOT_INT_ERR)
-			}
-		}
-		deriveList = append([]TypeDerive{&ArrayDerive{}}, deriveList...)
-	}
-
-	expr.setType(cloneTypeSpecifier(expr.typeS()))
-	expr.typeS().deriveList = deriveList
-
-	expr.typeS().fix()
-
-	return expr
-}
-
-func (expr *ArrayCreation) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	index := AddTypeSpecifier(expr.typeS(), exe)
-
-	if !expr.typeS().isArrayDerive() {
-		panic("TODO")
-	}
-
-	dimCount := 0
-	for _, dim := range expr.dimensionList {
-		if dim.expression == nil {
-			break
-		}
-
-		dim.expression.generate(exe, currentBlock, ob)
-		dimCount++
-	}
-
-	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, dimCount, index)
-}
-
-func createBasicArrayCreation(typ *TypeSpecifier, dimExprLists, dimList []*ArrayDimension, pos Position) Expression {
-	expr := createClassArrayCreation(typ, dimExprLists, dimList, pos)
-
-	return expr
-}
-
-func createClassArrayCreation(typ *TypeSpecifier, dimExprList, dimList []*ArrayDimension, pos Position) Expression {
-
-	expr := &ArrayCreation{
-		dimensionList: dimExprList,
-	}
-
-	expr.SetPosition(pos)
-
-	expr.setType(typ)
-
-	expr.dimensionList = append(expr.dimensionList, dimList...)
-
-	return expr
-}
-
-// ==============================
 // IndexExpression
 // ==============================
 type IndexExpression struct {
@@ -1103,113 +960,6 @@ func createIndexExpression(array, index Expression, pos Position) *IndexExpressi
 		array: array,
 		index: index,
 	}
-	expr.SetPosition(pos)
-
-	return expr
-}
-
-// ==============================
-// NewExpression
-// ==============================
-type NewExpression struct {
-	ExpressionImpl
-
-	// 包名
-	packageName string
-
-	// 类名
-	className       string
-	classDefinition *ClassDefinition
-	classIndex      int
-
-	// 类初始化方便名
-	methodName string
-	// 类初始化方法
-	methodDeclaration MemberDeclaration
-	// 参数
-	argumentList []Expression
-}
-
-func (expr *NewExpression) fix(currentBlock *Block) Expression {
-	// 判断包是否已导入
-	if expr.packageName != "" {
-		currentCompiler := getCurrentCompiler()
-		found := false
-		for _, requiredCompiler := range currentCompiler.importedList {
-			if expr.packageName == requiredCompiler.getPackageName() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			panic("TODO, 包没有导入")
-		}
-	}
-
-	expr.classDefinition = searchClassAndAdd(expr.Position(), expr.className, &expr.classIndex)
-
-	if expr.methodName == "" {
-		expr.methodName = defaultConstructorName
-	}
-
-	member := expr.classDefinition.searchMember(expr.methodName)
-
-	if member == nil {
-		compileError(expr.Position(), MEMBER_NOT_FOUND_ERR, expr.className, expr.methodName)
-	}
-
-	methodMember, ok := member.(*MethodMember)
-	if !ok {
-		compileError(expr.Position(), CONSTRUCTOR_IS_FIELD_ERR, expr.methodName)
-	}
-
-	if !(methodMember.functionDefinition.typeS().deriveList == nil && methodMember.functionDefinition.typeS().basicType == vm.VoidType) {
-		panic("TODO")
-	}
-
-	methodMember.functionDefinition.checkArgument(currentBlock, expr.argumentList, nil)
-
-	expr.methodDeclaration = member
-
-	typ := newTypeSpecifier(vm.ClassType)
-	typ.classRef = classRef{
-		identifier:      expr.classDefinition.name,
-		classDefinition: expr.classDefinition,
-	}
-	expr.setType(typ)
-
-	expr.typeS().fix()
-
-	return expr
-}
-
-func (expr *NewExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-
-	methodMember := expr.methodDeclaration.(*MethodMember)
-	paramCount := len(methodMember.functionDefinition.parameterList)
-
-	ob.generateCode(expr.Position(), vm.VM_NEW, expr.classIndex)
-	generatePushArgument(expr.argumentList, exe, currentBlock, ob)
-	ob.generateCode(expr.Position(), vm.VM_DUPLICATE_OFFSET, paramCount)
-
-	ob.generateCode(expr.Position(), vm.VM_PUSH_METHOD, methodMember.methodIndex)
-	ob.generateCode(expr.Position(), vm.VM_INVOKE)
-	ob.generateCode(expr.Position(), vm.VM_POP)
-}
-
-func createNewExpression(fullyClassName []string, argumentList []Expression, pos Position) *NewExpression {
-	className := fullyClassName[len(fullyClassName)-1]
-
-	packageNameList := fullyClassName[0 : len(fullyClassName)-1]
-	packageName := strings.Join(packageNameList, ".")
-
-	expr := &NewExpression{
-		packageName: packageName,
-		className:   className,
-		//methodName:   memthodName,
-		argumentList: argumentList,
-	}
-
 	expr.SetPosition(pos)
 
 	return expr

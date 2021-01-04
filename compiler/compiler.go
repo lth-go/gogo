@@ -41,13 +41,9 @@ type Compiler struct {
 	declarationList []*Declaration
 	// 语句列表
 	statementList []Statement
-	// 类定义列表
-	classDefinitionList []*ClassDefinition
 
 	// 当前块
 	currentBlock *Block
-	// 当前类
-	currentClassDefinition *ClassDefinition
 
 	// 已加载compiler列表
 	importedList []*Compiler
@@ -62,14 +58,13 @@ type Compiler struct {
 func newCompiler() *Compiler {
 	compilerBackup := getCurrentCompiler()
 	c := &Compiler{
-		importList:          []*ImportSpec{},
-		funcList:            []*FunctionDefinition{},
-		declarationList:     []*Declaration{},
-		statementList:       []Statement{},
-		classDefinitionList: []*ClassDefinition{},
-		importedList:        []*Compiler{},
-		vmFunctionList:      []*vm.Function{},
-		vmClassList:         []*vm.Class{},
+		importList:      []*ImportSpec{},
+		funcList:        []*FunctionDefinition{},
+		declarationList: []*Declaration{},
+		statementList:   []Statement{},
+		importedList:    []*Compiler{},
+		vmFunctionList:  []*vm.Function{},
+		vmClassList:     []*vm.Class{},
 	}
 	setCurrentCompiler(c)
 	// TODO 添加默认函数
@@ -187,9 +182,6 @@ func (c *Compiler) Show() {
 // 修正树
 //////////////////////////////
 func (c *Compiler) fixTree() {
-	// class
-	c.fixClassList()
-
 	// TODO remove
 	// add function
 	for _, fd := range c.funcList {
@@ -201,49 +193,12 @@ func (c *Compiler) fixTree() {
 
 	// 修正函数
 	for _, fd := range c.funcList {
-		if fd.classDefinition == nil {
-			fd.fix()
-		}
+		fd.fix()
 	}
 
 	// 修正全局声明
 	for varCount, declaration := range c.declarationList {
 		declaration.variableIndex = varCount
-	}
-}
-
-func (c *Compiler) fixClassList() {
-
-	// 修正继承
-	for _, cd := range c.classDefinitionList {
-		cd.addToCurrentCompiler()
-	}
-
-	// 修正方法和属性, 搜索父类, 设置索引
-	for _, cd := range c.classDefinitionList {
-
-		c.currentClassDefinition = cd
-
-		var fieldIndex int
-		var methodIndex int
-
-		for _, memberIfs := range cd.memberList {
-			switch member := memberIfs.(type) {
-			case *MethodMember:
-				member.functionDefinition.fix()
-
-				member.methodIndex = methodIndex
-				methodIndex++
-			case *FieldMember:
-				member.typeSpecifier.fix()
-
-				member.fieldIndex = fieldIndex
-				fieldIndex++
-			default:
-				panic("TODO")
-			}
-		}
-		c.currentClassDefinition = nil
 	}
 }
 
@@ -281,8 +236,6 @@ func (c *Compiler) generate() *vm.Executable {
 
 	// 添加全局变量声明
 	c.addGlobalVariable(exe)
-	// 添加类信息
-	c.addClasses(exe)
 	// 添加函数信息
 	c.addFunctions(exe)
 	// 添加顶层代码
@@ -300,52 +253,12 @@ func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
 	}
 }
 
-// 添加类
-func (c *Compiler) addClasses(exe *vm.Executable) {
-	for _, cd := range c.classDefinitionList {
-		vmClass := c.searchVmClass(cd)
-		vmClass.IsImplemented = true
-	}
-
-	for _, vmClass := range c.vmClassList {
-		cd := searchClass(vmClass.Name)
-		addClass(cd, vmClass)
-	}
-}
-
-// TODO 改名
-// 完善vmClass信息
-func addClass(cd *ClassDefinition, dest *vm.Class) {
-	for _, memberIfs := range cd.memberList {
-		switch member := memberIfs.(type) {
-		case *MethodMember:
-			newMethod := &vm.Method{
-				Name: member.functionDefinition.name,
-			}
-			dest.MethodList = append(dest.MethodList, newMethod)
-		case *FieldMember:
-			newField := &vm.Field{
-				Name: member.name,
-				Typ:  copyTypeSpecifier(member.typeSpecifier),
-			}
-			dest.FieldList = append(dest.FieldList, newField)
-		default:
-			panic("TODO")
-		}
-	}
-}
-
 // 添加函数
 func (c *Compiler) addFunctions(exe *vm.Executable) {
 
 	inThisExes := make([]bool, len(c.vmFunctionList))
 
 	for _, fd := range c.funcList {
-		// TODO 为什么block是空
-		if fd.classDefinition != nil && fd.block == nil {
-			continue
-		}
-
 		destIdx := c.getFunctionIndex(fd)
 		inThisExes[destIdx] = true
 
@@ -380,11 +293,7 @@ func addFunction(exe *vm.Executable, src *FunctionDefinition, dest *vm.Function,
 		dest.LocalVariableList = nil
 	}
 
-	if src.classDefinition != nil {
-		dest.IsMethod = true
-	} else {
-		dest.IsMethod = false
-	}
+	dest.IsMethod = false
 }
 
 func (c *Compiler) getFunctionIndex(src *FunctionDefinition) int {
@@ -392,11 +301,7 @@ func (c *Compiler) getFunctionIndex(src *FunctionDefinition) int {
 
 	srcPackageName := src.getPackageName()
 
-	if src.classDefinition != nil {
-		funcName = createMethodFunctionName(src.classDefinition.name, src.name)
-	} else {
-		funcName = src.name
-	}
+	funcName = src.name
 
 	for i, vmFunc := range c.vmFunctionList {
 		if srcPackageName == vmFunc.PackageName && funcName == vmFunc.Name {
@@ -416,36 +321,12 @@ func (c *Compiler) addTopLevel(exe *vm.Executable) {
 	exe.LineNumberList = ob.lineNumberList
 }
 
-// other
-func (c *Compiler) searchVmClass(src *ClassDefinition) *vm.Class {
-
-	srcPackageName := src.getPackageName()
-
-	for _, vmClass := range c.vmClassList {
-		if srcPackageName == vmClass.PackageName && src.name == vmClass.Name {
-			return vmClass
-		}
-	}
-	panic("TODO")
-}
-
 func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 
 	// 当前compiler查找
 	for _, pos := range c.funcList {
 		if pos.name == name {
 			return pos
-		}
-	}
-
-	return nil
-}
-
-func (c *Compiler) searchClass(identifier string) *ClassDefinition {
-
-	for _, cd := range c.classDefinitionList {
-		if cd.name == identifier {
-			return cd
 		}
 	}
 

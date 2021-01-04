@@ -203,7 +203,7 @@ func searchFunction(name string) *FunctionDefinition {
 	// 导入的compiler查找
 	for _, required := range compiler.importedList {
 		for _, fd := range required.funcList {
-			if fd.name == name && fd.classDefinition == nil {
+			if fd.name == name {
 				return fd
 			}
 		}
@@ -227,41 +227,6 @@ func searchModule(name string) *Module {
 
 	}
 	return nil
-}
-
-// 根据名字在当前compiler, 及required里搜索类定义
-func searchClass(identifier string) *ClassDefinition {
-
-	compiler := getCurrentCompiler()
-
-	for _, cd := range compiler.classDefinitionList {
-		if cd.name == identifier {
-			return cd
-		}
-	}
-
-	for _, requiredCompiler := range compiler.importedList {
-		for _, cd := range requiredCompiler.classDefinitionList {
-			if cd.name == identifier {
-				return cd
-			}
-		}
-	}
-
-	return nil
-}
-
-func searchClassAndAdd(pos Position, name string, classIndexP *int) *ClassDefinition {
-
-	cd := searchClass(name)
-
-	if cd == nil {
-		compileError(pos, CLASS_NOT_FOUND_ERR, name)
-	}
-
-	*classIndexP = cd.addToCurrentCompiler()
-
-	return cd
 }
 
 func searchCompiler(list []*Compiler, packageName []string) *Compiler {

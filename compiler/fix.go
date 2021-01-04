@@ -6,31 +6,6 @@ func fixStatementList(currentBlock *Block, statementList []Statement, fd *Functi
 	}
 }
 
-func fixClassMemberExpression(expr *MemberExpression, memberName string) Expression {
-	obj := expr.expression
-
-	obj.typeS().fix()
-
-	cd := obj.typeS().classRef.classDefinition
-
-	member := cd.searchMember(memberName)
-	if member == nil {
-		compileError(expr.Position(), MEMBER_NOT_FOUND_ERR, cd.name, memberName)
-	}
-
-	expr.memberDeclaration = member
-
-	switch m := member.(type) {
-	case *MethodMember:
-		expr.setType(createFunctionDeriveType(m.functionDefinition))
-	case *FieldMember:
-		expr.setType(m.typeSpecifier)
-	}
-
-	return expr
-
-}
-
 // 仅限函数
 func fixModuleMemberExpression(expr *MemberExpression, memberName string) Expression {
 	innerExpr := expr.expression

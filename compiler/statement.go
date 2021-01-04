@@ -217,8 +217,8 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		fixStatementList(stmt.block, stmt.block.statementList, fd)
 	}
 }
-func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 
+func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	if stmt.init != nil {
 		stmt.init.generate(exe, currentBlock, ob)
 	}

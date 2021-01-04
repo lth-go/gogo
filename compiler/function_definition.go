@@ -28,7 +28,6 @@ type FunctionDefinition struct {
 	block         *Block
 
 	localVariableList []*Declaration
-	classDefinition   *ClassDefinition
 
 	index int
 }
@@ -126,11 +125,7 @@ func (fd *FunctionDefinition) getPackageName() string {
 func (fd *FunctionDefinition) getVmFuncName() string {
 	var name string
 
-	if fd.classDefinition != nil {
-		name = createMethodFunctionName(fd.classDefinition.name, fd.name)
-	} else {
-		name = fd.name
-	}
+	name = fd.name
 
 	return name
 }

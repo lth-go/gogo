@@ -64,7 +64,7 @@ func calcNeedStackSize(codeList []byte) int {
 func (s *Stack) getIndexOverSp(sp int) int {
 	index := s.stackPointer + sp
 	if index == -1 {
-		index = len(s.stack) -1
+		index = len(s.stack) - 1
 	}
 	return index
 }

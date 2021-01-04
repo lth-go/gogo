@@ -37,7 +37,6 @@ type TypeSpecifier struct {
 }
 
 func (t *TypeSpecifier) fix() {
-
 	for _, deriveIfs := range t.deriveList {
 		derive, ok := deriveIfs.(*FunctionDerive)
 		if ok {
@@ -48,7 +47,6 @@ func (t *TypeSpecifier) fix() {
 	}
 
 	if t.basicType == vm.ClassType && t.classRef.classDefinition == nil {
-
 		cd := searchClass(t.classRef.identifier)
 		if cd == nil {
 			compileError(t.Position(), TYPE_NAME_NOT_FOUND_ERR, t.classRef.identifier)
@@ -73,7 +71,7 @@ func createClassTypeSpecifier(identifier string, pos Position) *TypeSpecifier {
 	typ := &TypeSpecifier{
 		basicType: vm.ClassType,
 		classRef: classRef{
-			identifier: identifier,
+			identifier:      identifier,
 			classDefinition: nil,
 		},
 	}

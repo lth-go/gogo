@@ -64,12 +64,12 @@ func newCompiler() *Compiler {
 	c := &Compiler{
 		importList:          []*ImportSpec{},
 		funcList:            []*FunctionDefinition{},
-		vmFunctionList:      []*vm.Function{},
-		vmClassList:         []*vm.Class{},
 		declarationList:     []*Declaration{},
 		statementList:       []Statement{},
 		classDefinitionList: []*ClassDefinition{},
 		importedList:        []*Compiler{},
+		vmFunctionList:      []*vm.Function{},
+		vmClassList:         []*vm.Class{},
 	}
 	setCurrentCompiler(c)
 	// TODO 添加默认函数
@@ -92,9 +92,9 @@ func (c *Compiler) addLexerByPath(path string) {
 	c.path = path
 }
 
-//////////////////////////////
+//
 // 函数定义
-//////////////////////////////
+//
 func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
 	// 定义重复
 	if searchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {

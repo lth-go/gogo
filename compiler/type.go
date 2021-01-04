@@ -6,19 +6,22 @@ const (
 	TypeFloat
 	TypeString
 	TypeArray
+	TypeSlice
 	TypeMap
 	TypeStruct
 )
 
 type Type interface {
 	GetType() int
+	GetIdentifier() string
+	GetPackageName() string
 }
 
 type BaseType struct {
 	PosImpl
 	PackageName string
 	Name        string
-	MethodSet   map[string]string
+	// MethodSet   map[string]string
 }
 
 type BoolType struct {
@@ -53,14 +56,14 @@ func (t *StringType) GetType() int {
 	return TypeString
 }
 
-type ArrayType struct {
+type SliceType struct {
 	BaseType
 	Len int64
 	Elt Type
 }
 
-func (t *ArrayType) GetType() int {
-	return TypeArray
+func (t *SliceType) GetType() int {
+	return TypeSlice
 }
 
 type MapType struct {

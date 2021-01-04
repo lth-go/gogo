@@ -5,20 +5,20 @@ func println(str string) int {
 }
 
 class Line {
-    float  start_x;
-    float  start_y;
-    float  end_x;
-    float  end_y;
+    start_x float;
+    start_y float;
+    end_x float;
+    end_y float;
 
-    void draw() {
+    func draw() void {
         println("draw Line!");
     }
 
-    void print() {
+    func print() void {
         println("(" + this.start_x + ", " + this.end_x + ")-(" + this.end_x + ", " + this.end_y + ")");
     }
 
-    void init(start_x float, start_y float, end_x float, end_y float) {
+    func init(start_x float, start_y float, end_x float, end_y float) void {
         this.start_x = start_x;
         this.start_y = start_y;
         this.end_x = end_x;

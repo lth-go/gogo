@@ -658,27 +658,27 @@ method_member
         }
         ;
 method_function_definition
-        : type_specifier IDENTIFIER LP parameter_list RP block
+        : FUNC IDENTIFIER LP parameter_list RP type_specifier block
         {
-            $$ = methodFunctionDefine($1, $2.Lit, $4, $6);
+            $$ = methodFunctionDefine($6, $2.Lit, $4, $7);
         }
-        | type_specifier IDENTIFIER LP RP block
+        | FUNC IDENTIFIER LP RP type_specifier block
         {
-            $$ = methodFunctionDefine($1, $2.Lit, nil, $5);
+            $$ = methodFunctionDefine($5, $2.Lit, nil, $6);
         }
-        | type_specifier IDENTIFIER LP parameter_list RP SEMICOLON
+        | FUNC IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
         {
-            $$ = methodFunctionDefine($1, $2.Lit, $4, nil);
+            $$ = methodFunctionDefine($6, $2.Lit, $4, nil);
         }
-        | type_specifier IDENTIFIER LP RP SEMICOLON
+        | FUNC IDENTIFIER LP RP type_specifier SEMICOLON
         {
-            $$ = methodFunctionDefine($1, $2.Lit, nil, nil);
+            $$ = methodFunctionDefine($5, $2.Lit, nil, nil);
         }
         ;
 field_member
-        : type_specifier IDENTIFIER SEMICOLON
+        : IDENTIFIER type_specifier SEMICOLON
         {
-            $$ = createFieldMember($1, $2.Lit, $1.Position())
+            $$ = createFieldMember($2, $1.Lit, $1.Position())
         }
         ;
 %%

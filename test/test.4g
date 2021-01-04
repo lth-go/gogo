@@ -478,7 +478,7 @@ println("ii = 10.." + (ii = 10));
 #
 # Check array
 #
-var array int[][];
+var array [][]int;
 array = null;
 
 array = new int[5][];
@@ -501,14 +501,14 @@ for (i = 0; i < 9; i = i + 1) {
     print("\n");
 }
 
-var array2 int[] = {1, 2, 3, 4, 5.0};
+var array2 []int = {1, 2, 3, 4, 5.0};
 
 
 for (i = 0; i < 5; i = i + 1) {
     print("array2[" + i + "].." + array2[i] + "\n");
 }
 
-var a99 int[][] = {
+var a99 [][]int = {
     {1, 2, 3, 4, 5, 6, 7, 8, 9},
     {2, 4, 6, 8, 10, 12, 14, 16, 18},
     {3, 6, 9, 12, 15, 18, 21, 24, 27},
@@ -527,7 +527,7 @@ for (i = 0; i < 9; i = i + 1) {
     print("\n");
 }
 
-var darray float[] = new float[10];
+var darray []float = new float[10];
 
 for (i = 0; i < 10; i = i + 1) {
     darray[i] = i;
@@ -542,7 +542,7 @@ for (i = 0; i < 6; i = i + 1) {
     println("darray[" + i + "].." + darray[i]);
 }
 
-var sarray string[] = new string[10];
+var sarray []string = new string[10];
 
 for (i = 0; i < 10; i = i + 1) {
     sarray[i] = "str" + i;
@@ -563,7 +563,7 @@ var null_str string = null;
 
 str_val = "abc";
 
-var array_val int[] = {1, 2, 3};
+var array_val []int = {1, 2, 3};
 
 print("null_str.." + null_str + "\n");
 print(str_val + null_str + "\n");

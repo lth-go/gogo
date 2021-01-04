@@ -81,15 +81,11 @@ type ExpressionImpl struct {
 	typeSpecifier *TypeSpecifier
 }
 
-func (expr *ExpressionImpl) fix(currentBlock *Block) Expression { return nil }
-
+func (expr *ExpressionImpl) fix(currentBlock *Block) Expression                              { return nil }
 func (expr *ExpressionImpl) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {}
-
-func (expr *ExpressionImpl) show(indent int) {}
-
-func (expr *ExpressionImpl) typeS() *TypeSpecifier { return expr.typeSpecifier }
-
-func (expr *ExpressionImpl) setType(t *TypeSpecifier) { expr.typeSpecifier = t }
+func (expr *ExpressionImpl) show(indent int)                                                 {}
+func (expr *ExpressionImpl) typeS() *TypeSpecifier                                           { return expr.typeSpecifier }
+func (expr *ExpressionImpl) setType(t *TypeSpecifier)                                        { expr.typeSpecifier = t }
 
 // ==============================
 // BooleanExpression

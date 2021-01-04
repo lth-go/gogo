@@ -9,7 +9,6 @@ import (
 
 %union{
     parameter_list       []*Parameter
-    argument_list        []Expression
 
     statement            Statement
     statement_list       []Statement
@@ -20,7 +19,6 @@ import (
     block                *Block
     else_if              []*ElseIf
 
-    basic_type_specifier *TypeSpecifier
     type_specifier       *TypeSpecifier
 
     array_dimension      *ArrayDimension
@@ -69,7 +67,7 @@ import (
       additive_expression multiplicative_expression
       unary_expression postfix_expression primary_expression primary_no_new_array
       array_literal array_creation
-%type <expression_list> expression_list
+%type <expression_list> expression_list argument_list
 
 %type <statement> statement
       if_statement for_statement
@@ -77,7 +75,6 @@ import (
       declaration_statement
 %type <statement_list> statement_list
 %type <parameter_list> parameter_list
-%type <argument_list> argument_list
 %type <block> block
 %type <else_if> else_if
 
@@ -153,26 +150,29 @@ basic_type_specifier
             $$ = createTypeSpecifier(vm.StringType, $1.Position())
         }
         ;
+/* TODO: class 转type */
+/* IDENTIFIER "." IDENTIFIER */
 class_type_specifier
         : IDENTIFIER
         {
             $$ = createClassTypeSpecifier($1.Lit, $1.Position())
         }
         ;
+/* TODO: LB RB type_specifier */
 array_type_specifier
-        : basic_type_specifier LB RB
+        : LB RB basic_type_specifier
         {
-            $$ = createArrayTypeSpecifier($1)
+            $$ = createArrayTypeSpecifier($3)
             $$.SetPosition($1.Position())
         }
-        | IDENTIFIER LB RB
+        | LB RB IDENTIFIER
         {
-            class_type := createClassTypeSpecifier($1.Lit, $1.Position())
+            class_type := createClassTypeSpecifier($3.Lit, $1.Position())
             $$ = createArrayTypeSpecifier(class_type)
         }
-        | array_type_specifier LB RB
+        | LB RB array_type_specifier
         {
-            $$ = createArrayTypeSpecifier($1)
+            $$ = createArrayTypeSpecifier($3)
         }
         ;
 type_specifier
@@ -489,9 +489,9 @@ dimension_list
         {
             $$ = []*ArrayDimension{&ArrayDimension{}}
         }
-        | dimension_list LB RB
+        | LB RB dimension_list
         {
-            $$ = append($1, &ArrayDimension{})
+            $$ = append($3, &ArrayDimension{})
         }
         ;
 expression_list

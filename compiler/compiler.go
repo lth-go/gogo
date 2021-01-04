@@ -2,8 +2,8 @@ package compiler
 
 import (
 	"fmt"
-	"strings"
 	"log"
+	"strings"
 
 	"github.com/lth-go/gogogogo/vm"
 )
@@ -118,9 +118,9 @@ func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, paramet
 	c.funcList = append(c.funcList, fd)
 }
 
-//////////////////////////////
+//
 // 编译
-//////////////////////////////
+//
 func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Executable {
 	compilerBackup := getCurrentCompiler()
 	setCurrentCompiler(c)

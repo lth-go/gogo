@@ -37,11 +37,11 @@ import (
         LOGICAL_AND LOGICAL_OR
         EQ NE GT GE LT LE
         ADD SUB MUL DIV
-        INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE_T FALSE_T
-        NULL_T
+        INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE_LITERAL FALSE_LITERAL
+        NULL_LITERAL
         IDENTIFIER
         EXCLAMATION DOT
-        VOID_T BOOL_T INT_T FLOAT_T STRING_T
+        VOID BOOL INT FLOAT STRING
         IMPORT
         VAR
         FUNC
@@ -51,7 +51,7 @@ import (
 %type <import_spec> import_declaration
 %type <import_spec_list> import_list
 
-%type <expression> expression expression_opt
+%type <expression> expression expression_or_nil
       assignment_expression
       logical_and_expression logical_or_expression
       equality_expression relational_expression
@@ -113,23 +113,23 @@ definition_or_statement
         }
         ;
 basic_type_specifier
-        : VOID_T
+        : VOID
         {
             $$ = createTypeSpecifier(vm.VoidType, $1.Position())
         }
-        | BOOL_T
+        | BOOL
         {
             $$ = createTypeSpecifier(vm.BooleanType, $1.Position())
         }
-        | INT_T
+        | INT
         {
             $$ = createTypeSpecifier(vm.IntType, $1.Position())
         }
-        | FLOAT_T
+        | FLOAT
         {
             $$ = createTypeSpecifier(vm.DoubleType, $1.Position())
         }
-        | STRING_T
+        | STRING
         {
             $$ = createTypeSpecifier(vm.StringType, $1.Position())
         }
@@ -378,17 +378,17 @@ primary_no_new_array
             $$ = &StringExpression{stringValue: $1.Lit}
             $$.SetPosition($1.Position())
         }
-        | TRUE_T
+        | TRUE_LITERAL
         {
             $$ = &BooleanExpression{booleanValue: true}
             $$.SetPosition($1.Position())
         }
-        | FALSE_T
+        | FALSE_LITERAL
         {
             $$ = &BooleanExpression{booleanValue: false}
             $$.SetPosition($1.Position())
         }
-        | NULL_T
+        | NULL_LITERAL
         {
             $$ = &NullExpression{}
             $$.SetPosition($1.Position())
@@ -467,14 +467,14 @@ else_if
         }
         ;
 for_statement
-        : FOR LP expression_opt SEMICOLON expression_opt SEMICOLON expression_opt RP block
+        : FOR LP expression_or_nil SEMICOLON expression_or_nil SEMICOLON expression_or_nil RP block
         {
             $$ = &ForStatement{init: $3, condition: $5, post: $7, block: $9}
             $$.SetPosition($1.Position())
             $9.parent = &StatementBlockInfo{statement: $$}
         }
         ;
-expression_opt
+expression_or_nil
         :
         {
             $$ = nil
@@ -482,7 +482,7 @@ expression_opt
         | expression
         ;
 return_statement
-        : RETURN_T expression_opt SEMICOLON
+        : RETURN_T expression_or_nil SEMICOLON
         {
             $$ = &ReturnStatement{returnValue: $2};
             $$.SetPosition($1.Position())

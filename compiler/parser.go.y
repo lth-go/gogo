@@ -112,15 +112,10 @@ definition_or_statement
         ;
 /* TODO: LB RB type_specifier */
 array_type_specifier
-        : LB RB IDENTIFIER
-        {
-            typ := createTypeSpecifierAsName($3.Lit, $1.Position())
-            $$ = createArrayTypeSpecifier(typ)
-            $$.SetPosition($1.Position())
-        }
-        | LB RB array_type_specifier
+        : LB RB type_specifier
         {
             $$ = createArrayTypeSpecifier($3)
+            $$.SetPosition($1.Position())
         }
         ;
 type_specifier

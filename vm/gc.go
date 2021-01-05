@@ -168,7 +168,7 @@ func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
 // 判断是否是引用类型
 func isReferenceType(typ *TypeSpecifier) bool {
 	// 字符串, 类, 数组
-	if ((typ.BasicType == StringType) && len(typ.DeriveList) == 0) || (typ.isArrayDerive()) {
+	if ((typ.BasicType == StringType) && typ.DeriveType == nil) || (typ.isArrayDerive()) {
 		return true
 	}
 	return false

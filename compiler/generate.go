@@ -137,15 +137,14 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
 
 	dest.BasicType = src.basicType
-	dest.DeriveList = []vm.TypeDerive{}
 
 	for _, derive := range src.deriveList {
 		switch realDerive := derive.(type) {
 		case *FunctionDerive:
 			newDerive := &vm.FunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
-			dest.AppendDerive(newDerive)
+			dest.SetDeriveType(newDerive)
 		case *ArrayDerive:
-			dest.AppendDerive(&vm.ArrayDerive{})
+			dest.SetDeriveType(&vm.ArrayDerive{})
 		default:
 			panic("TODO")
 		}

@@ -761,49 +761,6 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 	return callInfo.callerAddress == callFromNative
 }
 
-func (vm *VirtualMachine) createArraySub(dim int, dimIndex int, typ *TypeSpecifier) *ObjectRef {
-	var ret *ObjectRef
-
-	size := vm.stack.getInt(-dim)
-
-	if dimIndex == (len(typ.DeriveList) - 1) {
-		switch typ.BasicType {
-		case VoidType:
-			panic("TODO")
-		case BooleanType, IntType:
-			ret = vm.createArrayInt(size)
-		case DoubleType:
-			ret = vm.createArrayDouble(size)
-		case StringType:
-			ret = vm.createArrayObject(size)
-		case NullType, BaseType:
-			fallthrough
-		default:
-			panic("TODO")
-		}
-	} else if _, ok := typ.DeriveList[dimIndex].(*FunctionDerive); ok {
-		// BUG ?
-		ret = nil
-	} else {
-		ret = vm.createArrayObject(size)
-		if dimIndex < dim-1 {
-			vm.stack.setObject(0, ret)
-			vm.stack.stackPointer++
-
-			for i := 0; i < size; i++ {
-				child := vm.createArraySub(dim, dimIndex+1, typ)
-				ret.data.(*ObjectArrayObject).setObject(i, child)
-			}
-			vm.stack.stackPointer--
-		}
-	}
-	return ret
-}
-
-func (vm *VirtualMachine) createArray(dim int, typ *TypeSpecifier) *ObjectRef {
-	return vm.createArraySub(dim, 0, typ)
-}
-
 func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 
 	array := vm.createArrayInt(size)

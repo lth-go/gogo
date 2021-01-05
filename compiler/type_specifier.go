@@ -71,3 +71,23 @@ func cloneTypeSpecifier(src *TypeSpecifier) *TypeSpecifier {
 
 	return typ
 }
+
+func createTypeSpecifierAsName(name string, pos Position) *TypeSpecifier {
+	basicType := vm.NoType
+
+	// TODO:
+	basicTypeMap := map[string]vm.BasicType{
+		"void":   vm.VoidType,
+		"bool":   vm.BooleanType,
+		"int":    vm.IntType,
+		"float":  vm.DoubleType,
+		"string": vm.StringType,
+	}
+
+	_, ok := basicTypeMap[name]
+	if ok {
+		basicType = basicTypeMap[name]
+	}
+
+	return createTypeSpecifier(basicType, pos)
+}

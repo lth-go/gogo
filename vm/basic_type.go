@@ -8,7 +8,8 @@ package vm
 type BasicType int
 
 const (
-	BooleanType BasicType = iota
+	NoType BasicType = iota - 1
+	BooleanType
 	IntType
 	DoubleType
 	StringType

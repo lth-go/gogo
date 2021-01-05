@@ -2,7 +2,6 @@
 package compiler
 
 import (
-    "github.com/lth-go/gogogogo/vm"
     "strconv"
 )
 %}
@@ -31,69 +30,68 @@ import (
 }
 
 %token<tok> IF ELSE FOR RETURN_T BREAK CONTINUE
-        LP RP LC RC LB RB
-        SEMICOLON COMMA COLON
-        ASSIGN_T
-        LOGICAL_AND LOGICAL_OR
-        EQ NE GT GE LT LE
-        ADD SUB MUL DIV
-        INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE_LITERAL FALSE_LITERAL
-        NULL_LITERAL
-        IDENTIFIER
-        EXCLAMATION DOT
-        VOID BOOL INT FLOAT STRING
-        IMPORT
-        VAR
-        FUNC
-        TYPE
-        STRUCT
+    LP RP LC RC LB RB
+    SEMICOLON COMMA COLON
+    ASSIGN_T
+    LOGICAL_AND LOGICAL_OR
+    EQ NE GT GE LT LE
+    ADD SUB MUL DIV
+    INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE_LITERAL FALSE_LITERAL
+    NULL_LITERAL
+    IDENTIFIER
+    EXCLAMATION DOT
+    IMPORT
+    VAR
+    FUNC
+    TYPE
+    STRUCT
 
 %type <import_spec> import_declaration
-%type <import_spec_list> import_list
+%type <import_spec_list> import_declaration_list
 
 %type <expression> expression expression_or_nil
-      assignment_expression
-      logical_and_expression logical_or_expression
-      equality_expression relational_expression
-      additive_expression multiplicative_expression
-      unary_expression postfix_expression primary_expression primary_no_new_array
-      array_literal
+    assignment_expression
+    logical_and_expression logical_or_expression
+    equality_expression relational_expression
+    additive_expression multiplicative_expression
+    unary_expression postfix_expression primary_expression primary_no_new_array
+    array_literal
 %type <expression_list> expression_list argument_list
 
 %type <statement> statement
-      if_statement for_statement
-      return_statement break_statement continue_statement
-      declaration_statement
+    if_statement for_statement
+    return_statement break_statement continue_statement
+    declaration_statement
 %type <statement_list> statement_list
 /* TODO: 临时处理 */
 %type <parameter> receiver_or_nil
 %type <parameter_list> parameter_list
 %type <block> block
 %type <else_if> else_if
-%type <type_specifier> basic_type_specifier type_specifier array_type_specifier
+%type <type_specifier> type_specifier array_type_specifier
 
 %%
 
 translation_unit
-        : initial_declaration definition_or_statement
+        : import_declaration_list_or_nil definition_or_statement
         | translation_unit definition_or_statement
         ;
-initial_declaration
+import_declaration_list_or_nil
         : /* empty */
         {
             setImportList(nil)
         }
-        | import_list
+        | import_declaration_list
         {
             setImportList($1)
         }
         ;
-import_list
+import_declaration_list
         : import_declaration
         {
             $$ = createImportSpecList($1)
         }
-        | import_list import_declaration
+        | import_declaration_list import_declaration
         {
             $$ = append($1, $2)
         }
@@ -112,33 +110,12 @@ definition_or_statement
             l.compiler.statementList = append(l.compiler.statementList, $1)
         }
         ;
-basic_type_specifier
-        : VOID
-        {
-            $$ = createTypeSpecifier(vm.VoidType, $1.Position())
-        }
-        | BOOL
-        {
-            $$ = createTypeSpecifier(vm.BooleanType, $1.Position())
-        }
-        | INT
-        {
-            $$ = createTypeSpecifier(vm.IntType, $1.Position())
-        }
-        | FLOAT
-        {
-            $$ = createTypeSpecifier(vm.DoubleType, $1.Position())
-        }
-        | STRING
-        {
-            $$ = createTypeSpecifier(vm.StringType, $1.Position())
-        }
-        ;
 /* TODO: LB RB type_specifier */
 array_type_specifier
-        : LB RB basic_type_specifier
+        : LB RB IDENTIFIER
         {
-            $$ = createArrayTypeSpecifier($3)
+            typ := createTypeSpecifierAsName($3.Lit, $1.Position())
+            $$ = createArrayTypeSpecifier(typ)
             $$.SetPosition($1.Position())
         }
         | LB RB array_type_specifier
@@ -147,9 +124,13 @@ array_type_specifier
         }
         ;
 type_specifier
-        : basic_type_specifier
+        : IDENTIFIER
         {
-            $$ = $1
+            $$ = createTypeSpecifierAsName($1.Lit, $1.Position())
+        }
+        | IDENTIFIER DOT IDENTIFIER
+        {
+            $$ = createTypeSpecifierAsName($1.Lit + "." + $3.Lit, $1.Position())
         }
         | array_type_specifier
         ;

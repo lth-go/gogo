@@ -480,7 +480,7 @@ println("ii = 10.." + (ii = 10));
 var array []int;
 array = null;
 
-var array2 []int = {1, 2, 3, 4, 5.0};
+var array2 []int = []int{1, 2, 3, 4, 5.0};
 
 for (i = 0; i < 5; i = i + 1) {
     print("array2[" + i + "].." + array2[i] + "\n");
@@ -512,7 +512,7 @@ var null_str string = null;
 
 str_val = "abc";
 
-var array_val []int = {1, 2, 3};
+var array_val []int = []int{1, 2, 3};
 
 print("null_str.." + null_str + "\n");
 print(str_val + null_str + "\n");

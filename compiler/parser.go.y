@@ -67,7 +67,7 @@ import (
 %type <parameter_list> parameter_list parameter_list_or_nil
 %type <block> block
 %type <else_if> else_if
-%type <type_specifier> type_specifier array_type_specifier
+%type <type_specifier> type_specifier array_type_specifier composite_type
 
 %%
 
@@ -125,7 +125,10 @@ type_specifier
         {
             $$ = createTypeSpecifierAsName($1.Lit + "." + $3.Lit, $1.Position())
         }
-        | array_type_specifier
+        | composite_type
+        ;
+composite_type
+        : array_type_specifier
         ;
 function_definition
         : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block
@@ -295,11 +298,7 @@ unary_expression
         }
         ;
 primary_expression
-        : IDENTIFIER
-        {
-            $$ = createIdentifierExpression($1.Lit, $1.Position());
-        }
-        | INT_LITERAL
+        : INT_LITERAL
         {
             value, _ := strconv.Atoi($1.Lit)
             $$ = &IntExpression{intValue: value}
@@ -331,23 +330,27 @@ primary_expression
             $$ = &NullExpression{}
             $$.SetPosition($1.Position())
         }
-        | LC expression_list RC
+        | composite_type LC expression_list RC
         {
-            $$ = &ArrayLiteralExpression{arrayLiteral: $2}
+            $$ = &ArrayLiteralExpression{arrayLiteral: $3}
             $$.SetPosition($1.Position())
         }
-        | LC expression_list COMMA RC
+        | composite_type LC expression_list COMMA RC
         {
-            $$ = &ArrayLiteralExpression{arrayLiteral: $2}
+            $$ = &ArrayLiteralExpression{arrayLiteral: $3}
             $$.SetPosition($1.Position())
         }
-        | primary_expression LB expression RB
+        | IDENTIFIER
         {
-            $$ = createIndexExpression($1, $3, $1.Position())
+            $$ = createIdentifierExpression($1.Lit, $1.Position());
         }
         | primary_expression DOT IDENTIFIER
         {
             $$ = createMemberExpression($1, $3.Lit)
+        }
+        | primary_expression LB expression RB
+        {
+            $$ = createIndexExpression($1, $3, $1.Position())
         }
         | primary_expression LP argument_list RP
         {

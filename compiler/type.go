@@ -23,7 +23,7 @@ type FunctionDerive struct {
 
 type ArrayDerive struct{}
 
-// TypeSpecifier 表达式类型, 包括基本类型和派生类型
+// TypeSpecifier 表达式类型
 type TypeSpecifier struct {
 	PosImpl
 	name       string

@@ -34,9 +34,6 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 	}
 
 	if isObject(destTye) && srcTye.basicType == vm.NullType {
-		if srcTye.deriveType != nil {
-			panic("derive != NULL")
-		}
 		return src
 	}
 

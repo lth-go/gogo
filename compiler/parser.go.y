@@ -54,8 +54,7 @@ import (
     logical_and_expression logical_or_expression
     equality_expression relational_expression
     additive_expression multiplicative_expression
-    unary_expression postfix_expression primary_expression primary_no_new_array
-    array_literal
+    unary_expression primary_expression
 %type <expression_list> expression_list argument_list
 
 %type <statement> statement
@@ -65,7 +64,7 @@ import (
 %type <statement_list> statement_list
 /* TODO: 临时处理 */
 %type <parameter> receiver_or_nil
-%type <parameter_list> parameter_list
+%type <parameter_list> parameter_list parameter_list_or_nil
 %type <block> block
 %type <else_if> else_if
 %type <type_specifier> type_specifier array_type_specifier
@@ -110,7 +109,6 @@ definition_or_statement
             l.compiler.statementList = append(l.compiler.statementList, $1)
         }
         ;
-/* TODO: LB RB type_specifier */
 array_type_specifier
         : LB RB type_specifier
         {
@@ -130,25 +128,15 @@ type_specifier
         | array_type_specifier
         ;
 function_definition
-        : FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier block
+        : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block
         {
             l := yylex.(*Lexer)
             l.compiler.functionDefine($7, $3.Lit, $5, $8)
         }
-        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier block
-        {
-            l := yylex.(*Lexer)
-            l.compiler.functionDefine($6, $3.Lit, []*Parameter{}, $7)
-        }
-        | FUNC receiver_or_nil IDENTIFIER LP parameter_list RP type_specifier SEMICOLON
+        | FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier SEMICOLON
         {
             l := yylex.(*Lexer)
             l.compiler.functionDefine($7, $3.Lit, $5, nil)
-        }
-        | FUNC receiver_or_nil IDENTIFIER LP RP type_specifier SEMICOLON
-        {
-            l := yylex.(*Lexer)
-            l.compiler.functionDefine($6, $3.Lit, []*Parameter{}, nil)
         }
         ;
 receiver_or_nil
@@ -160,6 +148,13 @@ receiver_or_nil
         {
             $$ = &Parameter{typeSpecifier: $3, name: $2.Lit}
         }
+        ;
+parameter_list_or_nil
+        :
+        {
+            $$ = []*Parameter{}
+        }
+        | parameter_list
         ;
 parameter_list
         : IDENTIFIER type_specifier
@@ -287,7 +282,7 @@ multiplicative_expression
         }
         ;
 unary_expression
-        : postfix_expression
+        : primary_expression
         | SUB unary_expression
         {
             $$ = &MinusExpression{operand: $2}
@@ -299,43 +294,10 @@ unary_expression
             $$.SetPosition($1.Position())
         }
         ;
-postfix_expression
-        : primary_expression
-        ;
 primary_expression
-        : primary_no_new_array
-        | IDENTIFIER
+        : IDENTIFIER
         {
             $$ = createIdentifierExpression($1.Lit, $1.Position());
-        }
-        ;
-primary_no_new_array
-        : primary_no_new_array LB expression RB
-        {
-            $$ = createIndexExpression($1, $3, $1.Position())
-        }
-        | IDENTIFIER LB expression RB
-        {
-            identifier := createIdentifierExpression($1.Lit, $1.Position());
-            $$ = createIndexExpression(identifier, $3, $1.Position())
-        }
-        | primary_expression DOT IDENTIFIER
-        {
-            $$ = createMemberExpression($1, $3.Lit)
-        }
-        | primary_expression LP argument_list RP
-        {
-            $$ = &FunctionCallExpression{function: $1, argumentList: $3}
-            $$.SetPosition($1.Position())
-        }
-        | primary_expression LP RP
-        {
-            $$ = &FunctionCallExpression{function: $1, argumentList: []Expression{}}
-            $$.SetPosition($1.Position())
-        }
-        | LP expression RP
-        {
-            $$ = $2
         }
         | INT_LITERAL
         {
@@ -369,10 +331,7 @@ primary_no_new_array
             $$ = &NullExpression{}
             $$.SetPosition($1.Position())
         }
-        | array_literal
-        ;
-array_literal
-        : LC expression_list RC
+        | LC expression_list RC
         {
             $$ = &ArrayLiteralExpression{arrayLiteral: $2}
             $$.SetPosition($1.Position())
@@ -381,6 +340,28 @@ array_literal
         {
             $$ = &ArrayLiteralExpression{arrayLiteral: $2}
             $$.SetPosition($1.Position())
+        }
+        | primary_expression LB expression RB
+        {
+            $$ = createIndexExpression($1, $3, $1.Position())
+        }
+        | primary_expression DOT IDENTIFIER
+        {
+            $$ = createMemberExpression($1, $3.Lit)
+        }
+        | primary_expression LP argument_list RP
+        {
+            $$ = &FunctionCallExpression{function: $1, argumentList: $3}
+            $$.SetPosition($1.Position())
+        }
+        | primary_expression LP RP
+        {
+            $$ = &FunctionCallExpression{function: $1, argumentList: []Expression{}}
+            $$.SetPosition($1.Position())
+        }
+        | LP expression RP
+        {
+            $$ = $2
         }
         ;
 expression_list

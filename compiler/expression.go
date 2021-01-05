@@ -812,7 +812,6 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 // 创建列表时的值, eg,{1,2,3,4}
 type ArrayLiteralExpression struct {
 	ExpressionImpl
-
 	arrayLiteral []Expression
 }
 

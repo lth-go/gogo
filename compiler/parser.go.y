@@ -50,7 +50,6 @@ import (
 %type <import_spec_list> import_declaration_list
 
 %type <expression> expression expression_or_nil
-    assignment_expression
     logical_and_expression logical_or_expression
     equality_expression relational_expression
     additive_expression multiplicative_expression
@@ -171,11 +170,11 @@ parameter_list
         }
         ;
 argument_list
-        : assignment_expression
+        : expression
         {
             $$ = []Expression{$1}
         }
-        | argument_list COMMA assignment_expression
+        | argument_list COMMA expression
         {
             $$ = append($1, $3)
         }
@@ -191,16 +190,8 @@ statement_list
         }
         ;
 expression
-        : assignment_expression
-        | expression COMMA assignment_expression
-        {
-            $$ = &CommaExpression{left: $1, right: $3}
-            $$.SetPosition($1.Position())
-        }
-        ;
-assignment_expression
         : logical_or_expression
-        | primary_expression ASSIGN_T assignment_expression
+        | primary_expression ASSIGN_T expression
         {
             $$ = &AssignExpression{left: $1, operand: $3}
             $$.SetPosition($1.Position())
@@ -375,11 +366,11 @@ expression_list_or_nil
         | expression_list
         ;
 expression_list
-        : assignment_expression
+        : expression
         {
             $$ = []Expression{$1}
         }
-        | expression_list_or_nil COMMA assignment_expression
+        | expression_list_or_nil COMMA expression
         {
             $$ = append($1, $3)
         }

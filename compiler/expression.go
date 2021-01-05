@@ -356,50 +356,12 @@ func createIdentifierExpression(name string, pos Position) *IdentifierExpression
 }
 
 // ==============================
-// CommaExpression
-// ==============================
-
-// CommaExpression 逗号表达式
-type CommaExpression struct {
-	ExpressionImpl
-
-	left  Expression
-	right Expression
-}
-
-func (expr *CommaExpression) show(indent int) {
-	printWithIndent("CommaExpr", indent)
-
-	subIndent := indent + 2
-	expr.left.show(subIndent)
-	expr.right.show(subIndent)
-}
-
-func (expr *CommaExpression) fix(currentBlock *Block) Expression {
-
-	expr.left = expr.left.fix(currentBlock)
-	expr.right = expr.right.fix(currentBlock)
-
-	expr.setType(expr.right.typeS())
-	expr.typeS().fix()
-
-	return expr
-}
-
-func (expr *CommaExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-
-	expr.left.generate(exe, currentBlock, ob)
-	expr.right.generate(exe, currentBlock, ob)
-}
-
-// ==============================
 // AssignExpression
 // ==============================
 
 // AssignExpression 赋值表达式
 type AssignExpression struct {
 	ExpressionImpl
-
 	// 左值
 	left Expression
 	// 操作数

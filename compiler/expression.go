@@ -700,7 +700,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(newTypeSpecifier(fd.typeS().basicType))
 
-	expr.typeSpecifier.deriveList = fd.typeS().deriveList
+	expr.typeSpecifier.deriveType = fd.typeS().deriveType
 
 	expr.typeS().fix()
 	return expr
@@ -837,8 +837,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(newTypeSpecifier(elemType.basicType))
 
-	expr.typeS().deriveList = []TypeDerive{&ArrayDerive{}}
-	expr.typeS().deriveList = append(expr.typeS().deriveList, elemType.deriveList...)
+	expr.typeS().deriveType = &ArrayDerive{}
 
 	expr.typeS().fix()
 
@@ -898,7 +897,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(cloneTypeSpecifier(expr.array.typeS()))
 
-	expr.typeS().deriveList = expr.array.typeS().deriveList[1:]
+	expr.typeS().deriveType = nil
 
 	if !isInt(expr.index.typeS()) {
 		compileError(expr.Position(), INDEX_NOT_INT_ERR)

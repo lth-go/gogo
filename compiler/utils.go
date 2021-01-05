@@ -28,27 +28,24 @@ func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
 func isModule(t *TypeSpecifier) bool  { return t.basicType == vm.ModuleType }
 func isObject(t *TypeSpecifier) bool  { return isString(t) || isArray(t) }
 func isArray(t *TypeSpecifier) bool {
-	if t.deriveList == nil || len(t.deriveList) == 0 {
+	if t.deriveType == nil {
 		return false
 	}
-	firstElem := t.deriveList[0]
-	_, ok := firstElem.(*ArrayDerive)
+	_, ok := t.deriveType.(*ArrayDerive)
 	return ok
 }
 
 func getTypeName(typ *TypeSpecifier) string {
 	typeName := getBasicTypeName(typ.basicType)
 
-	for _, derive := range typ.deriveList {
-		switch derive.(type) {
-		case *FunctionDerive:
-			panic("TODO:derive_tag, func")
-		case *ArrayDerive:
-			typeName = typeName + "[]"
-		default:
-			print("=====\n", typ.Position().Line)
-			panic("TODO:derive_tag")
-		}
+	switch typ.deriveType.(type) {
+	case *FunctionDerive:
+		panic("TODO:derive_tag, func")
+	case *ArrayDerive:
+		typeName = typeName + "[]"
+	default:
+		print("=====\n", typ.Position().Line)
+		panic("TODO:derive_tag")
 	}
 
 	return typeName
@@ -73,7 +70,7 @@ func getBasicTypeName(typ vm.BasicType) string {
 
 func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 
-	if typ.deriveList != nil && len(typ.deriveList) != 0 {
+	if typ.deriveType != nil {
 		if !typ.isArrayDerive() {
 			panic("TODO")
 		}
@@ -112,36 +109,42 @@ func compareType(typ1 *TypeSpecifier, typ2 *TypeSpecifier) bool {
 		return false
 	}
 
-	typ1Len := len(typ1.deriveList)
-	typ2Len := len(typ2.deriveList)
-	if typ1Len != typ2Len {
+	derive1 := typ1.deriveType
+	derive2 := typ2.deriveType
+
+	if derive1 == nil && derive2 == nil {
+		return true
+	}
+
+	if derive1 == nil && derive2 != nil {
 		return false
 	}
 
-	for i := 0; i < typ1Len; i++ {
-		derive1 := typ1.deriveList[i]
-		derive2 := typ2.deriveList[i]
-		switch d1 := derive1.(type) {
+	if derive1 != nil && derive2 == nil {
+		return false
+	}
+
+	switch d1 := derive1.(type) {
+	case *ArrayDerive:
+		switch derive2.(type) {
 		case *ArrayDerive:
-			switch derive2.(type) {
-			case *ArrayDerive:
-				// pass
-			default:
-				return false
-			}
+			// pass
+		default:
+			return false
+		}
+	case *FunctionDerive:
+		switch d2 := derive2.(type) {
 		case *FunctionDerive:
-			switch d2 := derive2.(type) {
-			case *FunctionDerive:
-				if !compareParameter(d1.parameterList, d2.parameterList) {
-					return false
-				}
-			default:
+			if !compareParameter(d1.parameterList, d2.parameterList) {
 				return false
 			}
 		default:
-			panic("TODO")
+			return false
 		}
+	default:
+		panic("TODO")
 	}
+
 	return true
 }
 

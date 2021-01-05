@@ -22,16 +22,14 @@ type TypeSpecifier struct {
 	// 基本类型
 	basicType vm.BasicType
 	// 派生类型
-	deriveList []TypeDerive
+	deriveType TypeDerive
 }
 
 func (t *TypeSpecifier) fix() {
-	for _, deriveIfs := range t.deriveList {
-		derive, ok := deriveIfs.(*FunctionDerive)
-		if ok {
-			for _, parameter := range derive.parameterList {
-				parameter.typeSpecifier.fix()
-			}
+	derive, ok := t.deriveType.(*FunctionDerive)
+	if ok {
+		for _, parameter := range derive.parameterList {
+			parameter.typeSpecifier.fix()
 		}
 	}
 }
@@ -53,15 +51,8 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 }
 
 func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
-	typ.appendDerive(&ArrayDerive{})
+	typ.deriveType = &ArrayDerive{}
 	return typ
-}
-
-func (t *TypeSpecifier) appendDerive(derive TypeDerive) {
-	if t.deriveList == nil {
-		t.deriveList = []TypeDerive{}
-	}
-	t.deriveList = append(t.deriveList, derive)
 }
 
 func (t *TypeSpecifier) isArrayDerive() bool {

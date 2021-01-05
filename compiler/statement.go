@@ -288,7 +288,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	// 如果没有返回值,添加之
 	if stmt.returnValue != nil {
-		if fdType.deriveList == nil && isVoid(fdType) {
+		if fdType.deriveType == nil && isVoid(fdType) {
 			compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
 		}
 
@@ -303,7 +303,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	// return value == nil
 
 	// 衍生类型
-	if fdType.deriveList != nil {
+	if fdType.deriveType != nil {
 		if !fdType.isArrayDerive() {
 			panic("TODO")
 		}

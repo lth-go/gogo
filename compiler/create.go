@@ -22,10 +22,7 @@ func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
 
 	*ret = *(fd.typeSpecifier)
 
-	funcDerive := &FunctionDerive{parameterList: fd.parameterList}
-	ret.deriveList = []TypeDerive{funcDerive}
-
-	ret.deriveList = append(ret.deriveList, fd.typeSpecifier.deriveList...)
+	ret.deriveType = &FunctionDerive{parameterList: fd.parameterList}
 
 	return ret
 }

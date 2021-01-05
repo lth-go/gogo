@@ -138,16 +138,13 @@ func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
 
 	dest.BasicType = src.basicType
 
-	for _, derive := range src.deriveList {
-		switch realDerive := derive.(type) {
-		case *FunctionDerive:
-			newDerive := &vm.FunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
-			dest.SetDeriveType(newDerive)
-		case *ArrayDerive:
-			dest.SetDeriveType(&vm.ArrayDerive{})
-		default:
-			panic("TODO")
-		}
+	switch realDerive := src.deriveType.(type) {
+	case *FunctionDerive:
+		newDerive := &vm.FunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
+		dest.SetDeriveType(newDerive)
+	case *ArrayDerive:
+		dest.SetDeriveType(&vm.ArrayDerive{})
+	default:
 	}
 }
 

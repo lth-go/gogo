@@ -27,8 +27,6 @@ type VirtualMachine struct {
 
 	// 全局函数列表
 	functionList []ExecFunction
-	// 全局类列表
-	classList []*ExecClass
 
 	// exe列表
 	executableEntryList []*ExecutableEntry
@@ -82,8 +80,6 @@ func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 
 	vm.addFunctions(newEntry)
 
-	vm.addClasses(newEntry)
-
 	vm.convertCode(exe, exe.CodeList, nil)
 
 	for _, f := range exe.FunctionList {
@@ -136,128 +132,6 @@ func (vm *VirtualMachine) addFunctions(ee *ExecutableEntry) {
 	}
 }
 
-func (vm *VirtualMachine) addClasses(ee *ExecutableEntry) {
-	exe := ee.executable
-
-	// 循环判断有无重复定义
-	for _, exeClass := range exe.ClassDefinitionList {
-		for _, vmClass := range vm.classList {
-			// 有重复定义
-			if vmClass.name == exeClass.Name && vmClass.packageName == exeClass.PackageName {
-				if exeClass.IsImplemented {
-					vmError(CLASS_MULTIPLE_DEFINE_ERR, vmClass.packageName, vmClass.name)
-				}
-				// 如果类是导入的, 则未实现
-				vm.addClass(exe, exeClass, vmClass)
-			}
-		}
-	}
-
-	destIdx := len(vm.classList)
-	for _, exeClass := range exe.ClassDefinitionList {
-
-		newVmClass := &ExecClass{}
-		vm.classList = append(vm.classList, newVmClass)
-
-		newVmClass.vmClass = exeClass
-		newVmClass.Executable = ee
-		newVmClass.name = exeClass.Name
-		newVmClass.classIndex = destIdx
-
-		if exeClass.PackageName != "" {
-			newVmClass.packageName = exeClass.PackageName
-		} else {
-			newVmClass.packageName = ""
-		}
-
-		vm.addClass(exe, exeClass, newVmClass)
-
-		destIdx++
-	}
-}
-
-func (vm *VirtualMachine) addClass(exe *Executable, src *Class, dest *ExecClass) {
-	addFields(exe, src, dest)
-	addMethods(vm, exe, src, dest)
-}
-
-func addFields(exe *Executable, src *Class, dest *ExecClass) {
-	fieldCount := 0
-
-	for pos := src; ; {
-		fieldCount += len(pos.FieldList)
-			break
-	}
-
-	dest.fieldTypeList = make([]*TypeSpecifier, fieldCount)
-	setFieldTypes(exe, src, dest.fieldTypeList, 0)
-}
-
-func setFieldTypes(exe *Executable, pos *Class, fieldTypes []*TypeSpecifier, index int) int {
-
-	for _, field := range pos.FieldList {
-		fieldTypes[index] = field.Typ
-		index++
-	}
-
-	return index
-}
-
-func addMethods(vm *VirtualMachine, exe *Executable, src *Class, dest *ExecClass) {
-
-	vTable := &VTable{
-		execClass: dest,
-	}
-	addMethod(vm, exe, src, vTable)
-	// TODO
-	dest.classTable = vTable
-}
-
-func addMethod(vm *VirtualMachine, exe *Executable, pos *Class, vTable *VTable) int {
-	var j int
-
-	// 父类方法数量
-	superMethodCount := 0
-
-	methodCount := superMethodCount
-
-	for _, method := range pos.MethodList {
-		for j = 0; j < superMethodCount; j++ {
-			// 如果有与父类相同的方法名, 覆盖之
-			if method.Name == vTable.table[j].name {
-				vTable.table[j] = setVTable(vm, pos, method, false)
-				break
-			}
-		}
-		// 新增方法
-		if j == superMethodCount {
-			vTable.table = append(vTable.table, setVTable(vm, pos, method, true))
-			methodCount++
-		}
-	}
-
-	return methodCount
-}
-
-func setVTable(vm *VirtualMachine, classP *Class, src *Method, setName bool) *VTableItem {
-	dest := &VTableItem{}
-
-	if setName {
-		dest.name = src.Name
-	}
-
-	funcName := createMethodFunctionName(classP.Name, src.Name)
-	funcIdx := searchFunction(vm, classP.PackageName, funcName)
-
-	if funcIdx == functionNotFound {
-		vmError(FUNCTION_NOT_FOUND_ERR, funcName)
-	}
-
-	dest.index = funcIdx
-
-	return dest
-}
-
 func searchFunction(vm *VirtualMachine, packageName, name string) int {
 
 	for i, function := range vm.functionList {
@@ -266,27 +140,6 @@ func searchFunction(vm *VirtualMachine, packageName, name string) int {
 		}
 	}
 	return functionNotFound
-}
-
-func searchClassFromExecutable(exe *Executable, name string) *Class {
-
-	for _, exeClass := range exe.ClassDefinitionList {
-		if exeClass.Name == name {
-			return exeClass
-		}
-	}
-	panic("TODO")
-}
-
-func searchClass(vm *VirtualMachine, packageName string, name string) int {
-
-	for i, vmClass := range vm.classList {
-		if vmClass.packageName == packageName && vmClass.name == name {
-			return i
-		}
-	}
-	vmError(CLASS_NOT_FOUND_ERR, name)
-	return 0
 }
 
 //
@@ -468,52 +321,6 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array.setObject(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
-		case VM_PUSH_FIELD_INT:
-			// TODO 丑
-			obj := stack.getClassObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(stack.getObject(-1))
-			stack.setInt(-1, obj.getInt(index))
-			pc += 3
-		case VM_PUSH_FIELD_DOUBLE:
-			obj := stack.getClassObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(stack.getObject(-1))
-			stack.setDouble(-1, obj.getDouble(index))
-			pc += 3
-		case VM_PUSH_FIELD_OBJECT:
-			obj := stack.getClassObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(stack.getObject(-1))
-			stack.setObject(-1, obj.getObject(index))
-			pc += 3
-		case VM_POP_FIELD_INT:
-			obj := stack.getClassObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(stack.getObject(-1))
-			obj.writeInt(index, stack.getInt(-2))
-			stack.stackPointer -= 2
-			pc += 3
-		case VM_POP_FIELD_DOUBLE:
-			obj := stack.getClassObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(stack.getObject(-1))
-			obj.writeDouble(index, stack.getDouble(-2))
-			stack.stackPointer -= 2
-			pc += 3
-		case VM_POP_FIELD_OBJECT:
-			obj := stack.getClassObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(stack.getObject(-1))
-			obj.writeObject(index, stack.getObject(-2))
-			stack.stackPointer -= 2
-			pc += 3
 		case VM_ADD_INT:
 			stack.setInt(-2, stack.getInt(-2)+stack.getInt(-1))
 			vm.stack.stackPointer--
@@ -713,15 +520,6 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			stack.setInt(0, value)
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_METHOD:
-			obj := stack.getObject(-1)
-			index := get2ByteInt(codeList[pc+1:])
-
-			checkNullPointer(obj)
-
-			stack.setInt(0, obj.vTable.table[index].index)
-			vm.stack.stackPointer++
-			pc += 3
 		case VM_INVOKE:
 			funcIdx := stack.getInt(-1)
 			switch f := vm.functionList[funcIdx].(type) {
@@ -740,22 +538,6 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 				// TODO goto
 				return ret
 			}
-		case VM_NEW:
-			classIndex := get2ByteInt(codeList[pc+1:])
-			stack.setObject(0, vm.createClassObject(classIndex))
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_NEW_ARRAY:
-			dim := int(codeList[pc+1])
-			typ := exe.TypeSpecifierList[get2ByteInt(codeList[pc+2:])]
-
-			vm.restorePc(ee, gFunc, pc)
-			array := vm.createArray(dim, typ)
-			vm.stack.stackPointer -= dim
-
-			stack.setObject(0, array)
-			vm.stack.stackPointer++
-			pc += 4
 		case VM_NEW_ARRAY_LITERAL_INT:
 			size := get2ByteInt(codeList[pc+1:])
 
@@ -846,10 +628,6 @@ func (vm *VirtualMachine) convertCode(exe *Executable, codeList []byte, f *Funct
 			idxInExe := get2ByteInt(codeList[i+1:])
 			funcIdx := vm.searchFunction(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
 			set2ByteInt(codeList[i+1:], funcIdx)
-		case VM_NEW:
-			idxInExe := get2ByteInt(codeList[i+1:])
-			classIdx := vm.searchClass(exe.ClassDefinitionList[idxInExe].PackageName, exe.ClassDefinitionList[idxInExe].Name)
-			set2ByteInt(codeList[i+1:], classIdx)
 		}
 
 		info := &OpcodeInfo[code]
@@ -875,19 +653,6 @@ func (vm *VirtualMachine) searchFunction(packageName, name string) int {
 		}
 	}
 	return functionNotFound
-}
-
-func (vm *VirtualMachine) searchClass(packageName, name string) int {
-
-	for i, class := range vm.classList {
-		if class.packageName == packageName && class.name == name {
-			return i
-		}
-	}
-
-	vmError(CLASS_NOT_FOUND_ERR, name)
-
-	return 0
 }
 
 //
@@ -1009,7 +774,7 @@ func (vm *VirtualMachine) createArraySub(dim int, dimIndex int, typ *TypeSpecifi
 			ret = vm.createArrayInt(size)
 		case DoubleType:
 			ret = vm.createArrayDouble(size)
-		case StringType, ClassType:
+		case StringType:
 			ret = vm.createArrayObject(size)
 		case NullType, BaseType:
 			fallthrough

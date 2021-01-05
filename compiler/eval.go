@@ -67,6 +67,7 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 
 	return newExpr
 }
+
 func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64) Expression {
 	var value float64
 

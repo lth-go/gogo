@@ -35,13 +35,6 @@ const (
 	VM_POP_ARRAY_DOUBLE
 	VM_POP_ARRAY_OBJECT
 	/**********/
-	VM_PUSH_FIELD_INT
-	VM_PUSH_FIELD_DOUBLE
-	VM_PUSH_FIELD_OBJECT
-	VM_POP_FIELD_INT
-	VM_POP_FIELD_DOUBLE
-	VM_POP_FIELD_OBJECT
-	/**********/
 	VM_ADD_INT
 	VM_ADD_DOUBLE
 	VM_ADD_STRING
@@ -95,17 +88,12 @@ const (
 	VM_JUMP_IF_FALSE
 	/**********/
 	VM_PUSH_FUNCTION
-	VM_PUSH_METHOD
 	VM_INVOKE
 	VM_RETURN
 	/**********/
-	VM_NEW
-	VM_NEW_ARRAY
 	VM_NEW_ARRAY_LITERAL_INT
 	VM_NEW_ARRAY_LITERAL_DOUBLE
 	VM_NEW_ARRAY_LITERAL_OBJECT
-	VM_SUPER
-	VM_INSTANCEOF
 )
 
 type opcodeInfo struct {
@@ -150,13 +138,6 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"pop_array_int", "", -1},
 	{"pop_array_double", "", -1},
 	{"pop_array_object", "", -1},
-	/**********/
-	{"push_field_int", "s", 1},
-	{"push_field_double", "s", 1},
-	{"push_field_object", "s", 1},
-	{"pop_field_int", "s", -1},
-	{"pop_field_double", "s", -1},
-	{"pop_field_object", "s", -1},
 	/**********/
 	{"add_int", "", -1},
 	{"add_double", "", -1},
@@ -211,15 +192,10 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"jump_if_false", "s", -1},
 	/**********/
 	{"push_function", "s", 1},
-	{"push_method", "s", 1},
 	{"invoke", "", -1},
 	{"return", "", -1},
 	/**********/
-	{"new", "s", 1},
-	{"new_array", "bs", 0},
 	{"new_array_literal_int", "s", 1},
 	{"new_array_literal_double", "s", 1},
 	{"new_array_literal_object", "s", 1},
-	{"super", "", 0},
-	{"instanceof", "s", 0},
 }

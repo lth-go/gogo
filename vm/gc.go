@@ -32,14 +32,6 @@ func mark(ref *ObjectRef) {
 		for _, subObj := range o.objectArray {
 			mark(subObj)
 		}
-	case *ObjectClassObject:
-		ec := ref.vTable.execClass
-
-		for i, typ := range ec.fieldTypeList {
-			if isReferenceType(typ) {
-				mark(o.fieldList[i].(*ObjectRef))
-			}
-		}
 	}
 }
 
@@ -171,34 +163,12 @@ func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
 	return ref
 }
 
-//
-// class object
-//
-func (vm *VirtualMachine) createClassObject(classIndex int) *ObjectRef {
-	obj := &ObjectClassObject{}
-	vm.addObject(obj)
-
-	execClass := vm.classList[classIndex]
-
-	obj.fieldList = []Value{}
-	for _, typ := range execClass.fieldTypeList {
-		obj.fieldList = append(obj.fieldList, initializeValue(typ))
-	}
-
-	ref := &ObjectRef{
-		vTable: execClass.classTable,
-		data:   obj,
-	}
-
-	return ref
-}
-
 // utils
 
 // 判断是否是引用类型
 func isReferenceType(typ *TypeSpecifier) bool {
 	// 字符串, 类, 数组
-	if ((typ.BasicType == StringType || typ.BasicType == ClassType) && len(typ.DeriveList) == 0) || (typ.isArrayDerive()) {
+	if ((typ.BasicType == StringType) && len(typ.DeriveList) == 0) || (typ.isArrayDerive()) {
 		return true
 	}
 	return false

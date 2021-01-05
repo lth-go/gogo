@@ -211,21 +211,6 @@ func generatePopToLvalue(exe *vm.Executable, block *Block, expr Expression, ob *
 		e.array.generate(exe, block, ob)
 		e.index.generate(exe, block, ob)
 		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT+getOpcodeTypeOffset(expr.typeS()))
-	case *MemberExpression:
-        generatePopToMember(exe, block, e, ob)
-	}
-}
-
-func generatePopToMember(exe *vm.Executable,block *Block, expr *MemberExpression ,ob  *OpCodeBuf) {
-	
-	switch member := expr.memberDeclaration.(type) {
-	case *FieldMember:
-		expr.expression.generate(exe, block, ob)
-		ob.generateCode(expr.Position(),vm.VM_POP_FIELD_INT + getOpcodeTypeOffset(member.typeSpecifier), member.fieldIndex)
-	case *MethodMember:
-		compileError(expr.Position(), ASSIGN_TO_METHOD_ERR, member.functionDefinition.name)
-	default:
-		panic("TODO")
 	}
 }
 
@@ -245,22 +230,4 @@ func generatePushArgument(argList []Expression, exe *vm.Executable, currentBlock
 	for _, arg := range argList {
 		arg.generate(exe, currentBlock, ob)
 	}
-}
-
-func generateMethodCallExpression(expr *FunctionCallExpression, exe *vm.Executable, block *Block, ob *OpCodeBuf) {
-
-	member := expr.function.(*MemberExpression)
-
-	methodIndex := getMethodIndex(member)
-
-	generatePushArgument(expr.argumentList, exe, block, ob)
-	member.expression.generate(exe, block, ob)
-	ob.generateCode(expr.Position(), vm.VM_PUSH_METHOD, methodIndex)
-	ob.generateCode(expr.Position(), vm.VM_INVOKE)
-}
-
-func getMethodIndex(member *MemberExpression) int {
-	methodIndex := member.memberDeclaration.(*MethodMember).methodIndex
-
-	return methodIndex
 }

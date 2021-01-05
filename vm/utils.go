@@ -1,11 +1,8 @@
 package vm
 
 import (
-	"fmt"
-)
-
-import (
 	"encoding/binary"
+	"fmt"
 )
 
 func boolToInt(b bool) int {
@@ -44,7 +41,7 @@ func initializeValue(typ *TypeSpecifier) Value {
 	case DoubleType:
 		value = &DoubleValue{doubleValue: 0.0}
 
-	case StringType, ClassType:
+	case StringType:
 		value = vmNullObjectRef
 
 	case NullType, BaseType:

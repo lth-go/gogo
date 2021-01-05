@@ -51,8 +51,6 @@ type Compiler struct {
 	// TODO 能否去掉
 	// vm函数列表
 	vmFunctionList []*vm.Function
-	// vm类
-	vmClassList []*vm.Class
 }
 
 func newCompiler() *Compiler {
@@ -64,7 +62,6 @@ func newCompiler() *Compiler {
 		statementList:   []Statement{},
 		importedList:    []*Compiler{},
 		vmFunctionList:  []*vm.Function{},
-		vmClassList:     []*vm.Class{},
 	}
 	setCurrentCompiler(c)
 	// TODO 添加默认函数
@@ -232,7 +229,6 @@ func (c *Compiler) generate() *vm.Executable {
 	exe.PackageName = c.getPackageName()
 
 	exe.FunctionList = c.vmFunctionList
-	exe.ClassDefinitionList = c.vmClassList
 
 	// 添加全局变量声明
 	c.addGlobalVariable(exe)

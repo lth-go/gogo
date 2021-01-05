@@ -19,25 +19,16 @@ type Executable struct {
 
 	// 常量池
 	ConstantPool ConstantPool
-
-	// 全局变量
-	// 仅保存名称和类型
+	// 全局变量 仅保存名称和类型
 	GlobalVariableList []*Variable
-
 	// 函数列表
 	FunctionList []*Function
-
 	// 用于vm数组创建
 	TypeSpecifierList []*TypeSpecifier
 
 	// 顶层结构代码
 	CodeList []byte
-
-	// 类列表
-	ClassDefinitionList []*Class
-
-	// 行号对应表
-	// 保存字节码和与之对应的源代码的行号
+	// 行号对应表,保存字节码和与之对应的源代码的行号
 	LineNumberList []*LineNumber
 }
 
@@ -49,7 +40,6 @@ func NewExecutable() *Executable {
 		CodeList:            []byte{},
 		LineNumberList:      []*LineNumber{},
 		TypeSpecifierList:   []*TypeSpecifier{},
-		ClassDefinitionList: []*Class{},
 	}
 
 	return exe
@@ -255,31 +245,4 @@ type LineNumber struct {
 
 	// 接下来有多少字节码对应相同的行号
 	PcCount int
-}
-
-// ==============================
-// Class
-// ==============================
-type Class struct {
-	PackageName string
-	Name        string
-
-	IsImplemented bool
-
-	FieldList  []*Field
-	MethodList []*Method
-}
-
-type ClassIdentifier struct {
-	PackageName string
-	Name        string
-}
-
-type Field struct {
-	Name string
-	Typ  *TypeSpecifier
-}
-
-type Method struct {
-	Name string
 }

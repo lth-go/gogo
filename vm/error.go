@@ -35,15 +35,6 @@ var errMessageList []string = []string{
 	"由于函数$(name)没有指定包，不能动态加载。",
 }
 
-var errMessageMap = map[int]string{
-	//BAD_MULTIBYTE_CHARACTER_ERR:  "不正确的多字节字符。",
-	//FUNCTION_NOT_FOUND_ERR:       "找不到函数%s。",
-	//FUNCTION_MULTIPLE_DEFINE_ERR: "重复定义函数%s。",
-	//INDEX_OUT_OF_BOUNDS_ERR:      "数组下标越界。数组大小为%d，访问的下标为[%d]。",
-	//DIVISION_BY_ZERO_ERR:         "整数值不能被0除。",
-	//NULL_POINTER_ERR:             "引用了null。",
-}
-
 func vmError(errorNumber int, a ...interface{}) {
 	//vm := getVirtualMachine()
 

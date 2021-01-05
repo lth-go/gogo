@@ -4,9 +4,6 @@ const (
 	heapThresholdSize = 10240
 )
 
-//
-// Heap
-//
 // 虚拟机堆
 type Heap struct {
 	// TODO:阈值

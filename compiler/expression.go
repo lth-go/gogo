@@ -690,16 +690,6 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	case *IdentifierExpression:
 		fd = searchFunction(funcExpr.name)
 		name = funcExpr.name
-	case *MemberExpression:
-		switch member := funcExpr.memberDeclaration.(type) {
-		case *FieldMember:
-			compileError(expr.Position(), FIELD_CAN_NOT_CALL_ERR, member.name)
-		case *MethodMember:
-			fd = member.functionDefinition
-			name = fd.name
-		default:
-			panic("TODO")
-		}
 	}
 
 	if fd == nil {
@@ -717,16 +707,6 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-
-	switch memberExpr := expr.function.(type) {
-	case *MemberExpression:
-		_, ok := memberExpr.memberDeclaration.(*MethodMember)
-		if ok {
-			generateMethodCallExpression(expr, exe, currentBlock, ob)
-			return
-		}
-	}
-
 	generatePushArgument(expr.argumentList, exe, currentBlock, ob)
 
 	expr.function.generate(exe, currentBlock, ob)
@@ -746,20 +726,9 @@ type MemberExpression struct {
 	// 成员名称
 	memberName string
 
-	// 用于类成员
-	memberDeclaration MemberDeclaration
-	methodIndex       int
-
 	// module func
 	moduleFunc *FunctionDefinition
 }
-
-// 类成员表达式
-//type ClassMemberExpression struct {
-//	// 用于类成员
-//	memberDeclaration MemberDeclaration
-//	methodIndex int
-//}
 
 func (expr *MemberExpression) show(indent int) {
 	printWithIndent("MemberExpr", indent)
@@ -788,13 +757,6 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	switch member := expr.memberDeclaration.(type) {
-	case *FieldMember:
-		expr.expression.generate(exe, currentBlock, ob)
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FIELD_INT+getOpcodeTypeOffset(expr.typeS()), member.fieldIndex)
-	case *MethodMember:
-		compileError(expr.Position(), METHOD_IS_NOT_CALLED_ERR, member.functionDefinition.name)
-	}
 }
 
 func createMemberExpression(expression Expression, memberName string) *MemberExpression {

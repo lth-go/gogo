@@ -1,18 +1,9 @@
 package vm
 
-//
-// ExecFunction
-//
 // 虚拟机全局函数
 type ExecFunction interface {
 	getName() string
 	getPackageName() string
-}
-
-// TODO
-type FunctionImpl struct {
-	Name        string
-	PackageName string
 }
 
 // 原生函数

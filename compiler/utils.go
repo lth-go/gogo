@@ -3,6 +3,7 @@ package compiler
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/lth-go/gogogogo/vm"
@@ -24,7 +25,6 @@ func isBoolean(t *TypeSpecifier) bool { return t.basicType == vm.BooleanType }
 func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
 func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
 func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
-func isClass(t *TypeSpecifier) bool   { return t.basicType == vm.ClassType }
 func isModule(t *TypeSpecifier) bool  { return t.basicType == vm.ModuleType }
 func isObject(t *TypeSpecifier) bool  { return isString(t) || isArray(t) }
 func isArray(t *TypeSpecifier) bool {
@@ -86,12 +86,12 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 		return byte(0)
 	case vm.DoubleType:
 		return byte(1)
-	case vm.StringType, vm.ClassType:
+	case vm.StringType:
 		return byte(2)
 	case vm.NullType, vm.BaseType:
 		fallthrough
 	default:
-		panic("basic type")
+		log.Fatalf("TODO")
 	}
 	return byte(0)
 }
@@ -260,9 +260,4 @@ func comparePackageName(packageNameList1, packageNameList2 []string) bool {
 	}
 
 	return true
-}
-
-// TODO
-func createMethodFunctionName(className, methodName string) string {
-	return fmt.Sprintf("%s#%s", className, methodName)
 }

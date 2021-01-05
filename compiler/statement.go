@@ -324,8 +324,6 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		stmt.returnValue = createDoubleExpression(stmt.Position())
 	case vm.StringType:
 		stmt.returnValue = createStringExpression(stmt.Position())
-	case vm.ClassType:
-		stmt.returnValue = createNullExpression(stmt.Position())
 	case vm.NullType:
 		fallthrough
 	default:

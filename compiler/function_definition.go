@@ -123,9 +123,5 @@ func (fd *FunctionDefinition) getPackageName() string {
 }
 
 func (fd *FunctionDefinition) getVmFuncName() string {
-	var name string
-
-	name = fd.name
-
-	return name
+	return fd.name
 }

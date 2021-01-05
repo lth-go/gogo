@@ -73,8 +73,6 @@ func NewDoubleValue(value float64) *DoubleValue {
 // 引用对象
 type ObjectRef struct {
 	ValueImpl
-
-	vTable *VTable
 	data   Object
 }
 
@@ -188,48 +186,6 @@ func (obj *ObjectArrayObject) setObject(index int, value *ObjectRef) {
 	checkArray(obj, index)
 
 	obj.objectArray[index] = value
-}
-
-//
-// ObjectClassObject
-//
-type ObjectClassObject struct {
-	ObjectImpl
-
-	fieldList []Value
-}
-
-func (obj *ObjectClassObject) getInt(index int) int {
-	value := obj.fieldList[index].(*IntValue)
-	return value.intValue
-}
-
-func (obj *ObjectClassObject) getDouble(index int) float64 {
-	value := obj.fieldList[index].(*DoubleValue)
-	return value.doubleValue
-}
-
-func (obj *ObjectClassObject) getObject(index int) *ObjectRef {
-	value := obj.fieldList[index].(*ObjectRef)
-	return value
-}
-
-func (obj *ObjectClassObject) writeInt(sp int, value int) {
-	v := NewIntValue(value)
-	v.setPointer(false)
-
-	obj.fieldList[sp] = v
-}
-func (obj *ObjectClassObject) writeDouble(sp int, value float64) {
-	v := NewDoubleValue(value)
-	v.setPointer(false)
-
-	obj.fieldList[sp] = v
-}
-func (obj *ObjectClassObject) writeObject(sp int, value *ObjectRef) {
-	value.setPointer(true)
-
-	obj.fieldList[sp] = value
 }
 
 // utils

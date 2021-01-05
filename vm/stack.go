@@ -4,9 +4,6 @@ const (
 	stackAllocSize = 4096
 )
 
-//
-// Stack
-//
 // 虚拟机栈
 type Stack struct {
 	stackPointer int
@@ -152,9 +149,4 @@ func (s *Stack) getArrayDouble(sp int) *ObjectArrayDouble {
 func (s *Stack) getArrayObject(sp int) *ObjectArrayObject {
 	index := s.getIndexOverSp(sp)
 	return s.getObjectI(index).data.(*ObjectArrayObject)
-}
-
-func (s *Stack) getClassObject(sp int) *ObjectClassObject {
-	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*ObjectClassObject)
 }

@@ -55,7 +55,7 @@ import (
     equality_expression relational_expression
     additive_expression multiplicative_expression
     unary_expression primary_expression
-%type <expression_list> expression_list argument_list
+%type <expression_list> expression_list expression_list_or_nil argument_list
 
 %type <statement> statement
     if_statement for_statement
@@ -330,12 +330,12 @@ primary_expression
             $$ = &NullExpression{}
             $$.SetPosition($1.Position())
         }
-        | composite_type LC expression_list RC
+        | composite_type LC expression_list_or_nil RC
         {
             $$ = &ArrayLiteralExpression{arrayLiteral: $3}
             $$.SetPosition($1.Position())
         }
-        | composite_type LC expression_list COMMA RC
+        | composite_type LC expression_list_or_nil COMMA RC
         {
             $$ = &ArrayLiteralExpression{arrayLiteral: $3}
             $$.SetPosition($1.Position())
@@ -367,16 +367,19 @@ primary_expression
             $$ = $2
         }
         ;
-expression_list
+expression_list_or_nil
         :
         {
             $$ = nil
         }
-        | assignment_expression
+        | expression_list
+        ;
+expression_list
+        : assignment_expression
         {
             $$ = []Expression{$1}
         }
-        | expression_list COMMA assignment_expression
+        | expression_list_or_nil COMMA assignment_expression
         {
             $$ = append($1, $3)
         }

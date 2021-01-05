@@ -447,3 +447,72 @@ func (stmt *Declaration) generate(exe *vm.Executable, currentBlock *Block, ob *O
 	stmt.initializer.generate(exe, currentBlock, ob)
 	generatePopToIdentifier(stmt, stmt.Position(), ob)
 }
+
+// ==============================
+// AssignStatement
+// ==============================
+type AssignStatement struct {
+	StatementImpl
+	left  []Expression
+	right []Expression
+}
+
+func (stmt *AssignStatement) show(indent int) {
+	printWithIndent("AssignStmt", indent)
+
+	subIndent := indent + 2
+
+	for _, expr := range stmt.left {
+		printWithIndent("Left", subIndent)
+		expr.show(subIndent)
+	}
+	for _, expr := range stmt.right {
+		printWithIndent("Right", subIndent)
+		expr.show(subIndent)
+	}
+}
+
+func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
+	if len(stmt.left) != len(stmt.right) {
+		panic("TODO")
+	}
+
+	for _, expr := range stmt.left {
+		switch expr.(type) {
+		case *IdentifierExpression, *IndexExpression, *MemberExpression:
+		default:
+			compileError(expr.Position(), NOT_LVALUE_ERR, "")
+		}
+	}
+
+	for _, expr := range stmt.right {
+		switch expr.(type) {
+		case *IdentifierExpression, *IndexExpression, *MemberExpression:
+		default:
+			compileError(expr.Position(), NOT_LVALUE_ERR, "")
+		}
+	}
+
+	for _, expr := range stmt.left {
+		expr.fix(currentBlock)
+	}
+
+	for _, expr := range stmt.right {
+		expr.fix(currentBlock)
+	}
+}
+
+func (stmt *AssignStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+	count := len(stmt.left)
+
+	for i := 0; i < count; i++ {
+		leftExpr := stmt.left[i]
+		rightExpr := stmt.right[i]
+
+		rightExpr.generate(exe, currentBlock, ob)
+
+		ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
+
+		generatePopToLvalue(exe, currentBlock, leftExpr, ob)
+	}
+}

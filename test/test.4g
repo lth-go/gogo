@@ -1,7 +1,7 @@
 import "utils";
 
-func print(str string) int;
-func println(str string) int {
+# func print(str string) void;
+func println(str string) void {
     print(str + "\n");
 }
 

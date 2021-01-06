@@ -180,6 +180,19 @@ func (c *Compiler) Show() {
 //////////////////////////////
 func (c *Compiler) fixTree() {
 	// TODO remove
+
+	// add default function
+	fd := &FunctionDefinition{
+		typeSpecifier:     newTypeSpecifier(vm.VoidType),
+		name:              "print",
+		packageNameList:   c.GetPackageNameList(),
+		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.StringType), name: "str"}},
+		block:             nil,
+		index:             len(c.funcList),
+		localVariableList: nil,
+	}
+	c.funcList = append(c.funcList, fd)
+
 	// add function
 	for _, fd := range c.funcList {
 		c.addToVmFunctionList(fd)

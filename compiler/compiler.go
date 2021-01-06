@@ -115,7 +115,7 @@ func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, paramet
 //
 // 编译
 //
-func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Executable {
+func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 	compilerBackup := getCurrentCompiler()
 	setCurrentCompiler(c)
 
@@ -123,6 +123,8 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 	if yyParse(c.lexer) != 0 {
 		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
 	}
+
+	exeList := make([]*vm.Executable, 0)
 
 	for _, import_ := range c.importList {
 		// 判断是否已经被解析过
@@ -145,7 +147,7 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 
 		// 编译导入的包
 		requireCompiler.addLexerByPath(foundPath)
-		requireCompiler.compile(exeList, true)
+		exeList = append(exeList, requireCompiler.compile(true)...)
 	}
 
 	// fix and generate
@@ -155,11 +157,11 @@ func (c *Compiler) compile(exeList *vm.ExecutableList, isRequired bool) *vm.Exec
 	exe.Path = c.path
 	exe.IsRequired = isRequired
 
-	exeList.AddExe(exe)
+	exeList = append(exeList, exe)
 
 	setCurrentCompiler(compilerBackup)
 
-	return exe
+	return exeList
 }
 
 //////////////////////////////
@@ -366,8 +368,13 @@ func createCompilerByPath(path string) *Compiler {
 
 func (c *Compiler) Compile() *vm.ExecutableList {
 	exeList := vm.NewExecutableList()
-	exe := c.compile(exeList, false)
-	exeList.TopLevel = exe
+
+	eList := c.compile(false)
+	for _, exe := range eList {
+		exeList.AddExe(exe)
+	}
+
+	exeList.TopLevel = eList[len(eList)-1]
 
 	return exeList
 }

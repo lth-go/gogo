@@ -21,7 +21,7 @@ var opName = map[string]int{
 	"if":       IF,
 	"else":     ELSE,
 	"for":      FOR,
-	"return":   RETURN_T,
+	"return":   RETURN,
 	"break":    BREAK,
 	"continue": CONTINUE,
 	"import":   IMPORT,
@@ -135,7 +135,7 @@ retry:
 				lit = "=="
 			default:
 				s.back()
-				tok = ASSIGN_T
+				tok = ASSIGN
 				lit = "="
 			}
 		case '!':

@@ -29,10 +29,10 @@ import (
     tok                  Token
 }
 
-%token<tok> IF ELSE FOR RETURN_T BREAK CONTINUE
+%token<tok> IF ELSE FOR RETURN BREAK CONTINUE
     LP RP LC RC LB RB
     SEMICOLON COMMA COLON
-    ASSIGN_T
+    ASSIGN
     LOGICAL_AND LOGICAL_OR
     EQ NE GT GE LT LE
     ADD SUB MUL DIV
@@ -40,11 +40,8 @@ import (
     NULL_LITERAL
     IDENTIFIER
     EXCLAMATION DOT
-    IMPORT
-    VAR
-    FUNC
-    TYPE
-    STRUCT
+    IMPORT VAR FUNC
+    TYPE STRUCT
 
 %type <import_spec> import_declaration
 %type <import_spec_list> import_declaration_list
@@ -56,7 +53,8 @@ import (
     unary_expression primary_expression
 %type <expression_list> expression_list expression_list_or_nil argument_list
 
-%type <statement> statement simple_statement simple_statement_or_nil
+%type <statement> statement simple_statement_or_nil
+    simple_statement
     if_statement for_statement
     return_statement break_statement continue_statement
     declaration_statement assign_statement
@@ -66,7 +64,7 @@ import (
 %type <parameter_list> parameter_list parameter_list_or_nil
 %type <block> block
 %type <else_if> else_if
-%type <type_specifier> type_specifier array_type_specifier composite_type
+%type <type_specifier> type_specifier composite_type array_type_specifier
 
 %%
 
@@ -442,7 +440,7 @@ expression_or_nil
         | expression
         ;
 return_statement
-        : RETURN_T expression_or_nil
+        : RETURN expression_or_nil
         {
             $$ = &ReturnStatement{returnValue: $2};
             $$.SetPosition($1.Position())
@@ -468,14 +466,14 @@ declaration_statement
             $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
-        | VAR IDENTIFIER type_specifier ASSIGN_T expression
+        | VAR IDENTIFIER type_specifier ASSIGN expression
         {
             $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, initializer: $5, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
         ;
 assign_statement
-        : expression_list ASSIGN_T expression_list
+        : expression_list ASSIGN expression_list
         {
             $$ = &AssignStatement{left: $1, right: $3}
             $$.SetPosition($2.Position())

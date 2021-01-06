@@ -6,7 +6,7 @@ import (
 )
 
 func compileError(pos Position, errorNumber int, a ...interface{}) {
-	fmt.Println("编译错误")
+	fmt.Println("编译错误:")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	log.Fatalf("%d\n%s", errorNumber, errMessageMap[errorNumber])
 }

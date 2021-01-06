@@ -56,10 +56,10 @@ import (
     unary_expression primary_expression
 %type <expression_list> expression_list expression_list_or_nil argument_list
 
-%type <statement> statement
+%type <statement> statement simple_statement simple_statement_or_nil
     if_statement for_statement
     return_statement break_statement continue_statement
-    declaration_statement
+    declaration_statement assign_statement
 %type <statement_list> statement_list
 /* TODO: 临时处理 */
 %type <parameter> receiver_or_nil
@@ -102,7 +102,7 @@ import_declaration
         ;
 definition_or_statement
         : function_definition
-        | statement
+        | statement SEMICOLON
         {
             l := yylex.(*Lexer)
             l.compiler.statementList = append(l.compiler.statementList, $1)
@@ -130,7 +130,7 @@ composite_type
         : array_type_specifier
         ;
 function_definition
-        : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block
+        : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block SEMICOLON
         {
             l := yylex.(*Lexer)
             l.compiler.functionDefine($7, $3.Lit, $5, $8)
@@ -180,22 +180,17 @@ argument_list
         }
         ;
 statement_list
-        : statement
+        : statement SEMICOLON
         {
             $$ = []Statement{$1}
         }
-        | statement_list statement
+        | statement_list statement SEMICOLON
         {
             $$ = append($1, $2)
         }
         ;
 expression
         : logical_or_expression
-        | primary_expression ASSIGN_T expression
-        {
-            $$ = &AssignExpression{left: $1, operand: $3}
-            $$.SetPosition($1.Position())
-        }
         ;
 logical_or_expression
         : logical_and_expression
@@ -376,17 +371,28 @@ expression_list
         }
         ;
 statement
-        : expression SEMICOLON
-        {
-            $$ = &ExpressionStatement{expression: $1}
-            $$.SetPosition($1.Position())
-        }
+        : simple_statement
         | if_statement
         | for_statement
         | return_statement
         | break_statement
         | continue_statement
         | declaration_statement
+        ;
+simple_statement_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | simple_statement
+        ;
+simple_statement
+        : expression
+        {
+            $$ = &ExpressionStatement{expression: $1}
+            $$.SetPosition($1.Position())
+        }
+        | assign_statement
         ;
 if_statement
         : IF expression block
@@ -421,7 +427,7 @@ else_if
         }
         ;
 for_statement
-        : FOR LP expression_or_nil SEMICOLON expression_or_nil SEMICOLON expression_or_nil RP block
+        : FOR LP simple_statement_or_nil SEMICOLON expression_or_nil SEMICOLON simple_statement_or_nil RP block
         {
             $$ = &ForStatement{init: $3, condition: $5, post: $7, block: $9}
             $$.SetPosition($1.Position())
@@ -436,36 +442,43 @@ expression_or_nil
         | expression
         ;
 return_statement
-        : RETURN_T expression_or_nil SEMICOLON
+        : RETURN_T expression_or_nil
         {
             $$ = &ReturnStatement{returnValue: $2};
             $$.SetPosition($1.Position())
         }
         ;
 break_statement
-        : BREAK SEMICOLON
+        : BREAK
         {
             $$ = &BreakStatement{}
             $$.SetPosition($1.Position())
         }
         ;
 continue_statement
-        : CONTINUE SEMICOLON
+        : CONTINUE
         {
             $$ = &ContinueStatement{}
             $$.SetPosition($1.Position())
         }
         ;
 declaration_statement
-        : VAR IDENTIFIER type_specifier SEMICOLON
+        : VAR IDENTIFIER type_specifier
         {
             $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, variableIndex: -1}
             $$.SetPosition($1.Position())
         }
-        | VAR IDENTIFIER type_specifier ASSIGN_T expression SEMICOLON
+        | VAR IDENTIFIER type_specifier ASSIGN_T expression
         {
             $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, initializer: $5, variableIndex: -1}
             $$.SetPosition($1.Position())
+        }
+        ;
+assign_statement
+        : expression_list ASSIGN_T expression_list
+        {
+            $$ = &AssignStatement{left: $1, right: $3}
+            $$.SetPosition($2.Position())
         }
         ;
 block

@@ -171,9 +171,9 @@ func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *O
 type ForStatement struct {
 	StatementImpl
 
-	init      Expression
+	init      Statement
 	condition Expression
-	post      Expression
+	post      Statement
 	block     *Block
 }
 
@@ -198,7 +198,7 @@ func (stmt *ForStatement) show(indent int) {
 
 func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.init != nil {
-		stmt.init = stmt.init.fix(currentBlock)
+		stmt.init.fix(currentBlock, fd)
 	}
 
 	if stmt.condition != nil {
@@ -210,7 +210,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	if stmt.post != nil {
-		stmt.post = stmt.post.fix(currentBlock)
+		stmt.post.fix(currentBlock, fd)
 	}
 
 	if stmt.block != nil {
@@ -485,20 +485,14 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		}
 	}
 
-	for _, expr := range stmt.right {
-		switch expr.(type) {
-		case *IdentifierExpression, *IndexExpression, *MemberExpression:
-		default:
-			compileError(expr.Position(), NOT_LVALUE_ERR, "")
-		}
-	}
+	for i := 0; i < len(stmt.left); i++ {
+		leftExpr := stmt.left[i]
+		rightExpr := stmt.right[i]
 
-	for _, expr := range stmt.left {
-		expr.fix(currentBlock)
-	}
+		leftExpr.fix(currentBlock)
+		rightExpr.fix(currentBlock)
 
-	for _, expr := range stmt.right {
-		expr.fix(currentBlock)
+		stmt.right[i] = createAssignCast(stmt.right[i], leftExpr.typeS())
 	}
 }
 

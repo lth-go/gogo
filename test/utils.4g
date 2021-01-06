@@ -1,4 +1,4 @@
 # func print(str string) void;
 func printTest(str string) void {
     print(str + " ========" + "\n");
-}
+};

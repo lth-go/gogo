@@ -327,9 +327,10 @@ func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 
 	// TODO 字符串是否能跟null比较
 	if !(compareType(newBinaryExprLeftType, newBinaryExprRightType) ||
-		(isObject(newBinaryExprLeftType) && isNull(newBinaryExpr.right) ||
+		(isObject(newBinaryExprLeftType) &&
+			isNull(newBinaryExpr.right) ||
 			(isNull(newBinaryExpr.left) && isObject(newBinaryExprRightType)))) {
-		compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, getTypeName(newBinaryExprLeftType), getTypeName(newBinaryExprRightType))
+		compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, newBinaryExprLeftType.GetTypeName(), newBinaryExprRightType.GetTypeName())
 	}
 
 	newBinaryExpr.setType(newTypeSpecifier(vm.BooleanType))

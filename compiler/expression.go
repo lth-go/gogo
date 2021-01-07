@@ -751,7 +751,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	if !expr.typeS().isArrayDerive() {
+	if !expr.typeS().IsArray() {
 		panic("TODO")
 	}
 
@@ -794,7 +794,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 	expr.array = expr.array.fix(currentBlock)
 	expr.index = expr.index.fix(currentBlock)
 
-	if !expr.array.typeS().isArrayDerive() {
+	if !expr.array.typeS().IsArray() {
 		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
 	}
 

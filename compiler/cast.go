@@ -97,8 +97,8 @@ func castBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
 }
 
 func castMismatchError(pos Position, src, dest *TypeSpecifier) {
-	srcName := getTypeName(src)
-	destName := getTypeName(dest)
+	srcName := src.GetTypeName()
+	destName := src.GetTypeName()
 
 	compileError(pos, CAST_MISMATCH_ERR, srcName, destName)
 }

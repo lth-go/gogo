@@ -28,37 +28,6 @@ func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
 func isModule(t *TypeSpecifier) bool  { return t.basicType == vm.ModuleType }
 func isObject(t *TypeSpecifier) bool  { return isString(t) || t.IsArray() }
 
-func getTypeName(typ *TypeSpecifier) string {
-	typeName := getBasicTypeName(typ.basicType)
-
-	switch {
-	case typ.IsArray():
-		typeName = "[]" + typeName
-	default:
-		print("=====\n", typ.Position().Line)
-		panic("TODO:derive_tag")
-	}
-
-	return typeName
-}
-
-func getBasicTypeName(typ vm.BasicType) string {
-	switch typ {
-	case vm.BooleanType:
-		return "bool"
-	case vm.IntType:
-		return "int"
-	case vm.DoubleType:
-		return "float"
-	case vm.StringType:
-		return "string"
-	case vm.NullType:
-		return "null"
-	default:
-		panic(fmt.Sprintf("bad case. type..%d\n", typ))
-	}
-}
-
 func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 	if typ.IsComposite() {
 		return byte(2)

@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/lth-go/gogogogo/vm"
 )
 
@@ -29,18 +31,13 @@ func NewFuncType(params []*Parameter) *FuncType {
 	}
 }
 
-//
-// derive
-//
-type ArrayDerive struct{}
-
 // TypeSpecifier 表达式类型
 type TypeSpecifier struct {
 	PosImpl
-	name       string
-	basicType  vm.BasicType // 基本类型
-	sliceType  *SliceType
-	funcType   *FuncType
+	name      string
+	basicType vm.BasicType // 基本类型
+	sliceType *SliceType
+	funcType  *FuncType
 }
 
 func (t *TypeSpecifier) fix() {
@@ -74,10 +71,6 @@ func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 	return newType
 }
 
-func (t *TypeSpecifier) isArrayDerive() bool {
-	return t.IsArray()
-}
-
 func (t *TypeSpecifier) IsArray() bool {
 	// TODO: 根据basic判断
 	return t.sliceType != nil
@@ -96,10 +89,40 @@ func (t *TypeSpecifier) IsComposite() bool {
 	return t.IsArray() || t.IsFunc()
 }
 
+func (t *TypeSpecifier) GetTypeName() string {
+	typeName := getBasicTypeName(t.basicType)
+
+	switch {
+	case t.IsArray():
+		typeName = "[]" + typeName
+	default:
+		print("=====\n", t.Position().Line)
+		panic("TODO:derive_tag")
+	}
+
+	return typeName
+}
+
+func getBasicTypeName(typ vm.BasicType) string {
+	switch typ {
+	case vm.BooleanType:
+		return "bool"
+	case vm.IntType:
+		return "int"
+	case vm.DoubleType:
+		return "float"
+	case vm.StringType:
+		return "string"
+	case vm.NullType:
+		return "null"
+	default:
+		panic(fmt.Sprintf("bad case. type..%d\n", typ))
+	}
+}
+
 // utils
 func cloneTypeSpecifier(src *TypeSpecifier) *TypeSpecifier {
 	typ := &TypeSpecifier{}
-
 	*typ = *src
 
 	return typ

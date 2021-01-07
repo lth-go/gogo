@@ -33,7 +33,7 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 		return src
 	}
 
-	if destTye.IsObject() && srcTye.basicType == vm.BasicTypeNil {
+	if destTye.IsObject() && srcTye.IsNil() {
 		return src
 	}
 

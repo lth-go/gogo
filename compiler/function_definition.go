@@ -2,8 +2,6 @@ package compiler
 
 import (
 	"strings"
-
-	"github.com/lth-go/gogogogo/vm"
 )
 
 //
@@ -109,7 +107,7 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []
 		argumentList[i] = argumentList[i].fix(currentBlock)
 
 		paramType := parameterList[i].typeSpecifier
-		if paramType.basicType == vm.BasicTypeBase {
+		if paramType.IsBase() {
 			tempType = arrayBase
 		} else {
 			tempType = paramType

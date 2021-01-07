@@ -135,18 +135,14 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 // COPY
 //
 func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
-
 	dest.BasicType = src.basicType
-
 	if src.IsArray() {
 		dest.SetSliceType(copyTypeSpecifier(src.sliceType.ElementType), src.sliceType.Len)
 	}
 }
 
 func copyTypeSpecifier(src *TypeSpecifier) *vm.TypeSpecifier {
-
 	dest := &vm.TypeSpecifier{}
-
 	copyTypeSpecifierNoAlloc(src, dest)
 
 	return dest
@@ -182,19 +178,7 @@ func copyLocalVariables(fd *FunctionDefinition) []*vm.LocalVariable {
 	return dest
 }
 
-// TODO 作为exe的方法
-func AddTypeSpecifier(src *TypeSpecifier, exe *vm.Executable) int {
-	ret := len(exe.TypeSpecifierList)
-
-	newType := &vm.TypeSpecifier{}
-	copyTypeSpecifierNoAlloc(src, newType)
-	exe.TypeSpecifierList = append(exe.TypeSpecifierList, newType)
-
-	return ret
-}
-
 func generatePopToLvalue(exe *vm.Executable, block *Block, expr Expression, ob *OpCodeBuf) {
-
 	switch e := expr.(type) {
 	case *IdentifierExpression:
 		generatePopToIdentifier(e.inner.(*Declaration), expr.Position(), ob)

@@ -29,7 +29,7 @@ func set2ByteInt(b []byte, value int) {
 func initializeValue(typ *TypeSpecifier) Value {
 	var value Value
 
-	if typ.isArrayDerive() {
+	if typ.IsSliceType() {
 		value = vmNullObjectRef
 		return value
 	}

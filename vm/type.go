@@ -17,13 +17,13 @@ func (t *TypeSpecifier) SetSliceType(typ *TypeSpecifier, length int64) {
 	}
 }
 
-func (t *TypeSpecifier) isArrayDerive() bool {
+func (t *TypeSpecifier) IsSliceType() bool {
 	// TODO: 根据basicType判断
 	return t.SliceType != nil
 }
 
 func (t *TypeSpecifier) IsReferenceType() bool {
-	if t.BasicType == BasicTypeString || t.isArrayDerive() {
+	if t.BasicType == BasicTypeString || t.IsSliceType() {
 		return true
 	}
 	return false

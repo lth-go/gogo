@@ -583,7 +583,7 @@ func (vm *VirtualMachine) initializeLocalVariables(f *Function, fromSp int) {
 	for i = 0; i < len(f.LocalVariableList); i++ {
 		vm.stack.stack[spIdx] = initializeValue(f.LocalVariableList[i].TypeSpecifier)
 
-		if f.LocalVariableList[i].TypeSpecifier.BasicType == BasicTypeString {
+		if f.LocalVariableList[i].TypeSpecifier.IsReferenceType() {
 			vm.stack.stack[i].setPointer(true)
 		}
 		spIdx++

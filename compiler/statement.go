@@ -303,18 +303,18 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	// 基础类型
-	switch fdType.basicType {
-	case vm.BasicTypeVoid:
+	switch {
+	case fdType.IsVoid():
 		stmt.returnValue = createIntExpression(stmt.Position())
-	case vm.BasicTypeBool:
+	case fdType.IsBool():
 		stmt.returnValue = createBooleanExpression(stmt.Position())
-	case vm.BasicTypeInt:
+	case fdType.IsInt():
 		stmt.returnValue = createIntExpression(stmt.Position())
-	case vm.BasicTypeFloat:
+	case fdType.IsFloat():
 		stmt.returnValue = createDoubleExpression(stmt.Position())
-	case vm.BasicTypeString:
+	case fdType.IsString():
 		stmt.returnValue = createStringExpression(stmt.Position())
-	case vm.BasicTypeNil:
+	case fdType.IsNil():
 		fallthrough
 	default:
 		panic("TODO")

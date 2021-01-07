@@ -23,8 +23,6 @@ type Executable struct {
 	GlobalVariableList []*Variable
 	// 函数列表
 	FunctionList []*Function
-	// 用于vm数组创建
-	TypeSpecifierList []*TypeSpecifier
 
 	// 顶层结构代码
 	CodeList []byte
@@ -39,7 +37,6 @@ func NewExecutable() *Executable {
 		FunctionList:        []*Function{},
 		CodeList:            []byte{},
 		LineNumberList:      []*LineNumber{},
-		TypeSpecifierList:   []*TypeSpecifier{},
 	}
 
 	return exe
@@ -184,7 +181,6 @@ func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {
 // ==============================
 // 函数
 // ==============================
-
 type Function struct {
 	// 类型
 	TypeSpecifier *TypeSpecifier
@@ -235,7 +231,6 @@ func (f *Function) ShowCode() {
 // ==============================
 // 行号对应表
 // ==============================
-
 type LineNumber struct {
 	// 源代码行号
 	LineNumber int

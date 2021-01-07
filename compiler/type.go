@@ -35,7 +35,7 @@ func NewFuncType(params []*Parameter) *FuncType {
 type TypeSpecifier struct {
 	PosImpl
 	name      string
-	basicType vm.BasicType // 基本类型
+	basicType vm.BasicType
 	sliceType *SliceType
 	funcType  *FuncType
 }
@@ -111,6 +111,15 @@ func (t *TypeSpecifier) IsModule() bool {
 
 func (t *TypeSpecifier) IsObject() bool {
 	return t.IsString() || t.IsArray()
+}
+
+func (t *TypeSpecifier) IsNil() bool {
+	return t.basicType == vm.BasicTypeNil
+}
+
+// TODO:
+func (t *TypeSpecifier) IsBase() bool {
+	return t.basicType == vm.BasicTypeBase
 }
 
 func (t *TypeSpecifier) GetTypeName() string {

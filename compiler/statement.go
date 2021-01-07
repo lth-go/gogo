@@ -91,7 +91,7 @@ func (stmt *IfStatement) show(indent int) {
 func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	stmt.condition = stmt.condition.fix(currentBlock)
 
-	if !isBoolean(stmt.condition.typeS()) {
+	if !stmt.condition.typeS().IsBool() {
 		compileError(stmt.condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
 	}
 
@@ -198,7 +198,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.condition != nil {
 		stmt.condition = stmt.condition.fix(currentBlock)
 
-		if !isBoolean(stmt.condition.typeS()) {
+		if !stmt.condition.typeS().IsBool() {
 			compileError(stmt.condition.Position(), FOR_CONDITION_NOT_BOOLEAN_ERR)
 		}
 	}
@@ -282,7 +282,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	// 如果没有返回值,添加之
 	if stmt.returnValue != nil {
-		if !fdType.IsComposite() && isVoid(fdType) {
+		if !fdType.IsComposite() && fdType.IsVoid() {
 			compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
 		}
 
@@ -304,17 +304,17 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	// 基础类型
 	switch fdType.basicType {
-	case vm.VoidType:
+	case vm.BasicTypeVoid:
 		stmt.returnValue = createIntExpression(stmt.Position())
-	case vm.BooleanType:
+	case vm.BasicTypeBool:
 		stmt.returnValue = createBooleanExpression(stmt.Position())
-	case vm.IntType:
+	case vm.BasicTypeInt:
 		stmt.returnValue = createIntExpression(stmt.Position())
-	case vm.DoubleType:
+	case vm.BasicTypeFloat:
 		stmt.returnValue = createDoubleExpression(stmt.Position())
-	case vm.StringType:
+	case vm.BasicTypeString:
 		stmt.returnValue = createStringExpression(stmt.Position())
-	case vm.NullType:
+	case vm.BasicTypeNil:
 		fallthrough
 	default:
 		panic("TODO")

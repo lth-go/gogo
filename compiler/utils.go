@@ -19,30 +19,21 @@ func isNull(expr Expression) bool {
 	return ok
 }
 
-// TODO 作为TypeSpecifier的方法
-func isVoid(t *TypeSpecifier) bool    { return t.basicType == vm.VoidType }
-func isBoolean(t *TypeSpecifier) bool { return t.basicType == vm.BooleanType }
-func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
-func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
-func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
-func isModule(t *TypeSpecifier) bool  { return t.basicType == vm.ModuleType }
-func isObject(t *TypeSpecifier) bool  { return isString(t) || t.IsArray() }
-
 func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 	if typ.IsComposite() {
 		return byte(2)
 	}
 
 	switch typ.basicType {
-	case vm.VoidType:
+	case vm.BasicTypeVoid:
 		panic("basic type is void")
-	case vm.BooleanType, vm.IntType:
+	case vm.BasicTypeBool, vm.BasicTypeInt:
 		return byte(0)
-	case vm.DoubleType:
+	case vm.BasicTypeFloat:
 		return byte(1)
-	case vm.StringType:
+	case vm.BasicTypeString:
 		return byte(2)
-	case vm.NullType, vm.BaseType:
+	case vm.BasicTypeNil, vm.BasicTypeBase:
 		fallthrough
 	default:
 		log.Fatalf("TODO")
@@ -160,7 +151,7 @@ func searchModule(name string) *Module {
 		if name == lastName {
 			return &Module{
 				compiler: requiredCompiler,
-				typ:      newTypeSpecifier(vm.ModuleType),
+				typ:      newTypeSpecifier(vm.BasicTypeModule),
 			}
 		}
 

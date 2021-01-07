@@ -12,11 +12,11 @@ func createCastExpression(castType CastType, expr Expression) Expression {
 
 	switch castType {
 	case IntToDoubleCast:
-		typ = newTypeSpecifier(vm.DoubleType)
+		typ = newTypeSpecifier(vm.BasicTypeFloat)
 	case DoubleToIntCast:
-		typ = newTypeSpecifier(vm.IntType)
+		typ = newTypeSpecifier(vm.BasicTypeInt)
 	case BooleanToStringCast, IntToStringCast, DoubleToStringCast:
-		typ = newTypeSpecifier(vm.StringType)
+		typ = newTypeSpecifier(vm.BasicTypeString)
 	}
 	castExpr.setType(typ)
 
@@ -33,19 +33,19 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 		return src
 	}
 
-	if isObject(destTye) && srcTye.basicType == vm.NullType {
+	if destTye.IsObject() && srcTye.basicType == vm.BasicTypeNil {
 		return src
 	}
 
-	if isInt(srcTye) && isDouble(destTye) {
+	if srcTye.IsInt() && destTye.IsFloat() {
 		castExpr = createCastExpression(IntToDoubleCast, src)
 		return castExpr
 
-	} else if isDouble(srcTye) && isInt(destTye) {
+	} else if srcTye.IsFloat() && destTye.IsInt() {
 		castExpr = createCastExpression(DoubleToIntCast, src)
 		return castExpr
 
-	} else if isString(destTye) {
+	} else if destTye.IsString() {
 		castExpr = createToStringCast(src)
 		if castExpr != nil {
 			return castExpr
@@ -59,11 +59,11 @@ func createAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 func createToStringCast(src Expression) Expression {
 	var cast Expression
 
-	if isBoolean(src.typeS()) {
+	if src.typeS().IsBool() {
 		cast = createCastExpression(BooleanToStringCast, src)
-	} else if isInt(src.typeS()) {
+	} else if src.typeS().IsInt() {
 		cast = createCastExpression(IntToStringCast, src)
-	} else if isDouble(src.typeS()) {
+	} else if src.typeS().IsFloat() {
 		cast = createCastExpression(DoubleToStringCast, src)
 	} else {
 		panic("TODO")
@@ -77,19 +77,19 @@ func castBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
 	leftType := binaryExpr.left.typeS()
 	rightType := binaryExpr.right.typeS()
 
-	if isInt(leftType) && isDouble(rightType) {
+	if leftType.IsInt() && rightType.IsFloat() {
 		binaryExpr.left = createCastExpression(IntToDoubleCast, binaryExpr.left)
 
-	} else if isDouble(leftType) && isInt(rightType) {
+	} else if leftType.IsFloat() && rightType.IsInt() {
 		binaryExpr.right = createCastExpression(IntToDoubleCast, binaryExpr.right)
 
-	} else if isString(leftType) && isBoolean(rightType) {
+	} else if leftType.IsString() && rightType.IsBool() {
 		binaryExpr.right = createCastExpression(BooleanToStringCast, binaryExpr.right)
 
-	} else if isString(leftType) && isInt(rightType) {
+	} else if leftType.IsString() && rightType.IsInt() {
 		binaryExpr.right = createCastExpression(IntToStringCast, binaryExpr.right)
 
-	} else if isString(leftType) && isDouble(rightType) {
+	} else if leftType.IsString() && rightType.IsFloat() {
 		binaryExpr.right = createCastExpression(DoubleToStringCast, binaryExpr.right)
 	}
 

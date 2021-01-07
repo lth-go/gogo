@@ -35,13 +35,13 @@ func initializeValue(typ *TypeSpecifier) Value {
 	}
 
 	switch typ.BasicType {
-	case VoidType, BooleanType, IntType:
+	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
 		value = &IntValue{intValue: 0}
-	case DoubleType:
+	case BasicTypeFloat:
 		value = &DoubleValue{doubleValue: 0.0}
-	case StringType:
+	case BasicTypeString:
 		value = vmNullObjectRef
-	case NullType, BaseType:
+	case BasicTypeNil, BasicTypeBase:
 		fallthrough
 	default:
 		panic("TODO")

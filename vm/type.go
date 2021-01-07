@@ -23,7 +23,7 @@ func (t *TypeSpecifier) isArrayDerive() bool {
 }
 
 func (t *TypeSpecifier) IsReferenceType() bool {
-	if t.BasicType == StringType || t.isArrayDerive() {
+	if t.BasicType == BasicTypeString || t.isArrayDerive() {
 		return true
 	}
 	return false

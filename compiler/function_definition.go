@@ -109,7 +109,7 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []
 		argumentList[i] = argumentList[i].fix(currentBlock)
 
 		paramType := parameterList[i].typeSpecifier
-		if paramType.basicType == vm.BaseType {
+		if paramType.basicType == vm.BasicTypeBase {
 			tempType = arrayBase
 		} else {
 			tempType = paramType

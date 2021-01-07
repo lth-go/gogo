@@ -81,12 +81,36 @@ func (t *TypeSpecifier) IsFunc() bool {
 	return t.funcType != nil
 }
 
-func (t *TypeSpecifier) isModule() bool {
-	return isModule(t)
-}
-
 func (t *TypeSpecifier) IsComposite() bool {
 	return t.IsArray() || t.IsFunc()
+}
+
+func (t *TypeSpecifier) IsVoid() bool {
+	return t.basicType == vm.BasicTypeVoid
+}
+
+func (t *TypeSpecifier) IsBool() bool {
+	return t.basicType == vm.BasicTypeBool
+}
+
+func (t *TypeSpecifier) IsInt() bool {
+	return t.basicType == vm.BasicTypeInt
+}
+
+func (t *TypeSpecifier) IsFloat() bool {
+	return t.basicType == vm.BasicTypeFloat
+}
+
+func (t *TypeSpecifier) IsString() bool {
+	return t.basicType == vm.BasicTypeString
+}
+
+func (t *TypeSpecifier) IsModule() bool {
+	return t.basicType == vm.BasicTypeModule
+}
+
+func (t *TypeSpecifier) IsObject() bool {
+	return t.IsString() || t.IsArray()
 }
 
 func (t *TypeSpecifier) GetTypeName() string {
@@ -105,15 +129,15 @@ func (t *TypeSpecifier) GetTypeName() string {
 
 func getBasicTypeName(typ vm.BasicType) string {
 	switch typ {
-	case vm.BooleanType:
+	case vm.BasicTypeBool:
 		return "bool"
-	case vm.IntType:
+	case vm.BasicTypeInt:
 		return "int"
-	case vm.DoubleType:
+	case vm.BasicTypeFloat:
 		return "float"
-	case vm.StringType:
+	case vm.BasicTypeString:
 		return "string"
-	case vm.NullType:
+	case vm.BasicTypeNil:
 		return "null"
 	default:
 		panic(fmt.Sprintf("bad case. type..%d\n", typ))
@@ -129,15 +153,15 @@ func cloneTypeSpecifier(src *TypeSpecifier) *TypeSpecifier {
 }
 
 func createTypeSpecifierAsName(name string, pos Position) *TypeSpecifier {
-	basicType := vm.NoType
+	basicType := vm.BasicTypeNoType
 
 	// TODO:
 	basicTypeMap := map[string]vm.BasicType{
-		"void":   vm.VoidType,
-		"bool":   vm.BooleanType,
-		"int":    vm.IntType,
-		"float":  vm.DoubleType,
-		"string": vm.StringType,
+		"void":   vm.BasicTypeVoid,
+		"bool":   vm.BasicTypeBool,
+		"int":    vm.BasicTypeInt,
+		"float":  vm.BasicTypeFloat,
+		"string": vm.BasicTypeString,
 	}
 
 	_, ok := basicTypeMap[name]

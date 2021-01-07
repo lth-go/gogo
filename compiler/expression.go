@@ -101,7 +101,7 @@ func (expr *BooleanExpression) show(indent int) {
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.BooleanType))
+	expr.setType(newTypeSpecifier(vm.BasicTypeBool))
 	expr.typeS().fix()
 	return expr
 }
@@ -137,7 +137,7 @@ func (expr *IntExpression) show(indent int) {
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.IntType))
+	expr.setType(newTypeSpecifier(vm.BasicTypeInt))
 	expr.typeS().fix()
 	return expr
 }
@@ -178,7 +178,7 @@ func (expr *DoubleExpression) show(indent int) {
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.DoubleType))
+	expr.setType(newTypeSpecifier(vm.BasicTypeFloat))
 	expr.typeS().fix()
 	return expr
 }
@@ -220,7 +220,7 @@ func (expr *StringExpression) show(indent int) {
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.StringType))
+	expr.setType(newTypeSpecifier(vm.BasicTypeString))
 	expr.typeS().fix()
 	return expr
 }
@@ -252,7 +252,7 @@ func (expr *NullExpression) show(indent int) {
 }
 
 func (expr *NullExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.NullType))
+	expr.setType(newTypeSpecifier(vm.BasicTypeNil))
 	expr.typeS().fix()
 	return expr
 }
@@ -424,8 +424,7 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		if (isNull(leftExpr) && !isNull(rightExpr)) ||
 			(!isNull(leftExpr) && isNull(rightExpr)) {
 			offset = byte(2)
-		} else if (operator == EqOperator || operator == NeOperator) &&
-			isString(leftExpr.typeS()) {
+		} else if (operator == EqOperator || operator == NeOperator) && leftExpr.typeS().IsString() {
 			offset = byte(3)
 		} else {
 			offset = getOpcodeTypeOffset(expr.left.typeS())
@@ -483,7 +482,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 
 	expr.operand = expr.operand.fix(currentBlock)
 
-	if !isInt(expr.operand.typeS()) && !isDouble(expr.operand.typeS()) {
+	if !expr.operand.typeS().IsInt() && !expr.operand.typeS().IsFloat() {
 		compileError(expr.Position(), MINUS_TYPE_MISMATCH_ERR, "")
 	}
 
@@ -538,10 +537,10 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	switch operand := expr.operand.(type) {
 	case *BooleanExpression:
 		operand.booleanValue = !operand.booleanValue
-		operand.setType(createTypeSpecifier(vm.BooleanType, expr.Position()))
+		operand.setType(createTypeSpecifier(vm.BasicTypeBool, expr.Position()))
 		newExpr = operand
 	default:
-		if !isBoolean(expr.operand.typeS()) {
+		if !expr.operand.typeS().IsBool() {
 			compileError(expr.Position(), LOGICAL_NOT_TYPE_MISMATCH_ERR, "")
 		}
 		expr.setType(expr.operand.typeS())
@@ -652,7 +651,7 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	typ := expr.expression.typeS()
 
 	switch {
-	case typ.isModule():
+	case typ.IsModule():
 		newExpr = fixModuleMemberExpression(expr, expr.memberName)
 	default:
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
@@ -802,7 +801,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 
 	expr.typeS().sliceType = nil
 
-	if !isInt(expr.index.typeS()) {
+	if !expr.index.typeS().IsInt() {
 		compileError(expr.Position(), INDEX_NOT_INT_ERR)
 	}
 

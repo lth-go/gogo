@@ -185,10 +185,10 @@ func (c *Compiler) fixTree() {
 
 	// add default function
 	fd := &FunctionDefinition{
-		typeSpecifier:     newTypeSpecifier(vm.VoidType),
+		typeSpecifier:     newTypeSpecifier(vm.BasicTypeVoid),
 		name:              "print",
 		packageNameList:   c.GetPackageNameList(),
-		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.StringType), name: "str"}},
+		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
 		block:             nil,
 		index:             len(c.funcList),
 		localVariableList: nil,

@@ -8,14 +8,15 @@ package vm
 type BasicType int
 
 const (
-	NoType BasicType = iota - 1
-	BooleanType
-	IntType
-	DoubleType
-	StringType
-	NullType
-	VoidType
-	BaseType
-	ModuleType
-	StructType
+	BasicTypeNoType BasicType = iota - 1
+	BasicTypeBool
+	BasicTypeInt
+	BasicTypeFloat
+	BasicTypeString
+	BasicTypeNil
+	BasicTypeVoid
+	BasicTypeBase
+	BasicTypeModule
+	BasicTypeSlice
+	BasicTypeStruct
 )

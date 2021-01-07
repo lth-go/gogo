@@ -60,7 +60,6 @@ func getBasicTypeName(typ vm.BasicType) string {
 }
 
 func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
-
 	if typ.IsComposite() {
 		return byte(2)
 	}

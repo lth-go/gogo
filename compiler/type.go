@@ -39,7 +39,7 @@ type TypeSpecifier struct {
 	PosImpl
 	name       string
 	basicType  vm.BasicType // 基本类型
-	deriveType interface{}   // 派生类型, TODO: remove
+	deriveType interface{}  // 派生类型, TODO: remove
 	sliceType  *SliceType
 	funcType   *FuncType
 }
@@ -95,7 +95,7 @@ func (t *TypeSpecifier) isModule() bool {
 }
 
 func (t *TypeSpecifier) IsComposite() bool {
-	return t.deriveType != nil
+	return t.IsArray() || t.IsFunc()
 }
 
 // utils

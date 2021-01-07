@@ -803,6 +803,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 	expr.setType(cloneTypeSpecifier(expr.array.typeS()))
 
 	expr.typeS().deriveType = nil
+	expr.typeS().sliceType = nil
 
 	if !isInt(expr.index.typeS()) {
 		compileError(expr.Position(), INDEX_NOT_INT_ERR)

@@ -1,14 +1,5 @@
 package vm
 
-type TypeDerive interface{}
-
-type FunctionDerive struct {
-	ParameterList []*LocalVariable
-}
-
-type ArrayDerive struct {
-}
-
 type SliceType struct {
 	Len         int64
 	ElementType *TypeSpecifier
@@ -16,12 +7,7 @@ type SliceType struct {
 
 type TypeSpecifier struct {
 	BasicType  BasicType
-	DeriveType TypeDerive // TODO: remove
 	SliceType  *SliceType
-}
-
-func (t *TypeSpecifier) SetDeriveType(derive TypeDerive) {
-	t.DeriveType = derive
 }
 
 func (t *TypeSpecifier) SetSliceType(typ *TypeSpecifier, length int64) {
@@ -32,12 +18,12 @@ func (t *TypeSpecifier) SetSliceType(typ *TypeSpecifier, length int64) {
 }
 
 func (t *TypeSpecifier) isArrayDerive() bool {
-	_, ok := t.DeriveType.(*ArrayDerive)
-	return ok
+	// TODO: 根据basicType判断
+	return t.SliceType != nil
 }
 
 func (t *TypeSpecifier) IsReferenceType() bool {
-	if ((t.BasicType == StringType) && t.DeriveType == nil) || (t.isArrayDerive()) {
+	if t.BasicType == StringType || t.isArrayDerive() {
 		return true
 	}
 	return false

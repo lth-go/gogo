@@ -663,6 +663,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	expr.setType(newTypeSpecifier(fd.typeS().basicType))
 
 	expr.typeSpecifier.deriveType = fd.typeS().deriveType
+	expr.typeSpecifier.sliceType = fd.typeS().sliceType
 
 	expr.typeS().fix()
 	return expr

@@ -26,22 +26,13 @@ func isInt(t *TypeSpecifier) bool     { return t.basicType == vm.IntType }
 func isDouble(t *TypeSpecifier) bool  { return t.basicType == vm.DoubleType }
 func isString(t *TypeSpecifier) bool  { return t.basicType == vm.StringType }
 func isModule(t *TypeSpecifier) bool  { return t.basicType == vm.ModuleType }
-func isObject(t *TypeSpecifier) bool  { return isString(t) || isArray(t) }
-func isArray(t *TypeSpecifier) bool {
-	if t.deriveType == nil {
-		return false
-	}
-	_, ok := t.deriveType.(*ArrayDerive)
-	return ok
-}
+func isObject(t *TypeSpecifier) bool  { return isString(t) || t.IsArray() }
 
 func getTypeName(typ *TypeSpecifier) string {
 	typeName := getBasicTypeName(typ.basicType)
 
-	switch typ.deriveType.(type) {
-	case *FunctionDerive:
-		panic("TODO:derive_tag, func")
-	case *ArrayDerive:
+	switch {
+	case typ.IsArray():
 		typeName = "[]" + typeName
 	default:
 		print("=====\n", typ.Position().Line)
@@ -70,12 +61,10 @@ func getBasicTypeName(typ vm.BasicType) string {
 
 func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 
-	if typ.deriveType != nil {
-		if !typ.isArrayDerive() {
-			panic("TODO")
-		}
+	if typ.IsComposite() {
 		return byte(2)
 	}
+
 	switch typ.basicType {
 	case vm.VoidType:
 		panic("basic type is void")
@@ -109,43 +98,22 @@ func compareType(typ1 *TypeSpecifier, typ2 *TypeSpecifier) bool {
 		return false
 	}
 
-	derive1 := typ1.deriveType
-	derive2 := typ2.deriveType
+	t1 := typ1.sliceType
+	t2 := typ2.sliceType
 
-	if derive1 == nil && derive2 == nil {
+	if t1 == nil && t2 == nil {
 		return true
 	}
 
-	if derive1 == nil && derive2 != nil {
+	if t1 == nil && t2 != nil {
 		return false
 	}
 
-	if derive1 != nil && derive2 == nil {
+	if t1 != nil && t2 == nil {
 		return false
 	}
 
-	switch d1 := derive1.(type) {
-	case *ArrayDerive:
-		switch derive2.(type) {
-		case *ArrayDerive:
-			// pass
-		default:
-			return false
-		}
-	case *FunctionDerive:
-		switch d2 := derive2.(type) {
-		case *FunctionDerive:
-			if !compareParameter(d1.parameterList, d2.parameterList) {
-				return false
-			}
-		default:
-			return false
-		}
-	default:
-		panic("TODO")
-	}
-
-	return true
+	return compareType(t1.ElementType, t2.ElementType)
 }
 
 func compareParameter(paramList1, paramList2 []*Parameter) bool {

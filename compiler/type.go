@@ -18,15 +18,20 @@ func NewSliceType(elementType *TypeSpecifier) *SliceType {
 	}
 }
 
+type FuncType struct {
+	Params  []*Parameter
+	Results []*Parameter
+}
+
+func NewFuncType(params []*Parameter) *FuncType {
+	return &FuncType{
+		Params: params,
+	}
+}
+
 //
 // derive
 //
-type TypeDerive interface{}
-
-type FunctionDerive struct {
-	parameterList []*Parameter
-}
-
 type ArrayDerive struct{}
 
 // TypeSpecifier 表达式类型
@@ -34,14 +39,14 @@ type TypeSpecifier struct {
 	PosImpl
 	name       string
 	basicType  vm.BasicType // 基本类型
-	deriveType TypeDerive   // 派生类型, TODO: remove
+	deriveType interface{}   // 派生类型, TODO: remove
 	sliceType  *SliceType
+	funcType   *FuncType
 }
 
 func (t *TypeSpecifier) fix() {
-	derive, ok := t.deriveType.(*FunctionDerive)
-	if ok {
-		for _, parameter := range derive.parameterList {
+	if t.funcType != nil {
+		for _, parameter := range t.funcType.Params {
 			parameter.typeSpecifier.fix()
 		}
 	}
@@ -72,11 +77,25 @@ func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 }
 
 func (t *TypeSpecifier) isArrayDerive() bool {
-	return isArray(t)
+	return t.IsArray()
+}
+
+func (t *TypeSpecifier) IsArray() bool {
+	// TODO: 根据basic判断
+	return t.sliceType != nil
+}
+
+func (t *TypeSpecifier) IsFunc() bool {
+	// TODO: 根据basic判断
+	return t.funcType != nil
 }
 
 func (t *TypeSpecifier) isModule() bool {
 	return isModule(t)
+}
+
+func (t *TypeSpecifier) IsComposite() bool {
+	return t.deriveType != nil
 }
 
 // utils

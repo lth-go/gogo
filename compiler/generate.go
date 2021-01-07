@@ -138,14 +138,8 @@ func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
 
 	dest.BasicType = src.basicType
 
-	switch realDerive := src.deriveType.(type) {
-	case *FunctionDerive:
-		newDerive := &vm.FunctionDerive{ParameterList: copyParameterList(realDerive.parameterList)}
-		dest.SetDeriveType(newDerive)
-	case *ArrayDerive:
-		dest.SetDeriveType(&vm.ArrayDerive{})
+	if src.IsArray() {
 		dest.SetSliceType(copyTypeSpecifier(src.sliceType.ElementType), src.sliceType.Len)
-	default:
 	}
 }
 

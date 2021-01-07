@@ -356,61 +356,6 @@ func createIdentifierExpression(name string, pos Position) *IdentifierExpression
 }
 
 // ==============================
-// AssignExpression
-// ==============================
-
-// AssignExpression 赋值表达式
-type AssignExpression struct {
-	ExpressionImpl
-	// 左值
-	left Expression
-	// 操作数
-	operand Expression
-}
-
-func (expr *AssignExpression) show(indent int) {
-	printWithIndent("AssignExpr", indent)
-
-	subIndent := indent + 2
-	expr.left.show(subIndent)
-	expr.operand.show(subIndent)
-}
-
-func (expr *AssignExpression) fix(currentBlock *Block) Expression {
-	switch expr.left.(type) {
-	case *IdentifierExpression, *IndexExpression, *MemberExpression:
-		// pass
-	default:
-		compileError(expr.left.Position(), NOT_LVALUE_ERR, "")
-	}
-
-	expr.left = expr.left.fix(currentBlock)
-
-	expr.operand = expr.operand.fix(currentBlock)
-	expr.operand = createAssignCast(expr.operand, expr.left.typeS())
-
-	expr.setType(expr.left.typeS())
-	expr.typeS().fix()
-
-	return expr
-}
-
-func (expr *AssignExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	expr.generateEx(exe, currentBlock, ob, false)
-}
-
-// 顶层
-func (expr *AssignExpression) generateEx(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf, isTopLevel bool) {
-	expr.operand.generate(exe, currentBlock, ob)
-
-	if !isTopLevel {
-		ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
-	}
-
-	generatePopToLvalue(exe, currentBlock, expr.left, ob)
-}
-
-// ==============================
 // BinaryExpression
 // ==============================
 

@@ -44,14 +44,8 @@ func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition
 
 func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	expr := stmt.expression
-	switch assignExpr := expr.(type) {
-	case *AssignExpression:
-		// TODO
-		assignExpr.generateEx(exe, currentBlock, ob, true)
-	default:
-		expr.generate(exe, currentBlock, ob)
-		ob.generateCode(expr.Position(), vm.VM_POP)
-	}
+	expr.generate(exe, currentBlock, ob)
+	ob.generateCode(expr.Position(), vm.VM_POP)
 }
 
 // ==============================

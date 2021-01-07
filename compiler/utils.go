@@ -42,7 +42,7 @@ func getTypeName(typ *TypeSpecifier) string {
 	case *FunctionDerive:
 		panic("TODO:derive_tag, func")
 	case *ArrayDerive:
-		typeName = typeName + "[]"
+		typeName = "[]" + typeName
 	default:
 		print("=====\n", typ.Position().Line)
 		panic("TODO:derive_tag")
@@ -54,11 +54,11 @@ func getTypeName(typ *TypeSpecifier) string {
 func getBasicTypeName(typ vm.BasicType) string {
 	switch typ {
 	case vm.BooleanType:
-		return "boolean"
+		return "bool"
 	case vm.IntType:
 		return "int"
 	case vm.DoubleType:
-		return "double"
+		return "float"
 	case vm.StringType:
 		return "string"
 	case vm.NullType:
@@ -74,7 +74,7 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 		if !typ.isArrayDerive() {
 			panic("TODO")
 		}
-		return 2
+		return byte(2)
 	}
 	switch typ.basicType {
 	case vm.VoidType:

@@ -726,7 +726,7 @@ func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *
 	ret := doReturn(vm, funcP, codeP, pcP, baseP, ee, exe)
 
 	vm.stack.stack[vm.stack.stackPointer] = returnValue
-	vm.stack.stack[vm.stack.stackPointer].setPointer(isReferenceType(calleeFunc.TypeSpecifier))
+	vm.stack.stack[vm.stack.stackPointer].setPointer(calleeFunc.TypeSpecifier.IsReferenceType())
 	vm.stack.stackPointer++
 
 	return ret

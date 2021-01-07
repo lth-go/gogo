@@ -799,6 +799,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 	expr.setType(newTypeSpecifier(elemType.basicType))
 
 	expr.typeS().deriveType = &ArrayDerive{}
+	expr.typeS().sliceType = NewSliceType(elemType)
 
 	expr.typeS().fix()
 
@@ -810,10 +811,7 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 		panic("TODO")
 	}
 
-	if expr.arrayLiteral == nil {
-		panic("TODO")
-	}
-
+	// TODO: 可以创建空
 	if len(expr.arrayLiteral) == 0 {
 		panic("TODO")
 	}

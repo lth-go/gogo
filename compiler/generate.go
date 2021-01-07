@@ -144,6 +144,7 @@ func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
 		dest.SetDeriveType(newDerive)
 	case *ArrayDerive:
 		dest.SetDeriveType(&vm.ArrayDerive{})
+		dest.SetSliceType(copyTypeSpecifier(src.sliceType.ElementType), src.sliceType.Len)
 	default:
 	}
 }

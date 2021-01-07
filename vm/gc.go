@@ -50,7 +50,7 @@ func (vm *VirtualMachine) markObjects() {
 
 	for _, ee := range vm.executableEntryList {
 		for i, variable := range ee.static.variableList {
-			if isReferenceType(ee.executable.GlobalVariableList[i].typeSpecifier) {
+			if ee.executable.GlobalVariableList[i].typeSpecifier.IsReferenceType() {
 				mark(variable.(*ObjectRef))
 			}
 		}
@@ -161,17 +161,6 @@ func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
 	ref := &ObjectRef{data: obj}
 
 	return ref
-}
-
-// utils
-
-// 判断是否是引用类型
-func isReferenceType(typ *TypeSpecifier) bool {
-	// 字符串, 类, 数组
-	if ((typ.BasicType == StringType) && typ.DeriveType == nil) || (typ.isArrayDerive()) {
-		return true
-	}
-	return false
 }
 
 // 连接字符对象

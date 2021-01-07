@@ -9,7 +9,13 @@ import (
 //
 type SliceType struct {
 	Len         int64
-	ElementType TypeSpecifier
+	ElementType *TypeSpecifier
+}
+
+func NewSliceType(elementType *TypeSpecifier) *SliceType {
+	return &SliceType{
+		ElementType: elementType,
+	}
 }
 
 //
@@ -58,8 +64,11 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 }
 
 func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
-	typ.deriveType = &ArrayDerive{}
-	return typ
+	// TODO: 基本类型应该是slice
+	newType := newTypeSpecifier(typ.basicType)
+	newType.deriveType = &ArrayDerive{}
+	newType.sliceType = NewSliceType(typ)
+	return newType
 }
 
 func (t *TypeSpecifier) isArrayDerive() bool {

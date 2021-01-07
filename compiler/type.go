@@ -39,7 +39,6 @@ type TypeSpecifier struct {
 	PosImpl
 	name       string
 	basicType  vm.BasicType // 基本类型
-	deriveType interface{}  // 派生类型, TODO: remove
 	sliceType  *SliceType
 	funcType   *FuncType
 }
@@ -71,7 +70,6 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 	// TODO: 基本类型应该是slice
 	newType := newTypeSpecifier(typ.basicType)
-	newType.deriveType = &ArrayDerive{}
 	newType.sliceType = NewSliceType(typ)
 	return newType
 }

@@ -607,7 +607,6 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(newTypeSpecifier(fd.typeS().basicType))
 
-	expr.typeSpecifier.deriveType = fd.typeS().deriveType
 	expr.typeSpecifier.sliceType = fd.typeS().sliceType
 
 	expr.typeS().fix()
@@ -744,7 +743,6 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(newTypeSpecifier(elemType.basicType))
 
-	expr.typeS().deriveType = &ArrayDerive{}
 	expr.typeS().sliceType = NewSliceType(elemType)
 
 	expr.typeS().fix()
@@ -802,7 +800,6 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 
 	expr.setType(cloneTypeSpecifier(expr.array.typeS()))
 
-	expr.typeS().deriveType = nil
 	expr.typeS().sliceType = nil
 
 	if !isInt(expr.index.typeS()) {

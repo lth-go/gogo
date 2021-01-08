@@ -43,28 +43,22 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 type CastType int
 
 const (
-	IntToStringCast CastType = iota
-	BooleanToStringCast
-	DoubleToStringCast
-	IntToDoubleCast
-	DoubleToIntCast
+	CastTypeIntToString CastType = iota
+	CastTypeBoolToString
+	CastTypeFloatToString
+	CastTypeIntToFloat
+	CastTypeFloatToInt
 )
 
 //
 // Expression interface
 //
 type Expression interface {
-	// Pos接口
 	Pos
-
-	// 用于类型修正,以及简单的类型转换
-	fix(*Block) Expression
-	// 生成字节码
-	generate(*vm.Executable, *Block, *OpCodeBuf)
-
+	fix(*Block) Expression                       // 用于类型修正,以及简单的类型转换
+	generate(*vm.Executable, *Block, *OpCodeBuf) // 生成字节码
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
-
 	show(indent int)
 }
 
@@ -293,7 +287,7 @@ func (expr *IdentifierExpression) show(indent int) {
 
 func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	// 判断是否是变量
-	declaration := searchDeclaration(expr.name, currentBlock)
+	declaration := currentBlock.searchDeclaration(expr.name)
 	if declaration != nil {
 		expr.setType(declaration.typeSpecifier)
 		expr.inner = declaration
@@ -697,15 +691,15 @@ func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob
 	expr.operand.generate(exe, currentBlock, ob)
 
 	switch expr.castType {
-	case IntToDoubleCast:
+	case CastTypeIntToFloat:
 		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_DOUBLE)
-	case DoubleToIntCast:
+	case CastTypeFloatToInt:
 		ob.generateCode(expr.Position(), vm.VM_CAST_DOUBLE_TO_INT)
-	case BooleanToStringCast:
+	case CastTypeBoolToString:
 		ob.generateCode(expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
-	case IntToStringCast:
+	case CastTypeIntToString:
 		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_STRING)
-	case DoubleToStringCast:
+	case CastTypeFloatToString:
 		ob.generateCode(expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
 	default:
 		panic("TODO")
@@ -737,7 +731,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 
 	for i := 1; i < len(expr.arrayLiteral); i++ {
 		expr.arrayLiteral[i] = expr.arrayLiteral[i].fix(currentBlock)
-		expr.arrayLiteral[i] = createAssignCast(expr.arrayLiteral[i], elemType)
+		expr.arrayLiteral[i] = CreateAssignCast(expr.arrayLiteral[i], elemType)
 	}
 
 	expr.setType(newTypeSpecifier(elemType.basicType))

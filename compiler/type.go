@@ -59,7 +59,7 @@ func newTypeSpecifier(basicType vm.BasicType) *TypeSpecifier {
 // create
 //
 func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
-	typ := &TypeSpecifier{basicType: basicType}
+	typ := newTypeSpecifier(basicType)
 	typ.SetPosition(pos)
 	return typ
 }

@@ -18,5 +18,7 @@ const (
 	BasicTypeBase
 	BasicTypeModule
 	BasicTypeSlice
+	BasicTypeMap
 	BasicTypeStruct
+	BasicTypeFunc
 )

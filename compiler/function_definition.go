@@ -51,7 +51,7 @@ func (fd *FunctionDefinition) typeS() *TypeSpecifier {
 func (fd *FunctionDefinition) addParameterAsDeclaration() {
 
 	for _, param := range fd.parameterList {
-		if searchDeclaration(param.name, fd.block) != nil {
+		if fd.block.searchDeclaration(param.name) != nil {
 			compileError(param.typeSpecifier.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, param.name)
 		}
 		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
@@ -112,7 +112,7 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []
 		} else {
 			tempType = paramType
 		}
-		argumentList[i] = createAssignCast(argumentList[i], tempType)
+		argumentList[i] = CreateAssignCast(argumentList[i], tempType)
 	}
 }
 

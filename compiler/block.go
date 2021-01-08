@@ -43,7 +43,7 @@ func (b *Block) show(indent int) {
 }
 
 func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition, pos Position) {
-	if searchDeclaration(declaration.name, b) != nil {
+	if b.searchDeclaration(declaration.name) != nil {
 		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, declaration.name)
 	}
 
@@ -62,7 +62,6 @@ func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition,
 }
 
 func (b *Block) getCurrentFunction() *FunctionDefinition {
-
 	for block := b; block != nil; block = block.outerBlock {
 		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)
 		if ok {
@@ -70,5 +69,26 @@ func (b *Block) getCurrentFunction() *FunctionDefinition {
 		}
 
 	}
+	return nil
+}
+
+func (b *Block) searchDeclaration(name string) *Declaration {
+	// 从局部作用域查找
+	for block := b; block != nil; block = block.outerBlock {
+		for _, declaration := range block.declarationList {
+			if declaration.name == name {
+				return declaration
+			}
+		}
+	}
+
+	// 从全局作用域查找
+	compiler := getCurrentCompiler()
+	for _, declaration := range compiler.declarationList {
+		if declaration.name == name {
+			return declaration
+		}
+	}
+
 	return nil
 }

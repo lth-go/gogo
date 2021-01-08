@@ -90,8 +90,9 @@ func (c *Compiler) addLexerByPath(path string) {
 // 函数定义
 //
 func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
+	var dummyBlock *Block
 	// 定义重复
-	if searchFunction(identifier) != nil || searchDeclaration(identifier, nil) != nil {
+	if searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
 		compileError(typ.Position(), FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
 	}
 
@@ -344,6 +345,21 @@ func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 	return nil
 }
 
+func (c *Compiler) searchModule(name string) *Module {
+	for _, requiredCompiler := range c.importedList {
+		// 暂无处理重名
+		lastName := requiredCompiler.packageNameList[len(requiredCompiler.packageNameList)-1]
+		if name == lastName {
+			return &Module{
+				compiler: requiredCompiler,
+				typ:      newTypeSpecifier(vm.BasicTypeModule),
+			}
+		}
+
+	}
+	return nil
+}
+
 // ==============================
 // 编译文件
 // ==============================
@@ -381,4 +397,41 @@ func (c *Compiler) Compile() *vm.ExecutableList {
 
 func (c *Compiler) GetPackageNameList() []string {
 	return strings.Split(c.packageName, "/")
+}
+
+func searchCompiler(list []*Compiler, packageName []string) *Compiler {
+	for _, c := range list {
+		if comparePackageName(c.packageNameList, packageName) {
+			return c
+		}
+	}
+	return nil
+}
+
+func comparePackageName(packageNameList1, packageNameList2 []string) bool {
+	if packageNameList1 == nil {
+		if packageNameList2 == nil {
+			return true
+		}
+		return false
+	}
+
+	length1 := len(packageNameList1)
+	length2 := len(packageNameList2)
+
+	if length1 != length2 {
+		return false
+	}
+
+	for i := 0; i < length1; i++ {
+		if packageNameList1[i] != packageNameList2[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func searchModule(name string) *Module {
+	return getCurrentCompiler().searchModule(name)
 }

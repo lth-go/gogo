@@ -289,7 +289,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		stmt.returnValue = stmt.returnValue.fix(currentBlock)
 
 		// 类型转换
-		stmt.returnValue = createAssignCast(stmt.returnValue, fdType)
+		stmt.returnValue = CreateAssignCast(stmt.returnValue, fdType)
 
 		return
 	}
@@ -425,7 +425,7 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	// 类型转换
 	if stmt.initializer != nil {
 		stmt.initializer = stmt.initializer.fix(currentBlock)
-		stmt.initializer = createAssignCast(stmt.initializer, stmt.typeSpecifier)
+		stmt.initializer = CreateAssignCast(stmt.initializer, stmt.typeSpecifier)
 	}
 }
 
@@ -482,7 +482,7 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		leftExpr.fix(currentBlock)
 		rightExpr.fix(currentBlock)
 
-		stmt.right[i] = createAssignCast(stmt.right[i], leftExpr.typeS())
+		stmt.right[i] = CreateAssignCast(stmt.right[i], leftExpr.typeS())
 	}
 }
 

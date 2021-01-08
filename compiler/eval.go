@@ -8,7 +8,6 @@ import (
 
 func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expression {
 	switch leftExpr := binaryExpr.left.(type) {
-
 	case *IntExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 
@@ -20,7 +19,6 @@ func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expre
 			newExpr := evalMathExpressionDouble(binaryExpr, float64(leftExpr.intValue), rightExpr.doubleValue)
 			return newExpr
 		}
-
 	case *DoubleExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 
@@ -32,7 +30,6 @@ func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expre
 			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
 			return newExpr
 		}
-
 	case *StringExpression:
 		if binaryExpr.operator == AddOperator {
 			newExpr := chainBinaryExpressionString(binaryExpr)
@@ -93,7 +90,6 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 }
 
 func chainBinaryExpressionString(binaryExpr *BinaryExpression) Expression {
-
 	rightStr := expressionToString(binaryExpr.right)
 	if rightStr == "" {
 		return binaryExpr
@@ -287,7 +283,7 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	}
 
 	// 类型转换
-	newBinaryExpr := castBinaryExpression(expr)
+	newBinaryExpr := CastBinaryExpression(expr)
 
 	newBinaryExprLeftType := newBinaryExpr.left.typeS()
 	newBinaryExprRightType := newBinaryExpr.right.typeS()
@@ -304,7 +300,11 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 			newBinaryExpr.setType(newTypeSpecifier(vm.BasicTypeString))
 		}
 	} else {
-		compileError(expr.Position(), MATH_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(newBinaryExprLeftType.basicType), int(newBinaryExprRightType.basicType))
+		compileError(
+			expr.Position(),
+			MATH_TYPE_MISMATCH_ERR,
+			"Left: %d, Right: %d\n", newBinaryExprLeftType.basicType, newBinaryExprRightType.basicType,
+		)
 	}
 
 	return newBinaryExpr
@@ -320,7 +320,7 @@ func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 		return newExpr
 	}
 
-	newBinaryExpr := castBinaryExpression(expr)
+	newBinaryExpr := CastBinaryExpression(expr)
 
 	newBinaryExprLeftType := newBinaryExpr.left.typeS()
 	newBinaryExprRightType := newBinaryExpr.right.typeS()
@@ -348,6 +348,10 @@ func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 		return expr
 	}
 
-	compileError(expr.Position(), LOGICAL_TYPE_MISMATCH_ERR, "Left: %d, Right: %d\n", int(expr.left.typeS().basicType), int(expr.right.typeS().basicType))
+	compileError(
+		expr.Position(),
+		LOGICAL_TYPE_MISMATCH_ERR,
+		"Left: %d, Right: %d\n", expr.left.typeS().basicType, expr.right.typeS().basicType,
+	)
 	return nil
 }

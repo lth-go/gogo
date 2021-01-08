@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"encoding/binary"
+	"log"
 
 	"github.com/lth-go/gogogogo/vm"
 )
@@ -205,4 +206,35 @@ func generatePushArgument(argList []Expression, exe *vm.Executable, currentBlock
 	for _, arg := range argList {
 		arg.generate(exe, currentBlock, ob)
 	}
+}
+
+func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
+	if typ.IsComposite() {
+		return byte(2)
+	}
+
+	switch {
+	case typ.IsVoid():
+		panic("basic type is void")
+	case typ.IsBool(), typ.IsInt():
+		return byte(0)
+	case typ.IsFloat():
+		return byte(1)
+	case typ.IsString():
+		return byte(2)
+	case typ.IsNil(), typ.IsBase():
+		fallthrough
+	default:
+		log.Fatalf("TODO")
+	}
+
+	return byte(0)
+}
+
+func get2ByteInt(b []byte) int {
+	return int(binary.BigEndian.Uint16(b))
+}
+
+func set2ByteInt(b []byte, value int) {
+	binary.BigEndian.PutUint16(b, uint16(value))
 }

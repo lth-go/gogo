@@ -601,11 +601,11 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	expr.setType(CopyType(fd.typeS()))
 
 	// TODO: 兼容代码, 待移除
-	// if len(fd.typeSpecifier.funcType.Results) == 0 {
-	//     fd.typeSpecifier.basicType = vm.BasicTypeVoid
-	// } else {
-	//     fd.typeSpecifier.basicType = fd.typeSpecifier.funcType.Results[0].typeSpecifier.basicType
-	// }
+	if len(fd.typeSpecifier.funcType.Results) == 0 {
+		expr.typeS().basicType = vm.BasicTypeVoid
+	} else {
+		expr.typeS().basicType = fd.typeSpecifier.funcType.Results[0].typeSpecifier.basicType
+	}
 
 	expr.typeS().fix()
 	return expr

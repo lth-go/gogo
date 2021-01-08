@@ -278,7 +278,14 @@ func (stmt *ReturnStatement) show(indent int) {
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
-	fdType := fd.typeS()
+	// TODO: use first result type
+	var fdType *TypeSpecifier
+
+	if len(fd.typeS().funcType.Results) == 0 {
+		fdType = newTypeSpecifier(vm.BasicTypeVoid)
+	} else {
+		fdType = fd.typeS().funcType.Results[0].typeSpecifier
+	}
 
 	// 如果没有返回值,添加之
 	if stmt.returnValue != nil {
@@ -295,7 +302,6 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	// return value == nil
-
 	// 衍生类型
 	if fdType.IsComposite() {
 		stmt.returnValue = createNullExpression(stmt.Position())

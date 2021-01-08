@@ -10,7 +10,7 @@ func CreateAssignCast(src Expression, destTye *TypeSpecifier) Expression {
 
 	srcTye := src.typeS()
 
-	if compareType(src.typeS(), destTye) {
+	if compareType(srcTye, destTye) {
 		return src
 	}
 
@@ -91,6 +91,6 @@ func createToStringCast(src Expression) Expression {
 
 func castMismatchError(pos Position, src, dest *TypeSpecifier) {
 	srcName := src.GetTypeName()
-	destName := src.GetTypeName()
+	destName := dest.GetTypeName()
 	compileError(pos, CAST_MISMATCH_ERR, srcName, destName)
 }

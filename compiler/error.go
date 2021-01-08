@@ -9,7 +9,9 @@ func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误:")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	errMsg := fmt.Sprintf(errMessageMap[errorNumber], a...)
-	log.Fatalf("%d\n%s", errorNumber, errMsg)
+	msg := fmt.Sprintf("%d\n%s", errorNumber, errMsg)
+	panic(msg)
+	log.Fatalf(msg)
 }
 
 const (

@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lth-go/gogo/vm"
 )
@@ -147,9 +148,23 @@ func (t *TypeSpecifier) GetTypeName() string {
 	switch {
 	case t.IsArray():
 		typeName = "[]" + typeName
-	default:
-		print("=====\n", t.Position().Line)
-		panic("TODO:derive_tag")
+	case t.IsFunc():
+		paramTypeNameList := []string{}
+		resultTypeNameList := []string{}
+
+		for _, p := range t.funcType.Params {
+			paramTypeNameList = append(paramTypeNameList, p.typeSpecifier.GetTypeName())
+		}
+
+		for _, p := range t.funcType.Results {
+			resultTypeNameList = append(resultTypeNameList, p.typeSpecifier.GetTypeName())
+		}
+
+		typeName = fmt.Sprintf(
+			"func(%s) (%s)",
+			strings.Join(paramTypeNameList, ", "),
+			strings.Join(resultTypeNameList, ", "),
+		)
 	}
 
 	return typeName
@@ -167,6 +182,8 @@ func getBasicTypeName(typ vm.BasicType) string {
 		return "string"
 	case vm.BasicTypeNil:
 		return "null"
+	case vm.BasicTypeFunc:
+		return "func"
 	default:
 		panic(fmt.Sprintf("bad case. type..%d\n", typ))
 	}

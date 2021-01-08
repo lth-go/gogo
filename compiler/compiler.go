@@ -106,13 +106,6 @@ func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier 
 		localVariableList: nil,
 	}
 
-	// TODO: 兼容代码, 待移除
-	if len(fd.typeSpecifier.funcType.Results) == 0 {
-		fd.typeSpecifier.basicType = vm.BasicTypeVoid
-	} else {
-		fd.typeSpecifier.basicType = fd.typeSpecifier.funcType.Results[0].typeSpecifier.basicType
-	}
-
 	if block != nil {
 		block.parent = &FunctionBlockInfo{function: fd}
 	}
@@ -193,7 +186,7 @@ func (c *Compiler) fixTree() {
 
 	// add default function
 	fd := &FunctionDefinition{
-		typeSpecifier:     newTypeSpecifier(vm.BasicTypeVoid),
+		typeSpecifier:     newTypeSpecifier(vm.BasicTypeFunc),
 		name:              "print",
 		packageNameList:   c.GetPackageNameList(),
 		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
@@ -201,6 +194,8 @@ func (c *Compiler) fixTree() {
 		index:             len(c.funcList),
 		localVariableList: nil,
 	}
+	fd.typeSpecifier.funcType = &FuncType{Params: []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString)}}}
+
 	c.funcList = append(c.funcList, fd)
 
 	// add function

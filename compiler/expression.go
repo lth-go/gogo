@@ -300,7 +300,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	if fd != nil {
 		compiler := getCurrentCompiler()
 
-		expr.setType(createFunctionDeriveType(fd))
+		expr.setType(createFuncType(fd))
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
 			functionIndex:      compiler.addToVmFunctionList(fd),
@@ -599,6 +599,13 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	fd.checkArgument(currentBlock, expr.argumentList, arrayBase)
 
 	expr.setType(CopyType(fd.typeS()))
+
+	// TODO: 兼容代码, 待移除
+	// if len(fd.typeSpecifier.funcType.Results) == 0 {
+	//     fd.typeSpecifier.basicType = vm.BasicTypeVoid
+	// } else {
+	//     fd.typeSpecifier.basicType = fd.typeSpecifier.funcType.Results[0].typeSpecifier.basicType
+	// }
 
 	expr.typeS().fix()
 	return expr

@@ -61,10 +61,12 @@ import (
 %type <statement_list> statement_list
 /* TODO: 临时处理 */
 %type <parameter> receiver_or_nil
-%type <parameter_list> parameter_list parameter_list_or_nil
+%type <parameter_list> parameter_list parameters
+    result_or_nil result
+    type_list_or_nil type_list
 %type <block> block block_or_nil
 %type <else_if> else_if
-%type <type_specifier> type_specifier composite_type array_type_specifier
+%type <type_specifier> type_specifier composite_type array_type_specifier func_type_specifier signature
 
 %%
 
@@ -113,6 +115,13 @@ array_type_specifier
             $$.SetPosition($1.Position())
         }
         ;
+func_type_specifier
+        : FUNC signature
+        {
+            $$ = $2
+            $$.SetPosition($1.Position())
+        }
+        ;
 type_specifier
         : IDENTIFIER
         {
@@ -126,12 +135,13 @@ type_specifier
         ;
 composite_type
         : array_type_specifier
+        /* | func_type_specifier */
         ;
 function_definition
-        : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block_or_nil SEMICOLON
+        : FUNC receiver_or_nil IDENTIFIER signature block_or_nil SEMICOLON
         {
             l := yylex.(*Lexer)
-            l.compiler.functionDefine($7, $3.Lit, $5, $8)
+            l.compiler.functionDefine($1.Position(), $2, $3.Lit, $4, $5)
         }
         ;
 receiver_or_nil
@@ -144,13 +154,6 @@ receiver_or_nil
             $$ = &Parameter{typeSpecifier: $3, name: $2.Lit}
         }
         ;
-parameter_list_or_nil
-        :
-        {
-            $$ = []*Parameter{}
-        }
-        | parameter_list
-        ;
 parameter_list
         : IDENTIFIER type_specifier
         {
@@ -162,6 +165,16 @@ parameter_list
             $$ = append($1, &Parameter{typeSpecifier: $4, name: $3.Lit})
         }
         ;
+parameters
+        : LP RP
+        {
+            $$ = []*Parameter{}
+        }
+        | LP parameter_list RP
+        {
+            $$ = $2
+        }
+        ;
 argument_list
         : expression
         {
@@ -170,6 +183,46 @@ argument_list
         | argument_list COMMA expression
         {
             $$ = append($1, $3)
+        }
+        ;
+signature
+        : parameters result_or_nil
+        {
+            $$ = createFuncTypeSpecifier($1, $2)
+        }
+        ;
+result_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | result
+        ;
+result
+        : type_specifier
+        {
+            $$ = []*Parameter{&Parameter{typeSpecifier: $1}}
+        }
+        | LP type_list_or_nil RP
+        {
+            $$ = $2
+        }
+        ;
+type_list_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | type_list
+        ;
+type_list
+        : type_specifier
+        {
+            $$ = []*Parameter{&Parameter{typeSpecifier: $1}}
+        }
+        | type_list COMMA type_specifier
+        {
+            $$ = append($1, &Parameter{typeSpecifier: $3})
         }
         ;
 statement_list

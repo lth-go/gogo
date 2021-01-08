@@ -25,9 +25,10 @@ type FuncType struct {
 	Results []*Parameter
 }
 
-func NewFuncType(params []*Parameter) *FuncType {
+func NewFuncType(params []*Parameter, results []*Parameter) *FuncType {
 	return &FuncType{
-		Params: params,
+		Params:  params,
+		Results: results,
 	}
 }
 
@@ -75,9 +76,16 @@ func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 	return newType
 }
 
-func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
+func createFuncTypeSpecifier(params []*Parameter, results []*Parameter) *TypeSpecifier {
+	newType := newTypeSpecifier(vm.BasicTypeFunc)
+	newType.funcType = NewFuncType(params, results)
+	return newType
+}
+
+// TODO: 改名
+func createFuncType(fd *FunctionDefinition) *TypeSpecifier {
 	typ := CopyType(fd.typeSpecifier)
-	typ.funcType = NewFuncType(fd.parameterList)
+	typ.funcType = NewFuncType(fd.parameterList, nil)
 
 	return typ
 }

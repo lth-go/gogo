@@ -89,21 +89,28 @@ func (c *Compiler) addLexerByPath(path string) {
 //
 // 函数定义
 //
-func (c *Compiler) functionDefine(typ *TypeSpecifier, identifier string, parameterList []*Parameter, block *Block) {
+func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
 	var dummyBlock *Block
 	// 定义重复
 	if searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
-		compileError(typ.Position(), FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
+		compileError(pos, FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
 	}
 
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
 		name:              identifier,
 		packageNameList:   c.GetPackageNameList(),
-		parameterList:     parameterList,
+		parameterList:     typ.funcType.Params,
 		block:             block,
 		index:             len(c.funcList),
 		localVariableList: nil,
+	}
+
+	// TODO: 兼容代码, 待移除
+	if len(fd.typeSpecifier.funcType.Results) == 0 {
+		fd.typeSpecifier.basicType = vm.BasicTypeVoid
+	} else {
+		fd.typeSpecifier.basicType = fd.typeSpecifier.funcType.Results[0].typeSpecifier.basicType
 	}
 
 	if block != nil {

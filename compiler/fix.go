@@ -32,7 +32,7 @@ func fixModuleMemberExpression(expr *MemberExpression, memberName string) Expres
 		},
 	}
 
-	newExpr.setType(createFunctionDeriveType(fd))
+	newExpr.setType(createFuncType(fd))
 	newExpr.typeS().fix()
 
 	return newExpr

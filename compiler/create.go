@@ -1,6 +1,6 @@
 package compiler
 
-const defaultPackage = "gogogogo.lang"
+const defaultPackage = "gogo.lang"
 
 func setImportList(importList []*ImportSpec) {
 

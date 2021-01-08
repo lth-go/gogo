@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	importSuffix = ".4g"
+	importSuffix = ".gogo"
 )
 
 type ImportSpec struct {

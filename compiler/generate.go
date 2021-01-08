@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"log"
 
-	"github.com/lth-go/gogogogo/vm"
+	"github.com/lth-go/gogo/vm"
 )
 
 type OpCodeBuf struct {

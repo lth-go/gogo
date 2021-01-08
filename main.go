@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/lth-go/gogogogo/compiler"
-	"github.com/lth-go/gogogogo/vm"
+	"github.com/lth-go/gogo/compiler"
+	"github.com/lth-go/gogo/vm"
 )
 
 func main() {

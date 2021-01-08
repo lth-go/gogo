@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/lth-go/gogogogo/vm"
+	"github.com/lth-go/gogo/vm"
 )
 
 // 全局compiler列表

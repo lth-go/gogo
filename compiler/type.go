@@ -3,7 +3,7 @@ package compiler
 import (
 	"fmt"
 
-	"github.com/lth-go/gogogogo/vm"
+	"github.com/lth-go/gogo/vm"
 )
 
 //

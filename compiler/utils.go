@@ -19,7 +19,7 @@ func isNull(expr Expression) bool {
 // compare
 //
 func compareType(typ1 *TypeSpecifier, typ2 *TypeSpecifier) bool {
-	if typ1.basicType != typ2.basicType {
+	if typ1.GetBasicType() != typ2.GetBasicType() {
 		return false
 	}
 

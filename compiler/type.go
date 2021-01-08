@@ -48,6 +48,10 @@ func (t *TypeSpecifier) fix() {
 	}
 }
 
+func (t *TypeSpecifier) GetBasicType() vm.BasicType {
+	return t.basicType
+}
+
 // TODO: 临时使用
 func newTypeSpecifier(basicType vm.BasicType) *TypeSpecifier {
 	return &TypeSpecifier{
@@ -71,6 +75,13 @@ func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 	return newType
 }
 
+func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
+	typ := CopyType(fd.typeSpecifier)
+	typ.funcType = NewFuncType(fd.parameterList)
+
+	return typ
+}
+
 func (t *TypeSpecifier) IsArray() bool {
 	// TODO: 根据basic判断
 	return t.sliceType != nil
@@ -86,27 +97,27 @@ func (t *TypeSpecifier) IsComposite() bool {
 }
 
 func (t *TypeSpecifier) IsVoid() bool {
-	return t.basicType == vm.BasicTypeVoid
+	return t.GetBasicType() == vm.BasicTypeVoid
 }
 
 func (t *TypeSpecifier) IsBool() bool {
-	return t.basicType == vm.BasicTypeBool
+	return t.GetBasicType() == vm.BasicTypeBool
 }
 
 func (t *TypeSpecifier) IsInt() bool {
-	return t.basicType == vm.BasicTypeInt
+	return t.GetBasicType() == vm.BasicTypeInt
 }
 
 func (t *TypeSpecifier) IsFloat() bool {
-	return t.basicType == vm.BasicTypeFloat
+	return t.GetBasicType() == vm.BasicTypeFloat
 }
 
 func (t *TypeSpecifier) IsString() bool {
-	return t.basicType == vm.BasicTypeString
+	return t.GetBasicType() == vm.BasicTypeString
 }
 
 func (t *TypeSpecifier) IsModule() bool {
-	return t.basicType == vm.BasicTypeModule
+	return t.GetBasicType() == vm.BasicTypeModule
 }
 
 func (t *TypeSpecifier) IsObject() bool {
@@ -114,16 +125,16 @@ func (t *TypeSpecifier) IsObject() bool {
 }
 
 func (t *TypeSpecifier) IsNil() bool {
-	return t.basicType == vm.BasicTypeNil
+	return t.GetBasicType() == vm.BasicTypeNil
 }
 
 // TODO:
 func (t *TypeSpecifier) IsBase() bool {
-	return t.basicType == vm.BasicTypeBase
+	return t.GetBasicType() == vm.BasicTypeBase
 }
 
 func (t *TypeSpecifier) GetTypeName() string {
-	typeName := getBasicTypeName(t.basicType)
+	typeName := getBasicTypeName(t.GetBasicType())
 
 	switch {
 	case t.IsArray():
@@ -179,4 +190,17 @@ func createTypeSpecifierAsName(name string, pos Position) *TypeSpecifier {
 	}
 
 	return createTypeSpecifier(basicType, pos)
+}
+
+func CopyType(srcType *TypeSpecifier) *TypeSpecifier {
+	if srcType == nil {
+		return nil
+	}
+
+	destType := newTypeSpecifier(vm.BasicTypeNoType)
+
+	// TODO: 深拷贝
+	*destType = *srcType
+
+	return destType
 }

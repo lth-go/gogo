@@ -15,14 +15,3 @@ func setImportList(importList []*ImportSpec) {
 
 	compiler.importList = importList
 }
-
-func createFunctionDeriveType(fd *FunctionDefinition) *TypeSpecifier {
-
-	ret := newTypeSpecifier(fd.typeSpecifier.basicType)
-
-	*ret = *(fd.typeSpecifier)
-
-	ret.funcType = NewFuncType(fd.parameterList)
-
-	return ret
-}

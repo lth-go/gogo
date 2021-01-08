@@ -598,9 +598,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	fd.checkArgument(currentBlock, expr.argumentList, arrayBase)
 
-	expr.setType(newTypeSpecifier(fd.typeS().basicType))
-
-	expr.typeSpecifier.sliceType = fd.typeS().sliceType
+	expr.setType(CopyType(fd.typeS()))
 
 	expr.typeS().fix()
 	return expr

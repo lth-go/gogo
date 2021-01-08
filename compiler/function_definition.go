@@ -17,17 +17,14 @@ type Parameter struct {
 // FunctionDefinition 函数定义
 //
 type FunctionDefinition struct {
-	typeSpecifier *TypeSpecifier
-
-	packageNameList []string
-	name            string
-
-	parameterList []*Parameter
-	block         *Block
-
+	typeSpecifier     *TypeSpecifier
+	packageNameList   []string
+	name              string
+	receiver          *Parameter
+	parameterList     []*Parameter
+	block             *Block
 	localVariableList []*Declaration
-
-	index int
+	index             int
 }
 
 func (fd *FunctionDefinition) fix() {

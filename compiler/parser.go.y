@@ -62,7 +62,7 @@ import (
 /* TODO: 临时处理 */
 %type <parameter> receiver_or_nil
 %type <parameter_list> parameter_list parameter_list_or_nil
-%type <block> block
+%type <block> block block_or_nil
 %type <else_if> else_if
 %type <type_specifier> type_specifier composite_type array_type_specifier
 
@@ -128,15 +128,10 @@ composite_type
         : array_type_specifier
         ;
 function_definition
-        : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block SEMICOLON
+        : FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier block_or_nil SEMICOLON
         {
             l := yylex.(*Lexer)
             l.compiler.functionDefine($7, $3.Lit, $5, $8)
-        }
-        | FUNC receiver_or_nil IDENTIFIER LP parameter_list_or_nil RP type_specifier SEMICOLON
-        {
-            l := yylex.(*Lexer)
-            l.compiler.functionDefine($7, $3.Lit, $5, nil)
         }
         ;
 receiver_or_nil
@@ -501,5 +496,12 @@ block
             l := yylex.(*Lexer)
             $<block>$ = &Block{outerBlock: l.compiler.currentBlock}
         }
+        ;
+block_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | block
         ;
 %%

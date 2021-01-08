@@ -136,7 +136,7 @@ func generateStatementList(exe *vm.Executable, currentBlock *Block, statementLis
 // COPY
 //
 func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
-	dest.BasicType = src.basicType
+	dest.BasicType = src.GetBasicType()
 	if src.IsArray() {
 		dest.SetSliceType(copyTypeSpecifier(src.sliceType.ElementType), src.sliceType.Len)
 	}

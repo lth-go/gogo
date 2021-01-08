@@ -303,7 +303,7 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 		compileError(
 			expr.Position(),
 			MATH_TYPE_MISMATCH_ERR,
-			"Left: %d, Right: %d\n", newBinaryExprLeftType.basicType, newBinaryExprRightType.basicType,
+			"Left: %d, Right: %d\n", newBinaryExprLeftType.GetBasicType(), newBinaryExprRightType.GetBasicType(),
 		)
 	}
 
@@ -351,7 +351,7 @@ func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	compileError(
 		expr.Position(),
 		LOGICAL_TYPE_MISMATCH_ERR,
-		"Left: %d, Right: %d\n", expr.left.typeS().basicType, expr.right.typeS().basicType,
+		"Left: %d, Right: %d\n", expr.left.typeS().GetBasicType(), expr.right.typeS().GetBasicType(),
 	)
 	return nil
 }

@@ -66,7 +66,7 @@ func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
 
 func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 	// TODO: 基本类型应该是slice
-	newType := newTypeSpecifier(typ.basicType)
+	newType := newTypeSpecifier(vm.BasicTypeSlice)
 	newType.sliceType = NewSliceType(typ)
 	return newType
 }

@@ -8,7 +8,8 @@ import (
 func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误:")
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
-	log.Fatalf("%d\n%s", errorNumber, errMessageMap[errorNumber])
+	errMsg := fmt.Sprintf(errMessageMap[errorNumber], a...)
+	log.Fatalf("%d\n%s", errorNumber, errMsg)
 }
 
 const (
@@ -118,7 +119,7 @@ var errMessageMap map[int]string = map[int]string{
 	IDENTIFIER_NOT_FOUND_ERR:                 "找不到变量或函数$(name)。",
 	FUNCTION_IDENTIFIER_ERR:                  "$(name)是函数名，但没有函数调用的()。",
 	DERIVE_TYPE_CAST_ERR:                     "不能强制转型为派生类型。",
-	CAST_MISMATCH_ERR:                        "不能将$(src)转型为$(dest)。",
+	CAST_MISMATCH_ERR:                        "不能将%+v转型为%v。",
 	MATH_TYPE_MISMATCH_ERR:                   "算数运算符的操作数类型不正确。",
 	COMPARE_TYPE_MISMATCH_ERR:                "比较运算符的操作数类型不正确。",
 	LOGICAL_TYPE_MISMATCH_ERR:                "逻辑and/or运算符的操作数类型不正确。",

@@ -734,7 +734,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 		expr.arrayLiteral[i] = CreateAssignCast(expr.arrayLiteral[i], elemType)
 	}
 
-	expr.setType(newTypeSpecifier(elemType.basicType))
+	expr.setType(newTypeSpecifier(vm.BasicTypeSlice))
 
 	expr.typeS().sliceType = NewSliceType(elemType)
 
@@ -791,8 +791,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
 	}
 
-	expr.setType(cloneTypeSpecifier(expr.array.typeS()))
-
+	expr.setType(cloneTypeSpecifier(expr.array.typeS().sliceType.ElementType))
 	expr.typeS().sliceType = nil
 
 	if !expr.index.typeS().IsInt() {

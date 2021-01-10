@@ -30,7 +30,6 @@ func (v *ValueImpl) setPointer(b bool) {
 //
 type CallInfo struct {
 	ValueImpl
-
 	// 调用的函数
 	caller *GFunction
 	// 保存执行函数前的pc
@@ -103,7 +102,6 @@ func (obj *ObjectImpl) setMark(m bool) {
 //
 type ObjectString struct {
 	ObjectImpl
-
 	stringValue string
 }
 
@@ -129,13 +127,11 @@ func (array *ObjectArrayInt) getArraySize() int {
 
 func (array *ObjectArrayInt) getInt(index int) int {
 	checkArray(array, index)
-
 	return array.intArray[index]
 }
 
 func (array *ObjectArrayInt) setInt(index int, value int) {
 	checkArray(array, index)
-
 	array.intArray[index] = value
 }
 
@@ -178,19 +174,16 @@ func (obj *ObjectArrayObject) getArraySize() int {
 
 func (obj *ObjectArrayObject) getObject(index int) *ObjectRef {
 	checkArray(obj, index)
-
 	return obj.objectArray[index]
 }
 
 func (obj *ObjectArrayObject) setObject(index int, value *ObjectRef) {
 	checkArray(obj, index)
-
 	obj.objectArray[index] = value
 }
 
 // utils
 func checkArray(array ObjectArray, index int) {
-
 	if array == nil {
 		vmError(NULL_POINTER_ERR)
 		return

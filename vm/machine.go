@@ -20,7 +20,7 @@ type VirtualMachine struct {
 	pc int
 
 	// 当前函数
-	currentFunction *GFunction
+	// currentFunction *GFunction
 	// 全局函数列表
 	functionList []ExecFunction
 
@@ -41,7 +41,6 @@ func NewVirtualMachine() *VirtualMachine {
 		currentExecutable: nil,
 	}
 	setVirtualMachine(vm)
-
 	vm.AddNativeFunctions()
 
 	return vm
@@ -71,7 +70,6 @@ func (vm *VirtualMachine) SetExecutableList(exeList *ExecutableList) {
 
 // 添加单个exe到vm
 func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
-
 	vm.executableList = append(vm.executableList, exe)
 	vm.addFunctions(exe)
 	vm.convertCode(exe, exe.CodeList, nil)
@@ -88,42 +86,28 @@ func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 }
 
 func (vm *VirtualMachine) addFunctions(exe *Executable) {
+	// check func name
 	for _, exeFunc := range exe.FunctionList {
-		for _, vmFunc := range vm.functionList {
-			// TODO 实现默认函数后去除
-			if !exeFunc.IsImplemented {
-				continue
-			}
-			if vmFunc.getName() == exeFunc.Name && vmFunc.getPackageName() == exeFunc.PackageName {
-				vmError(FUNCTION_MULTIPLE_DEFINE_ERR, vmFunc.getPackageName(), vmFunc.getName())
-			}
+		// TODO 实现默认函数后去除
+		if !exeFunc.IsNative {
+			continue
+		}
+		if vm.searchFunction(exeFunc.PackageName, exeFunc.Name) != functionNotFound {
+			vmError(FUNCTION_MULTIPLE_DEFINE_ERR, exeFunc.PackageName, exeFunc.Name)
 		}
 	}
 
-	destIdx := len(vm.functionList)
-
+	// add exe func to vm func
 	for srcIdx, exeFunc := range exe.FunctionList {
-		vmFunc := &GFunction{}
+		vmFunc := &GFunction{
+			PackageName: exeFunc.PackageName,
+			Name:        exeFunc.Name,
+			Executable:  exe,
+			Index:       srcIdx,
+		}
 
 		vm.functionList = append(vm.functionList, vmFunc)
-
-		vmFunc.PackageName = exeFunc.PackageName
-		vmFunc.Name = exeFunc.Name
-
-		vm.functionList[destIdx].(*GFunction).Executable = exe
-		vm.functionList[destIdx].(*GFunction).Index = srcIdx
-
-		destIdx++
 	}
-}
-
-func searchFunction(vm *VirtualMachine, packageName, name string) int {
-	for i, function := range vm.functionList {
-		if function.getPackageName() == packageName && function.getName() == name {
-			return i
-		}
-	}
-	return functionNotFound
 }
 
 //
@@ -131,7 +115,7 @@ func searchFunction(vm *VirtualMachine, packageName, name string) int {
 //
 func (vm *VirtualMachine) Execute() {
 	vm.currentExecutable = vm.topLevel
-	vm.currentFunction = nil
+	// vm.currentFunction = nil
 	vm.pc = 0
 
 	vm.stack.expand(vm.topLevel.CodeList)
@@ -508,10 +492,10 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			switch f := vm.functionList[funcIdx].(type) {
 			case *NativeFunction:
 				vm.restorePc(exe, gFunc, pc)
-				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
+				vm.InvokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GFunction:
-				vm.invokeGFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &exe)
+				vm.InvokeFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &exe)
 			default:
 				panic("TODO")
 			}
@@ -642,7 +626,7 @@ func (vm *VirtualMachine) searchFunction(packageName, name string) int {
 // 函数相关
 //
 // 执行原生函数
-func (vm *VirtualMachine) invokeNativeFunction(f *NativeFunction, spP *int) {
+func (vm *VirtualMachine) InvokeNativeFunction(f *NativeFunction, spP *int) {
 
 	stack := vm.stack.stack
 	sp := *spP
@@ -650,12 +634,11 @@ func (vm *VirtualMachine) invokeNativeFunction(f *NativeFunction, spP *int) {
 	ret := f.proc(vm, f.argCount, stack[sp-f.argCount-1:])
 
 	stack[sp-f.argCount-1] = ret
-
 	*spP = sp - f.argCount
 }
 
 // 函数执行
-func (vm *VirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
+func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
 	// caller 调用者, 当前所属的函数调用域
 
 	// callee 要调用的函数的基本信息
@@ -772,6 +755,6 @@ func (vm *VirtualMachine) createArrayLiteralObject(size int) *ObjectRef {
 
 func (vm *VirtualMachine) restorePc(ee *Executable, function *GFunction, pc int) {
 	vm.currentExecutable = ee
-	vm.currentFunction = function
+	// vm.currentFunction = function
 	vm.pc = pc
 }

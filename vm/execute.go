@@ -10,10 +10,8 @@ import (
 type Executable struct {
 	// 包名
 	PackageName string
-
 	// 是否是被导入的
-	IsRequired bool
-
+	IsImported bool
 	// 源码路径
 	Path string
 
@@ -82,7 +80,7 @@ func NewExecutableList() *ExecutableList {
 
 func (exeList *ExecutableList) AddExe(exe *Executable) bool {
 	for _, itemExe := range exeList.List {
-		if itemExe.PackageName == exe.PackageName && itemExe.IsRequired == exe.IsRequired {
+		if itemExe.PackageName == exe.PackageName && itemExe.IsImported == exe.IsImported {
 			return false
 		}
 	}
@@ -172,27 +170,27 @@ func (vl *VariableList) Init() {
 }
 
 func (vl *VariableList) getInt(index int) int {
-	return vl.VariableList[index].value.(*IntValue).intValue
+	return vl.VariableList[index].Value.(*IntValue).intValue
 }
 
 func (vl *VariableList) getDouble(index int) float64 {
-	return vl.VariableList[index].value.(*DoubleValue).doubleValue
+	return vl.VariableList[index].Value.(*DoubleValue).doubleValue
 }
 
 func (vl *VariableList) getObject(index int) *ObjectRef {
-	return vl.VariableList[index].value.(*ObjectRef)
+	return vl.VariableList[index].Value.(*ObjectRef)
 }
 
 func (vl *VariableList) setInt(index int, value int) {
-	vl.VariableList[index].value.(*IntValue).intValue = value
+	vl.VariableList[index].Value.(*IntValue).intValue = value
 }
 
 func (vl *VariableList) setDouble(index int, value float64) {
-	vl.VariableList[index].value.(*DoubleValue).doubleValue = value
+	vl.VariableList[index].Value.(*DoubleValue).doubleValue = value
 }
 
 func (vl *VariableList) setObject(index int, value *ObjectRef) {
-	vl.VariableList[index].value = value
+	vl.VariableList[index].Value = value
 }
 
 func NewVmVariableList() *VariableList {
@@ -202,19 +200,23 @@ func NewVmVariableList() *VariableList {
 }
 
 type Variable struct {
-	name          string
-	typeSpecifier *TypeSpecifier
-	value         Value
+	Name          string
+	TypeSpecifier *TypeSpecifier
+	Value         Value
 }
 
 func (v *Variable) Init() {
-	v.value = initializeValue(v.typeSpecifier)
+	v.Value = initializeValue(v.TypeSpecifier)
+}
+
+func (v *Variable) IsReferenceType() bool {
+	return v.TypeSpecifier.IsReferenceType()
 }
 
 func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {
 	return &Variable{
-		name:          name,
-		typeSpecifier: typeSpecifier,
+		Name:          name,
+		TypeSpecifier: typeSpecifier,
 	}
 }
 
@@ -228,23 +230,18 @@ type Function struct {
 	PackageName string
 	// 函数名
 	Name string
-	// 形参列表
-	ParameterList []*LocalVariable
 	// 是否原生函数
-	IsImplemented bool
+	IsNative bool
 	// 是否是方法
 	IsMethod bool
+	// 形参列表
+	ParameterList []*Variable
 	// 局部变量列表
-	LocalVariableList []*LocalVariable
+	LocalVariableList []*Variable
 	// 字节码类表
 	CodeList []byte
 	// 行号对应表
 	LineNumberList []*LineNumber
-}
-
-type LocalVariable struct {
-	Name          string
-	TypeSpecifier *TypeSpecifier
 }
 
 func (f *Function) ShowCode() {
@@ -268,16 +265,14 @@ func (f *Function) ShowCode() {
 	}
 }
 
-// ==============================
+//
 // 行号对应表
-// ==============================
+//
 type LineNumber struct {
 	// 源代码行号
 	LineNumber int
-
 	// 字节码开始的位置
 	StartPc int
-
 	// 接下来有多少字节码对应相同的行号
 	PcCount int
 }

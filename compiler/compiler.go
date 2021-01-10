@@ -156,7 +156,7 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 	exe := c.generate()
 
 	exe.Path = c.path
-	exe.IsRequired = isRequired
+	exe.IsImported = isRequired
 
 	exeList = append(exeList, exe)
 
@@ -298,12 +298,12 @@ func addFunction(exe *vm.Executable, src *FunctionDefinition, dest *vm.Function,
 	if src.block != nil && inThisExe {
 		generateStatementList(exe, src.block, src.block.statementList, ob)
 
-		dest.IsImplemented = true
+		dest.IsNative = true
 		dest.CodeList = ob.fixOpcodeBuf()
 		dest.LineNumberList = ob.lineNumberList
 		dest.LocalVariableList = copyLocalVariables(src)
 	} else {
-		dest.IsImplemented = false
+		dest.IsNative = false
 		dest.LocalVariableList = nil
 	}
 

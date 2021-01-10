@@ -2,10 +2,6 @@ package vm
 
 var HeapThresholdSize = 1024 * 256
 
-//////////////////////////////
-// 垃圾回收
-//////////////////////////////
-
 //
 // 判断是否下需要gc
 //
@@ -50,8 +46,8 @@ func (vm *VirtualMachine) markObjects() {
 
 	for _, exe := range vm.executableList {
 		for _, variable := range exe.VariableList.VariableList {
-			if variable.typeSpecifier.IsReferenceType() {
-				mark(variable.value.(*ObjectRef))
+			if variable.IsReferenceType() {
+				mark(variable.Value.(*ObjectRef))
 			}
 		}
 	}
@@ -104,9 +100,9 @@ func (vm *VirtualMachine) garbageCollect() {
 	vm.sweepObjects()
 }
 
-//////////////////////////////
+//
 // 创建对象
-//////////////////////////////
+//
 
 //
 // 添加对象到堆, 用于垃圾回收
@@ -116,8 +112,6 @@ func (vm *VirtualMachine) addObject(value Object) {
 	value.setMark(false)
 	vm.heap.append(value)
 }
-
-//////////////////////////////
 
 //
 // string object

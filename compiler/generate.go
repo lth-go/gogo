@@ -149,11 +149,11 @@ func copyTypeSpecifier(src *TypeSpecifier) *vm.TypeSpecifier {
 	return dest
 }
 
-func copyParameterList(src []*Parameter) []*vm.LocalVariable {
-	dest := []*vm.LocalVariable{}
+func copyParameterList(src []*Parameter) []*vm.Variable {
+	dest := []*vm.Variable{}
 
 	for _, param := range src {
-		v := &vm.LocalVariable{
+		v := &vm.Variable{
 			Name:          param.name,
 			TypeSpecifier: copyTypeSpecifier(param.typeSpecifier),
 		}
@@ -162,14 +162,14 @@ func copyParameterList(src []*Parameter) []*vm.LocalVariable {
 	return dest
 }
 
-func copyLocalVariables(fd *FunctionDefinition) []*vm.LocalVariable {
+func copyLocalVariables(fd *FunctionDefinition) []*vm.Variable {
 	// TODO 形参占用位置
-	var dest = []*vm.LocalVariable{}
+	var dest = []*vm.Variable{}
 
 	localVariableCount := len(fd.localVariableList) - len(fd.parameterList)
 
 	for _, v := range fd.localVariableList[0:localVariableCount] {
-		vmV := &vm.LocalVariable{
+		vmV := &vm.Variable{
 			Name:          v.name,
 			TypeSpecifier: copyTypeSpecifier(v.typeSpecifier),
 		}

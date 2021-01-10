@@ -22,6 +22,7 @@ func intToBool(i int) bool {
 func get2ByteInt(b []byte) int {
 	return int(binary.BigEndian.Uint16(b))
 }
+
 func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
@@ -51,9 +52,7 @@ func initializeValue(typ *TypeSpecifier) Value {
 }
 
 func createMethodFunctionName(className, methodName string) string {
-
 	ret := fmt.Sprintf("%s#%s", className, methodName)
-
 	return ret
 }
 

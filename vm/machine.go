@@ -95,7 +95,7 @@ func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 
 func addStaticVariables(entry *ExecutableEntry, exe *Executable) {
 	entry.static = NewStatic()
-	for _, value := range exe.GlobalVariableList {
+	for _, value := range exe.VariableList.VariableList {
 		entry.static.append(initializeValue(value.typeSpecifier))
 	}
 }

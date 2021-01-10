@@ -500,9 +500,7 @@ func (stmt *AssignStatement) generate(exe *vm.Executable, currentBlock *Block, o
 		rightExpr := stmt.right[i]
 
 		rightExpr.generate(exe, currentBlock, ob)
-
 		ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
-
 		generatePopToLvalue(exe, currentBlock, leftExpr, ob)
 	}
 }

@@ -19,8 +19,8 @@ type Executable struct {
 
 	// 常量池
 	ConstantPool ConstantPool
-	// 全局变量 仅保存名称和类型
-	GlobalVariableList []*Variable
+	// 全局变量
+	VariableList *VariableList
 	// 函数列表
 	FunctionList []*Function
 
@@ -32,11 +32,11 @@ type Executable struct {
 
 func NewExecutable() *Executable {
 	exe := &Executable{
-		ConstantPool:        NewConstantPool(),
-		GlobalVariableList:  []*Variable{},
-		FunctionList:        []*Function{},
-		CodeList:            []byte{},
-		LineNumberList:      []*LineNumber{},
+		ConstantPool:   NewConstantPool(),
+		VariableList:   NewVmVariableList(),
+		FunctionList:   []*Function{},
+		CodeList:       []byte{},
+		LineNumberList: []*LineNumber{},
 	}
 
 	return exe
@@ -73,8 +73,7 @@ func (exe *Executable) AddConstantPool(cp Constant) int {
 //
 type ExecutableEntry struct {
 	executable *Executable
-
-	static *Static
+	static     *Static
 }
 
 //
@@ -166,6 +165,18 @@ func (c *ConstantString) getString() string {
 // ==============================
 // 全局变量
 // ==============================
+type VariableList struct {
+	Static       // TODO: remove
+	VariableList []*Variable
+}
+
+func NewVmVariableList() *VariableList {
+	return &VariableList{
+		Static:       *NewStatic(),
+		VariableList: []*Variable{},
+	}
+}
+
 type Variable struct {
 	name          string
 	typeSpecifier *TypeSpecifier

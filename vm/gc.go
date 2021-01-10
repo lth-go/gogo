@@ -50,7 +50,7 @@ func (vm *VirtualMachine) markObjects() {
 
 	for _, ee := range vm.executableEntryList {
 		for i, variable := range ee.static.variableList {
-			if ee.executable.GlobalVariableList[i].typeSpecifier.IsReferenceType() {
+			if ee.executable.VariableList.VariableList[i].typeSpecifier.IsReferenceType() {
 				mark(variable.(*ObjectRef))
 			}
 		}

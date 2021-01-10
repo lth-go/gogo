@@ -136,7 +136,6 @@ func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-
 	if expr.intValue >= 0 && expr.intValue < 256 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
 	} else if expr.intValue >= 0 && expr.intValue < 65536 {

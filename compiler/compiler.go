@@ -263,7 +263,7 @@ func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
 	for _, dl := range c.declarationList {
 
 		newValue := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
-		exe.GlobalVariableList = append(exe.GlobalVariableList, newValue)
+		exe.VariableList.VariableList = append(exe.VariableList.VariableList, newValue)
 	}
 }
 

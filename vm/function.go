@@ -25,7 +25,7 @@ type GFunction struct {
 	Name        string
 	PackageName string
 
-	Executable *ExecutableEntry
+	Executable *Executable
 	Index      int
 }
 

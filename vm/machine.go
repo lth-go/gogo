@@ -18,7 +18,7 @@ type VirtualMachine struct {
 	heap *Heap
 
 	// 当前exe
-	currentExecutable *ExecutableEntry
+	currentExecutable *Executable
 	// 当前函数
 	currentFunction *GFunction
 
@@ -29,10 +29,10 @@ type VirtualMachine struct {
 	functionList []ExecFunction
 
 	// exe列表
-	executableEntryList []*ExecutableEntry
+	executableEntryList []*Executable
 
 	// 顶层exe
-	topLevel *ExecutableEntry
+	topLevel *Executable
 }
 
 func NewVirtualMachine() *VirtualMachine {
@@ -74,7 +74,7 @@ func (vm *VirtualMachine) SetExecutableList(exeList *ExecutableList) {
 // 添加单个exe到vm
 func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 
-	newEntry := &ExecutableEntry{executable: exe}
+	newEntry := exe
 
 	vm.executableEntryList = append(vm.executableEntryList, newEntry)
 
@@ -93,14 +93,14 @@ func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 	}
 }
 
-func addStaticVariables(entry *ExecutableEntry, exe *Executable) {
+func addStaticVariables(entry *Executable, exe *Executable) {
 	for _, value := range exe.VariableList.VariableList {
-		entry.executable.VariableList.Static.append(initializeValue(value.typeSpecifier))
+		entry.VariableList.Static.append(initializeValue(value.typeSpecifier))
 	}
 }
 
-func (vm *VirtualMachine) addFunctions(ee *ExecutableEntry) {
-	exe := ee.executable
+func (vm *VirtualMachine) addFunctions(ee *Executable) {
+	exe := ee
 
 	for _, exeFunc := range exe.FunctionList {
 		for _, vmFunc := range vm.functionList {
@@ -149,9 +149,9 @@ func (vm *VirtualMachine) Execute() {
 	vm.currentFunction = nil
 	vm.pc = 0
 
-	vm.stack.expand(vm.topLevel.executable.CodeList)
+	vm.stack.expand(vm.topLevel.CodeList)
 
-	vm.execute(nil, vm.topLevel.executable.CodeList)
+	vm.execute(nil, vm.topLevel.CodeList)
 }
 
 func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
@@ -160,11 +160,10 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 
 	stack := vm.stack
 
-	ee := vm.currentExecutable
-	exe := vm.currentExecutable.executable
+	exe := vm.currentExecutable
 
 	for pc := vm.pc; pc < len(codeList); {
-		static := ee.executable.VariableList.Static
+		static := exe.VariableList.Static
 
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:
@@ -267,7 +266,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array := stack.getArrayInt(-2)
 			index := stack.getInt(-1)
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			intValue := array.getInt(index)
 
 			stack.setInt(-2, intValue)
@@ -277,7 +276,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array := stack.getArrayDouble(-2)
 			index := stack.getInt(-1)
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			doubleValue := array.getDouble(index)
 
 			stack.setDouble(-2, doubleValue)
@@ -287,7 +286,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array := stack.getArrayObject(-2)
 			index := stack.getInt(-1)
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			object := array.getObject(index)
 
 			stack.setObject(-2, object)
@@ -298,7 +297,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array := stack.getArrayInt(-2)
 			index := stack.getInt(-1)
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			array.setInt(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -307,7 +306,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array := stack.getArrayDouble(-2)
 			index := stack.getInt(-1)
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			array.setDouble(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -316,7 +315,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			array := stack.getArrayObject(-2)
 			index := stack.getInt(-1)
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			array.setObject(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -380,13 +379,13 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			pc++
 		case VM_CAST_INT_TO_STRING:
 			// TODO 啥意思
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			buf := fmt.Sprintf("%d", stack.getInt(-1))
 			stack.setObject(-1, vm.createStringObject(buf))
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
 			// TODO 啥意思
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			buf := fmt.Sprintf("%f", stack.getDouble(-1))
 			stack.setObject(-1, vm.createStringObject(buf))
 			pc++
@@ -523,16 +522,16 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			funcIdx := stack.getInt(-1)
 			switch f := vm.functionList[funcIdx].(type) {
 			case *NativeFunction:
-				vm.restorePc(ee, gFunc, pc)
+				vm.restorePc(exe, gFunc, pc)
 				vm.invokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GFunction:
-				vm.invokeGFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &ee, &exe)
+				vm.invokeGFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &exe)
 			default:
 				panic("TODO")
 			}
 		case VM_RETURN:
-			if vm.returnFunction(&gFunc, &codeList, &pc, &base, &ee, &exe) {
+			if vm.returnFunction(&gFunc, &codeList, &pc, &base, &exe) {
 				ret = stack.stack[stack.stackPointer-1]
 				// TODO goto
 				return ret
@@ -540,7 +539,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 		case VM_NEW_ARRAY_LITERAL_INT:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			array := vm.createArrayLiteralInt(size)
 			vm.stack.stackPointer -= size
 			stack.setObject(0, array)
@@ -549,7 +548,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 		case VM_NEW_ARRAY_LITERAL_DOUBLE:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			array := vm.createArrayLiteralDouble(size)
 			vm.stack.stackPointer -= size
 			stack.setObject(0, array)
@@ -558,7 +557,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 		case VM_NEW_ARRAY_LITERAL_OBJECT:
 			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restorePc(ee, gFunc, pc)
+			vm.restorePc(exe, gFunc, pc)
 			array := vm.createArrayLiteralObject(size)
 			vm.stack.stackPointer -= size
 			stack.setObject(0, array)
@@ -671,13 +670,11 @@ func (vm *VirtualMachine) invokeNativeFunction(f *NativeFunction, spP *int) {
 }
 
 // 函数执行
-func (vm *VirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, ee **ExecutableEntry, exe **Executable) {
+func (vm *VirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
 	// caller 调用者, 当前所属的函数调用域
 
 	// callee 要调用的函数的基本信息
-
-	*ee = callee.Executable
-	*exe = (*ee).executable
+	*exe = callee.Executable
 
 	// 包含调用函数的全部信息
 	calleeP := (*exe).FunctionList[callee.Index]
@@ -715,14 +712,14 @@ func (vm *VirtualMachine) invokeGFunction(caller **GFunction, callee *GFunction,
 	*codeP = calleeP.CodeList
 }
 
-func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, ee **ExecutableEntry, exe **Executable) bool {
+func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, exe **Executable) bool {
 
 	returnValue := vm.stack.stack[vm.stack.stackPointer-1]
 	vm.stack.stackPointer--
 
 	calleeFunc := (*exe).FunctionList[(*funcP).Index]
 
-	ret := doReturn(vm, funcP, codeP, pcP, baseP, ee, exe)
+	ret := doReturn(vm, funcP, codeP, pcP, baseP, exe)
 
 	vm.stack.stack[vm.stack.stackPointer] = returnValue
 	vm.stack.stack[vm.stack.stackPointer].setPointer(calleeFunc.TypeSpecifier.IsReferenceType())
@@ -731,7 +728,7 @@ func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *
 	return ret
 }
 
-func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, eeP **ExecutableEntry, exeP **Executable) bool {
+func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
 
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
 
@@ -742,14 +739,12 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 	callInfo := vm.stack.stack[*baseP+argCount].(*CallInfo)
 
 	if callInfo.caller != nil {
-		*eeP = callInfo.caller.Executable
-		*exeP = (*eeP).executable
+		*exeP = callInfo.caller.Executable
 		callerP := (*exeP).FunctionList[callInfo.caller.Index]
 		*codeP = callerP.CodeList
 	} else {
-		*eeP = vm.topLevel
-		*exeP = vm.topLevel.executable
-		*codeP = vm.topLevel.executable.CodeList
+		*exeP = vm.topLevel
+		*codeP = vm.topLevel.CodeList
 	}
 	*funcP = callInfo.caller
 
@@ -790,7 +785,7 @@ func (vm *VirtualMachine) createArrayLiteralObject(size int) *ObjectRef {
 }
 
 // TODO 待研究
-func (vm *VirtualMachine) restorePc(ee *ExecutableEntry, function *GFunction, pc int) {
+func (vm *VirtualMachine) restorePc(ee *Executable, function *GFunction, pc int) {
 	vm.currentExecutable = ee
 	vm.currentFunction = function
 	vm.pc = pc

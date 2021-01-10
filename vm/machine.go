@@ -94,9 +94,8 @@ func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 }
 
 func addStaticVariables(entry *ExecutableEntry, exe *Executable) {
-	entry.static = NewStatic()
 	for _, value := range exe.VariableList.VariableList {
-		entry.static.append(initializeValue(value.typeSpecifier))
+		entry.executable.VariableList.Static.append(initializeValue(value.typeSpecifier))
 	}
 }
 
@@ -165,7 +164,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 	exe := vm.currentExecutable.executable
 
 	for pc := vm.pc; pc < len(codeList); {
-		static := ee.static
+		static := ee.executable.VariableList.Static
 
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:

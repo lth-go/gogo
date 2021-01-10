@@ -49,7 +49,7 @@ func (vm *VirtualMachine) markObjects() {
 	}
 
 	for _, ee := range vm.executableEntryList {
-		for i, variable := range ee.static.variableList {
+		for i, variable := range ee.executable.VariableList.Static.variableList {
 			if ee.executable.VariableList.VariableList[i].typeSpecifier.IsReferenceType() {
 				mark(variable.(*ObjectRef))
 			}

@@ -73,7 +73,6 @@ func (exe *Executable) AddConstantPool(cp Constant) int {
 //
 type ExecutableEntry struct {
 	executable *Executable
-	static     *Static
 }
 
 //
@@ -166,13 +165,13 @@ func (c *ConstantString) getString() string {
 // 全局变量
 // ==============================
 type VariableList struct {
-	Static       // TODO: remove
+	Static *Static       // TODO: remove
 	VariableList []*Variable
 }
 
 func NewVmVariableList() *VariableList {
 	return &VariableList{
-		Static:       *NewStatic(),
+		Static:       NewStatic(),
 		VariableList: []*Variable{},
 	}
 }

@@ -69,13 +69,6 @@ func (exe *Executable) AddConstantPool(cp Constant) int {
 }
 
 //
-// ExecutableEntry
-//
-type ExecutableEntry struct {
-	executable *Executable
-}
-
-//
 // ExecutableList
 //
 type ExecutableList struct {
@@ -161,17 +154,49 @@ func (c *ConstantString) getString() string {
 	return c.stringValue
 }
 
-// ==============================
+//
 // 全局变量
-// ==============================
+//
 type VariableList struct {
-	Static *Static       // TODO: remove
 	VariableList []*Variable
+}
+
+func (vl *VariableList) Append(v *Variable) {
+	vl.VariableList = append(vl.VariableList, v)
+}
+
+func (vl *VariableList) Init() {
+	for _, value := range vl.VariableList {
+		value.Init()
+	}
+}
+
+func (vl *VariableList) getInt(index int) int {
+	return vl.VariableList[index].value.(*IntValue).intValue
+}
+
+func (vl *VariableList) getDouble(index int) float64 {
+	return vl.VariableList[index].value.(*DoubleValue).doubleValue
+}
+
+func (vl *VariableList) getObject(index int) *ObjectRef {
+	return vl.VariableList[index].value.(*ObjectRef)
+}
+
+func (vl *VariableList) setInt(index int, value int) {
+	vl.VariableList[index].value.(*IntValue).intValue = value
+}
+
+func (vl *VariableList) setDouble(index int, value float64) {
+	vl.VariableList[index].value.(*DoubleValue).doubleValue = value
+}
+
+func (vl *VariableList) setObject(index int, value *ObjectRef) {
+	vl.VariableList[index].value = value
 }
 
 func NewVmVariableList() *VariableList {
 	return &VariableList{
-		Static:       NewStatic(),
 		VariableList: []*Variable{},
 	}
 }
@@ -179,6 +204,11 @@ func NewVmVariableList() *VariableList {
 type Variable struct {
 	name          string
 	typeSpecifier *TypeSpecifier
+	value         Value
+}
+
+func (v *Variable) Init() {
+	v.value = initializeValue(v.typeSpecifier)
 }
 
 func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {

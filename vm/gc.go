@@ -48,10 +48,10 @@ func (vm *VirtualMachine) markObjects() {
 		resetMark(obj)
 	}
 
-	for _, ee := range vm.executableEntryList {
-		for i, variable := range ee.VariableList.Static.variableList {
-			if ee.VariableList.VariableList[i].typeSpecifier.IsReferenceType() {
-				mark(variable.(*ObjectRef))
+	for _, exe := range vm.executableList {
+		for _, variable := range exe.VariableList.VariableList {
+			if variable.typeSpecifier.IsReferenceType() {
+				mark(variable.value.(*ObjectRef))
 			}
 		}
 	}

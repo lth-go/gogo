@@ -273,9 +273,7 @@ type FunctionIdentifier struct {
 // IdentifierExpression 变量表达式
 type IdentifierExpression struct {
 	ExpressionImpl
-
 	name string
-
 	// 声明要么是变量，要么是函数, 要么是包(FunctionIdentifier Declaration Module)
 	inner IdentifierInner
 }
@@ -557,7 +555,6 @@ func (expr *LogicalNotExpression) generate(exe *vm.Executable, currentBlock *Blo
 // FunctionCallExpression 函数调用表达式
 type FunctionCallExpression struct {
 	ExpressionImpl
-
 	// 函数名
 	function Expression
 	// 实参列表
@@ -612,9 +609,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
 	generatePushArgument(expr.argumentList, exe, currentBlock, ob)
-
 	expr.function.generate(exe, currentBlock, ob)
-
 	ob.generateCode(expr.Position(), vm.VM_INVOKE)
 }
 

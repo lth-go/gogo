@@ -41,7 +41,7 @@ import (
     IDENTIFIER
     EXCLAMATION DOT
     IMPORT VAR FUNC
-    TYPE STRUCT
+    TYPE STRUCT MAP
 
 %type <import_spec> import_declaration
 %type <import_spec_list> import_declaration_list
@@ -66,7 +66,7 @@ import (
     type_list_or_nil type_list
 %type <block> block block_or_nil
 %type <else_if> else_if
-%type <type_specifier> type_specifier composite_type array_type_specifier func_type_specifier signature
+%type <type_specifier> type_specifier composite_type array_type_specifier func_type_specifier signature map_type_specifier
 
 %%
 
@@ -115,6 +115,13 @@ array_type_specifier
             $$.SetPosition($1.Position())
         }
         ;
+map_type_specifier
+        : MAP LB type_specifier RB type_specifier
+        {
+            $$ = createMapTypeSpecifier($3, $5)
+            $$.SetPosition($1.Position())
+        }
+        ;
 func_type_specifier
         : FUNC signature
         {
@@ -132,10 +139,11 @@ type_specifier
             $$ = createTypeSpecifierAsName($1.Lit + "." + $3.Lit, $1.Position())
         }
         | composite_type
+        | func_type_specifier
         ;
 composite_type
         : array_type_specifier
-        /* | func_type_specifier */
+        | map_type_specifier
         ;
 function_definition
         : FUNC receiver_or_nil IDENTIFIER signature block_or_nil SEMICOLON

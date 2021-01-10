@@ -33,6 +33,18 @@ func NewFuncType(params []*Parameter, results []*Parameter) *FuncType {
 	}
 }
 
+type MapType struct {
+	Key   *TypeSpecifier
+	Value *TypeSpecifier
+}
+
+func NewMapType(keyType, valueType *TypeSpecifier) *MapType {
+	return &MapType{
+		Key:   keyType,
+		Value: valueType,
+	}
+}
+
 // TypeSpecifier 表达式类型
 type TypeSpecifier struct {
 	PosImpl
@@ -40,6 +52,7 @@ type TypeSpecifier struct {
 	basicType vm.BasicType
 	sliceType *SliceType
 	funcType  *FuncType
+	mapType   *MapType
 }
 
 func (t *TypeSpecifier) fix() {
@@ -80,6 +93,12 @@ func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
 func createFuncTypeSpecifier(params []*Parameter, results []*Parameter) *TypeSpecifier {
 	newType := newTypeSpecifier(vm.BasicTypeFunc)
 	newType.funcType = NewFuncType(params, results)
+	return newType
+}
+
+func createMapTypeSpecifier(keyType *TypeSpecifier, valueType *TypeSpecifier) *TypeSpecifier {
+	newType := newTypeSpecifier(vm.BasicTypeMap)
+	newType.mapType = NewMapType(keyType, valueType)
 	return newType
 }
 

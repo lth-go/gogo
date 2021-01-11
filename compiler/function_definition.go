@@ -34,7 +34,6 @@ func (fd *FunctionDefinition) fix() {
 	if fd.block != nil {
 		// 修正表达式列表
 		fixStatementList(fd.block, fd.block.statementList, fd)
-
 		// 修正返回值
 		fd.addReturnFunction()
 	}

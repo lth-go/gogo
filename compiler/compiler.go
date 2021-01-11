@@ -330,7 +330,6 @@ func (c *Compiler) addTopLevel(exe *vm.Executable) {
 }
 
 func (c *Compiler) searchFunction(name string) *FunctionDefinition {
-
 	// 当前compiler查找
 	for _, pos := range c.funcList {
 		if pos.name == name {

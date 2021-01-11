@@ -639,8 +639,8 @@ func (vm *VirtualMachine) InvokeNativeFunction(f *NativeFunction, spP *int) {
 // 函数执行
 func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
 	// caller 调用者, 当前所属的函数调用域
-
 	// callee 要调用的函数的基本信息
+
 	*exe = callee.Executable
 
 	// 包含调用函数的全部信息

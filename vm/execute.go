@@ -8,24 +8,16 @@ import (
 // 字节码解释器
 //
 type Executable struct {
-	// 包名
-	PackageName string
-	// 是否是被导入的
-	IsImported bool
-	// 源码路径
-	Path string
+	PackageName string // 包名
+	IsImported  bool   // 是否是被导入的
+	Path        string // 源码路径
 
-	// 常量池
-	ConstantPool ConstantPool
-	// 全局变量
-	VariableList *VariableList
-	// 函数列表
-	FunctionList []*Function
+	ConstantPool ConstantPool  // 常量池
+	VariableList *VariableList // 全局变量
+	FunctionList []*Function   // 函数列表
 
-	// 顶层结构代码
-	CodeList []byte
-	// 行号对应表,保存字节码和与之对应的源代码的行号
-	LineNumberList []*LineNumber
+	CodeList       []byte        // 顶层结构代码
+	LineNumberList []*LineNumber // 行号对应表,保存字节码和与之对应的源代码的行号
 }
 
 func NewExecutable() *Executable {
@@ -224,24 +216,17 @@ func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {
 // 函数
 // ==============================
 type Function struct {
-	// 类型
-	TypeSpecifier *TypeSpecifier
-	// 包名
-	PackageName string
-	// 函数名
-	Name string
-	// 是否在当前包实现
-	IsImplemented bool
-	// 是否是方法
-	IsMethod bool
-	// 形参列表
-	ParameterList []*Variable
-	// 局部变量列表
-	LocalVariableList []*Variable
-	// 字节码类表
-	CodeList []byte
-	// 行号对应表
-	LineNumberList []*LineNumber
+	TypeSpecifier     *TypeSpecifier // 类型
+	PackageName       string         // 包名
+	Name              string         // 函数名
+	IsImplemented     bool           // 是否在当前包实现
+	IsMethod          bool           // 是否是方法
+	ParameterList     []*Variable    // 形参列表
+	LocalVariableList []*Variable    // 局部变量列表
+	CodeList          []byte         // 字节码类表
+	LineNumberList    []*LineNumber  // 行号对应表
+
+	Executable *Executable
 }
 
 func (f *Function) ShowCode() {

@@ -7,16 +7,14 @@ func fixStatementList(currentBlock *Block, statementList []Statement, fd *Functi
 }
 
 // 仅限函数
-func fixModuleMemberExpression(expr *MemberExpression, memberName string) Expression {
+func fixPackageMemberExpression(expr *MemberExpression, memberName string) Expression {
 	innerExpr := expr.expression
 
 	innerExpr.typeS().fix()
 
-	module := innerExpr.(*IdentifierExpression).inner.(*Module)
+	p := innerExpr.(*IdentifierExpression).inner.(*Package)
 
-	moduleCompiler := module.compiler
-
-	fd := moduleCompiler.searchFunction(memberName)
+	fd := p.compiler.searchFunction(memberName)
 	if fd == nil {
 		panic("TODO")
 	}
@@ -29,6 +27,7 @@ func fixModuleMemberExpression(expr *MemberExpression, memberName string) Expres
 		inner: &FunctionIdentifier{
 			functionDefinition: fd,
 			functionIndex:      currentCompiler.addToVmFunctionList(fd),
+			// Index:              currentCompiler.AddFuncList(fd),
 		},
 	}
 

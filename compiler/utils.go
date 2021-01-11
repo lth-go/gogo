@@ -60,26 +60,3 @@ func compareParameter(paramList1, paramList2 []*Parameter) bool {
 	}
 	return true
 }
-
-//
-// search
-//
-func searchFunction(name string) *FunctionDefinition {
-	compiler := getCurrentCompiler()
-
-	fd := compiler.searchFunction(name)
-	if fd != nil {
-		return fd
-	}
-
-	// 导入的compiler查找
-	for _, required := range compiler.importedList {
-		for _, fd := range required.funcList {
-			if fd.name == name {
-				return fd
-			}
-		}
-	}
-
-	return nil
-}

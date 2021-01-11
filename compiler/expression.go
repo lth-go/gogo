@@ -268,13 +268,14 @@ type IdentifierInner interface{}
 type FunctionIdentifier struct {
 	functionDefinition *FunctionDefinition
 	functionIndex      int
+	// Index              int // TODO: 用这个
 }
 
 // IdentifierExpression 变量表达式
 type IdentifierExpression struct {
 	ExpressionImpl
 	name string
-	// 声明要么是变量，要么是函数, 要么是包(FunctionIdentifier Declaration Module)
+	// 声明要么是变量，要么是函数, 要么是包(FunctionIdentifier Declaration Package)
 	inner IdentifierInner
 }
 
@@ -293,7 +294,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// 判断是否是函数
-	fd := searchFunction(expr.name)
+	fd := getCurrentCompiler().searchFunction(expr.name)
 	if fd != nil {
 		compiler := getCurrentCompiler()
 
@@ -301,6 +302,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
 			functionIndex:      compiler.addToVmFunctionList(fd),
+			// Index:              compiler.AddFuncList(fd),
 		}
 		expr.typeS().fix()
 
@@ -308,10 +310,10 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// TODO 判断是否是包
-	module := searchModule(expr.name)
-	if module != nil {
-		expr.setType(module.typ)
-		expr.inner = module
+	pkg := getCurrentCompiler().searchPackage(expr.name)
+	if pkg != nil {
+		expr.setType(pkg.typ)
+		expr.inner = pkg
 		expr.typeS().fix()
 		return expr
 	}
@@ -584,7 +586,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	switch funcExpr := funcIfs.(type) {
 	case *IdentifierExpression:
-		fd = searchFunction(funcExpr.name)
+		fd = funcExpr.inner.(*FunctionIdentifier).functionDefinition
 		name = funcExpr.name
 	}
 
@@ -618,15 +620,8 @@ func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *B
 // ==============================
 type MemberExpression struct {
 	ExpressionImpl
-
-	// 实例
-	expression Expression
-
-	// 成员名称
-	memberName string
-
-	// module func
-	moduleFunc *FunctionDefinition
+	expression Expression // 实例
+	memberName string     // 成员名称
 }
 
 func (expr *MemberExpression) show(indent int) {
@@ -644,8 +639,8 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	typ := expr.expression.typeS()
 
 	switch {
-	case typ.IsModule():
-		newExpr = fixModuleMemberExpression(expr, expr.memberName)
+	case typ.IsPackage():
+		newExpr = fixPackageMemberExpression(expr, expr.memberName)
 	default:
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
 	}
@@ -820,9 +815,7 @@ func createIndexExpression(array, index Expression, pos Position) *IndexExpressi
 	return expr
 }
 
-//
-// TODO Module
-type Module struct {
+type Package struct {
 	typ      *TypeSpecifier
 	compiler *Compiler
 }

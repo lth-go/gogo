@@ -92,7 +92,7 @@ func (c *Compiler) addLexerByPath(path string) {
 func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
 	var dummyBlock *Block
 	// 定义重复
-	if searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
+	if c.searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
 		compileError(pos, FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
 	}
 
@@ -236,6 +236,21 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 	return len(c.vmFunctionList) - 1
 }
 
+// func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
+//     packageName := fd.getPackageName()
+//     name := fd.name
+
+//     for i, func_ := range c.funcList {
+//         if func_.getPackageName() == packageName && func_.name == name {
+//             return i
+//         }
+//     }
+
+//     // TODO: 添加函数
+
+//     return -1
+// }
+
 //////////////////////////////
 // 生成字节码
 //////////////////////////////
@@ -280,8 +295,11 @@ func (c *Compiler) addFunctions(exe *vm.Executable) {
 			continue
 		}
 
-		fd := searchFunction(vmFunc.Name)
-		addFunction(exe, fd, vmFunc, false)
+		p := c.searchPackage(vmFunc.PackageName)
+		if p != nil {
+			fd := p.compiler.searchFunction(vmFunc.Name)
+			addFunction(exe, fd, vmFunc, false)
+		}
 	}
 }
 
@@ -330,24 +348,22 @@ func (c *Compiler) addTopLevel(exe *vm.Executable) {
 }
 
 func (c *Compiler) searchFunction(name string) *FunctionDefinition {
-	// 当前compiler查找
-	for _, pos := range c.funcList {
-		if pos.name == name {
-			return pos
+	for _, func_ := range c.funcList {
+		if func_.name == name {
+			return func_
 		}
 	}
-
 	return nil
 }
 
-func (c *Compiler) searchModule(name string) *Module {
-	for _, requiredCompiler := range c.importedList {
-		// 暂无处理重名
-		lastName := requiredCompiler.packageNameList[len(requiredCompiler.packageNameList)-1]
+func (c *Compiler) searchPackage(name string) *Package {
+	for _, importedC := range c.importedList {
+		// TODO: 暂无处理重名
+		lastName := importedC.packageNameList[len(importedC.packageNameList)-1]
 		if name == lastName {
-			return &Module{
-				compiler: requiredCompiler,
-				typ:      newTypeSpecifier(vm.BasicTypeModule),
+			return &Package{
+				compiler: importedC,
+				typ:      newTypeSpecifier(vm.BasicTypePackage),
 			}
 		}
 
@@ -425,8 +441,4 @@ func comparePackageName(packageNameList1, packageNameList2 []string) bool {
 	}
 
 	return true
-}
-
-func searchModule(name string) *Module {
-	return getCurrentCompiler().searchModule(name)
 }

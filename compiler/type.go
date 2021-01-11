@@ -144,8 +144,8 @@ func (t *TypeSpecifier) IsString() bool {
 	return t.GetBasicType() == vm.BasicTypeString
 }
 
-func (t *TypeSpecifier) IsModule() bool {
-	return t.GetBasicType() == vm.BasicTypeModule
+func (t *TypeSpecifier) IsPackage() bool {
+	return t.GetBasicType() == vm.BasicTypePackage
 }
 
 func (t *TypeSpecifier) IsObject() bool {

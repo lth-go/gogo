@@ -16,7 +16,7 @@ const (
 	BasicTypeNil
 	BasicTypeVoid
 	BasicTypeBase
-	BasicTypeModule
+	BasicTypePackage
 	BasicTypeSlice
 	BasicTypeMap
 	BasicTypeStruct

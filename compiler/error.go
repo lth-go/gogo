@@ -129,7 +129,7 @@ var errMessageMap map[int]string = map[int]string{
 	LOGICAL_NOT_TYPE_MISMATCH_ERR:            "逻辑非运算符的操作数类型不正确。",
 	INC_DEC_TYPE_MISMATCH_ERR:                "自增/自减运算符的操作数类型不正确。",
 	FUNCTION_NOT_IDENTIFIER_ERR:              "函数调用运算符的操作数不是函数名。",
-	FUNCTION_NOT_FOUND_ERR:                   "找不到函数$(name)。",
+	FUNCTION_NOT_FOUND_ERR:                   "找不到函数%s。",
 	ARGUMENT_COUNT_MISMATCH_ERR:              "函数的参数数量错误。",
 	NOT_LVALUE_ERR:                           "赋值运算符的左边不是一个左边值。",
 	LABEL_NOT_FOUND_ERR:                      "标签$(label)不存在。",

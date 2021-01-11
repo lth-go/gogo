@@ -226,7 +226,7 @@ type Function struct {
 	CodeList          []byte         // 字节码类表
 	LineNumberList    []*LineNumber  // 行号对应表
 
-	Executable *Executable
+	// Executable *Executable
 }
 
 func (f *Function) ShowCode() {

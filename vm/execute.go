@@ -230,8 +230,8 @@ type Function struct {
 	PackageName string
 	// 函数名
 	Name string
-	// 是否原生函数
-	IsNative bool
+	// 是否在当前包实现
+	IsImplemented bool
 	// 是否是方法
 	IsMethod bool
 	// 形参列表

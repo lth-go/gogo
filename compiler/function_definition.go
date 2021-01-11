@@ -24,7 +24,6 @@ type FunctionDefinition struct {
 	parameterList     []*Parameter
 	block             *Block
 	localVariableList []*Declaration
-	index             int
 }
 
 func (fd *FunctionDefinition) fix() {

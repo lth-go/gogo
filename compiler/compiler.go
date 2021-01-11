@@ -102,7 +102,6 @@ func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier 
 		packageNameList:   c.GetPackageNameList(),
 		parameterList:     typ.funcType.Params,
 		block:             block,
-		index:             len(c.funcList),
 		localVariableList: nil,
 	}
 
@@ -191,7 +190,6 @@ func (c *Compiler) fixTree() {
 		packageNameList:   c.GetPackageNameList(),
 		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
 		block:             nil,
-		index:             len(c.funcList),
 		localVariableList: nil,
 	}
 	fd.typeSpecifier.funcType = &FuncType{Params: []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString)}}}
@@ -219,7 +217,6 @@ func (c *Compiler) fixTree() {
 
 // 添加VmFunction
 func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
-
 	srcPackageName := src.getPackageName()
 	vmFuncName := src.getVmFuncName()
 
@@ -245,7 +242,6 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 func (c *Compiler) generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.getPackageName()
-
 	exe.FunctionList = c.vmFunctionList
 
 	// 添加全局变量声明
@@ -261,7 +257,6 @@ func (c *Compiler) generate() *vm.Executable {
 // 添加全局变量
 func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
 	for _, dl := range c.declarationList {
-
 		newValue := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
 		exe.VariableList.Append(newValue)
 	}
@@ -270,16 +265,17 @@ func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
 // 添加函数
 func (c *Compiler) addFunctions(exe *vm.Executable) {
 
-	inThisExes := make([]bool, len(c.vmFunctionList))
+	inThisExes := make([]bool, len(exe.FunctionList))
 
 	for _, fd := range c.funcList {
-		destIdx := c.getFunctionIndex(fd)
+		destIdx := c.getFunctionIndex(fd, exe)
 		inThisExes[destIdx] = true
 
-		addFunction(exe, fd, c.vmFunctionList[destIdx], true)
+		addFunction(exe, fd, exe.FunctionList[destIdx], true)
 	}
 
-	for i, vmFunc := range c.vmFunctionList {
+	// 添加导入包的函数
+	for i, vmFunc := range exe.FunctionList {
 		if inThisExes[i] {
 			continue
 		}
@@ -294,30 +290,28 @@ func addFunction(exe *vm.Executable, src *FunctionDefinition, dest *vm.Function,
 
 	dest.TypeSpecifier = copyTypeSpecifier(src.typeS())
 	dest.ParameterList = copyParameterList(src.parameterList)
+	dest.IsMethod = false
 
 	if src.block != nil && inThisExe {
 		generateStatementList(exe, src.block, src.block.statementList, ob)
 
-		dest.IsNative = true
+		dest.IsImplemented = true
 		dest.CodeList = ob.fixOpcodeBuf()
 		dest.LineNumberList = ob.lineNumberList
 		dest.LocalVariableList = copyLocalVariables(src)
 	} else {
-		dest.IsNative = false
+		dest.IsImplemented = false
 		dest.LocalVariableList = nil
 	}
-
-	dest.IsMethod = false
 }
 
-func (c *Compiler) getFunctionIndex(src *FunctionDefinition) int {
+func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable) int {
 	var funcName string
 
 	srcPackageName := src.getPackageName()
-
 	funcName = src.name
 
-	for i, vmFunc := range c.vmFunctionList {
+	for i, vmFunc := range exe.FunctionList {
 		if srcPackageName == vmFunc.PackageName && funcName == vmFunc.Name {
 			return i
 		}

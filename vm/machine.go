@@ -89,7 +89,7 @@ func (vm *VirtualMachine) addFunctions(exe *Executable) {
 	// check func name
 	for _, exeFunc := range exe.FunctionList {
 		// TODO 实现默认函数后去除
-		if !exeFunc.IsNative {
+		if !exeFunc.IsImplemented {
 			continue
 		}
 		if vm.searchFunction(exeFunc.PackageName, exeFunc.Name) != functionNotFound {

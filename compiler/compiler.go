@@ -236,21 +236,6 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 	return len(c.vmFunctionList) - 1
 }
 
-// func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
-//     packageName := fd.getPackageName()
-//     name := fd.name
-
-//     for i, func_ := range c.funcList {
-//         if func_.getPackageName() == packageName && func_.name == name {
-//             return i
-//         }
-//     }
-
-//     // TODO: 添加函数
-
-//     return -1
-// }
-
 //////////////////////////////
 // 生成字节码
 //////////////////////////////

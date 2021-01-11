@@ -268,7 +268,6 @@ type IdentifierInner interface{}
 type FunctionIdentifier struct {
 	functionDefinition *FunctionDefinition
 	functionIndex      int
-	// Index              int // TODO: 用这个
 }
 
 // IdentifierExpression 变量表达式
@@ -302,7 +301,6 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
 			functionIndex:      compiler.addToVmFunctionList(fd),
-			// Index:              compiler.AddFuncList(fd),
 		}
 		expr.typeS().fix()
 

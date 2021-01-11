@@ -19,8 +19,6 @@ type VirtualMachine struct {
 	// 程序计数器
 	pc int
 
-	// 当前函数
-	// currentFunction *GFunction
 	// 全局函数列表
 	functionList []ExecFunction
 
@@ -40,21 +38,21 @@ func NewVirtualMachine() *VirtualMachine {
 		functionList:      []ExecFunction{},
 		currentExecutable: nil,
 	}
-	setVirtualMachine(vm)
+	// setVirtualMachine(vm)
 	vm.AddNativeFunctions()
 
 	return vm
 }
 
 // 设置全局vm
-var StVirtualMachine *VirtualMachine
+// var StVirtualMachine *VirtualMachine
 
-func setVirtualMachine(vm *VirtualMachine) {
-	StVirtualMachine = vm
-}
-func getVirtualMachine() *VirtualMachine {
-	return StVirtualMachine
-}
+// func setVirtualMachine(vm *VirtualMachine) {
+//     StVirtualMachine = vm
+// }
+// func getVirtualMachine() *VirtualMachine {
+//     return StVirtualMachine
+// }
 
 //
 // 虚拟机初始化操作
@@ -590,7 +588,6 @@ func (vm *VirtualMachine) convertCode(exe *Executable, codeList []byte, f *Funct
 			set2ByteInt(codeList[i+1:], destIdx)
 
 		case VM_PUSH_FUNCTION:
-
 			idxInExe := get2ByteInt(codeList[i+1:])
 			funcIdx := vm.searchFunction(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
 			set2ByteInt(codeList[i+1:], funcIdx)

@@ -7,6 +7,7 @@ import (
 
 func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误:")
+	fmt.Printf("Filename: %s\n", getCurrentCompiler().path)
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	errMsg := fmt.Sprintf(errMessageMap[errorNumber], a...)
 	msg := fmt.Sprintf("%d\n%s", errorNumber, errMsg)
@@ -116,7 +117,7 @@ var errMessageMap map[int]string = map[int]string{
 	FUNCTION_MULTIPLE_DEFINE_ERR:             "函数名重复($(name))",
 	BAD_MULTIBYTE_CHARACTER_ERR:              "不正确的多字节字符。",
 	UNEXPECTED_WIDE_STRING_IN_COMPILE_ERR:    "预期外的宽字符串。",
-	PARAMETER_MULTIPLE_DEFINE_ERR:            "函数的参数名重复($(name))。",
+	PARAMETER_MULTIPLE_DEFINE_ERR:            "函数的参数名重复(%s)。",
 	VARIABLE_MULTIPLE_DEFINE_ERR:             "变量名$(name)重复。",
 	IDENTIFIER_NOT_FOUND_ERR:                 "找不到变量或函数$(name)。",
 	FUNCTION_IDENTIFIER_ERR:                  "$(name)是函数名，但没有函数调用的()。",

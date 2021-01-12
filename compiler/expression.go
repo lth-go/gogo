@@ -141,8 +141,7 @@ func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob 
 	} else if expr.intValue >= 0 && expr.intValue < 65536 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
 	} else {
-		c := vm.NewConstantInt(expr.intValue)
-		cpIdx := exe.AddConstantPool(c)
+		cpIdx := TodoAddConstant(expr.intValue)
 
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
 	}
@@ -184,8 +183,7 @@ func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_1)
 
 	} else {
-		c := vm.NewConstantDouble(expr.doubleValue)
-		cpIdx := exe.AddConstantPool(c)
+		cpIdx := TodoAddConstant(expr.doubleValue)
 
 		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
 	}
@@ -219,9 +217,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-
-	c := vm.NewConstantString(expr.stringValue)
-	cpIdx := exe.AddConstantPool(c)
+	cpIdx := TodoAddConstant(expr.stringValue)
 
 	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }

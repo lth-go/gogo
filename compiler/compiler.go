@@ -11,6 +11,28 @@ import (
 var stCompilerList []*Compiler  // 全局compiler列表
 var stCurrentCompiler *Compiler // 全局compiler
 
+func TodoAddConstant(value interface{}) int {
+	compiler := getCurrentCompiler()
+
+	var c vm.Constant
+
+	switch v := value.(type) {
+	case int:
+		c = vm.NewConstantInt(v)
+	case float64:
+		c = vm.NewConstantDouble(v)
+	case string:
+		c = vm.NewConstantString(v)
+	default:
+		panic("TODO")
+	}
+	if len(compiler.vmConstantList) == 0 {
+		compiler.vmConstantList = make([]vm.Constant, 0)
+	}
+	compiler.vmConstantList = append(compiler.vmConstantList, c)
+	return len(compiler.vmConstantList) - 1
+}
+
 func getCurrentCompiler() *Compiler {
 	return stCurrentCompiler
 }
@@ -44,6 +66,8 @@ type Compiler struct {
 
 	// 当前块
 	currentBlock *Block
+
+	vmConstantList []vm.Constant
 }
 
 func NewCompiler(path string) *Compiler {
@@ -207,6 +231,9 @@ func (c *Compiler) Generate() *vm.Executable {
 
 	exe.CodeList = opCodeBuf.fixOpcodeBuf()
 	exe.LineNumberList = opCodeBuf.lineNumberList
+
+	// TODO: remove
+	exe.ConstantPool.SetPool(c.vmConstantList)
 
 	return exe
 }

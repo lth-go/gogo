@@ -8,14 +8,11 @@ import (
 // 字节码解释器
 //
 type Executable struct {
-	PackageName string // 包名
-	IsImported  bool   // 是否是被导入的
-	Path        string // 源码路径
-
-	ConstantPool ConstantPool  // 常量池
-	VariableList *VariableList // 全局变量
-	FunctionList []*Function   // 函数列表
-
+	PackageName    string        // 包名
+	Path           string        // 源码路径
+	ConstantPool   ConstantPool  // 常量池
+	VariableList   *VariableList // 全局变量
+	FunctionList   []*Function   // 函数列表
 	CodeList       []byte        // 顶层结构代码
 	LineNumberList []*LineNumber // 行号对应表,保存字节码和与之对应的源代码的行号
 }
@@ -72,7 +69,7 @@ func NewExecutableList() *ExecutableList {
 
 func (exeList *ExecutableList) AddExe(exe *Executable) bool {
 	for _, itemExe := range exeList.List {
-		if itemExe.PackageName == exe.PackageName && itemExe.IsImported == exe.IsImported {
+		if itemExe.PackageName == exe.PackageName {
 			return false
 		}
 	}
@@ -225,7 +222,6 @@ type Function struct {
 	LocalVariableList []*Variable    // 局部变量列表
 	CodeList          []byte         // 字节码类表
 	LineNumberList    []*LineNumber  // 行号对应表
-
 	// Executable *Executable
 }
 

@@ -70,8 +70,11 @@ func (vm *VirtualMachine) SetExecutableList(exeList *ExecutableList) {
 func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
 	vm.executableList = append(vm.executableList, exe)
 	vm.addFunctions(exe)
-	vm.convertCode(exe, exe.CodeList, nil)
 
+	// 修正字节码
+	// 方法调用修正
+	// 函数下标修正
+	vm.convertCode(exe, exe.CodeList, nil)
 	for _, f := range exe.FunctionList {
 		vm.convertCode(exe, f.CodeList, f)
 	}

@@ -154,9 +154,6 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 	c.fixTree()
 	exe := c.generate()
 
-	exe.Path = c.path
-	exe.IsImported = isRequired
-
 	exeList = append(exeList, exe)
 
 	setCurrentCompiler(compilerBackup)
@@ -181,20 +178,8 @@ func (c *Compiler) Show() {
 // 修正树
 //////////////////////////////
 func (c *Compiler) fixTree() {
-	// TODO remove
-
-	// add default function
-	fd := &FunctionDefinition{
-		typeSpecifier:     newTypeSpecifier(vm.BasicTypeFunc),
-		name:              "print",
-		packageNameList:   c.GetPackageNameList(),
-		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
-		block:             nil,
-		localVariableList: nil,
-	}
-	fd.typeSpecifier.funcType = &FuncType{Params: []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString)}}}
-
-	c.funcList = append(c.funcList, fd)
+	// TODO: 添加原生函数
+	c.AddNativeFunctions()
 
 	// add function
 	for _, fd := range c.funcList {
@@ -243,6 +228,7 @@ func (c *Compiler) generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.getPackageName()
 	exe.FunctionList = c.vmFunctionList
+	exe.Path = c.path
 
 	// 添加全局变量声明
 	c.addGlobalVariable(exe)
@@ -426,4 +412,19 @@ func comparePackageName(packageNameList1, packageNameList2 []string) bool {
 	}
 
 	return true
+}
+
+func (c *Compiler) AddNativeFunctions() {
+	typ := createFuncTypeSpecifier([]*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString)}}, nil)
+
+	fd := &FunctionDefinition{
+		typeSpecifier:     typ,
+		name:              "print",
+		packageNameList:   c.GetPackageNameList(),
+		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
+		block:             nil,
+		localVariableList: nil,
+	}
+
+	c.funcList = append(c.funcList, fd)
 }

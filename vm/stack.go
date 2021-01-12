@@ -87,10 +87,12 @@ func (s *Stack) getIntI(sp int) int {
 	value := s.stack[sp].(*IntValue)
 	return value.intValue
 }
+
 func (s *Stack) getDoubleI(sp int) float64 {
 	value := s.stack[sp].(*DoubleValue)
 	return value.doubleValue
 }
+
 func (s *Stack) getObjectI(sp int) *ObjectRef {
 	value := s.stack[sp].(*ObjectRef)
 	return value
@@ -101,10 +103,12 @@ func (s *Stack) setInt(sp int, value int) {
 	index := s.getIndexOverSp(sp)
 	s.setIntI(index, value)
 }
+
 func (s *Stack) setDouble(sp int, value float64) {
 	index := s.getIndexOverSp(sp)
 	s.setDoubleI(index, value)
 }
+
 func (s *Stack) setObject(sp int, value *ObjectRef) {
 	index := s.getIndexOverSp(sp)
 	s.setObjectI(index, value)
@@ -117,12 +121,14 @@ func (s *Stack) setIntI(sp int, value int) {
 
 	s.stack[sp] = v
 }
+
 func (s *Stack) setDoubleI(sp int, value float64) {
 	v := NewDoubleValue(value)
 	v.setPointer(false)
 
 	s.stack[sp] = v
 }
+
 func (s *Stack) setObjectI(sp int, value *ObjectRef) {
 	v := value
 	v.setPointer(true)

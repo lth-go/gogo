@@ -27,7 +27,6 @@ func fixPackageMemberExpression(expr *MemberExpression, memberName string) Expre
 		inner: &FunctionIdentifier{
 			functionDefinition: fd,
 			functionIndex:      currentCompiler.addToVmFunctionList(fd),
-			// Index:              currentCompiler.AddFuncList(fd),
 		},
 	}
 

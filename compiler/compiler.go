@@ -11,28 +11,6 @@ import (
 var stCompilerList []*Compiler  // 全局compiler列表
 var stCurrentCompiler *Compiler // 全局compiler
 
-func TodoAddConstant(value interface{}) int {
-	compiler := getCurrentCompiler()
-
-	var c vm.Constant
-
-	switch v := value.(type) {
-	case int:
-		c = vm.NewConstantInt(v)
-	case float64:
-		c = vm.NewConstantDouble(v)
-	case string:
-		c = vm.NewConstantString(v)
-	default:
-		panic("TODO")
-	}
-	if len(compiler.vmConstantList) == 0 {
-		compiler.vmConstantList = make([]vm.Constant, 0)
-	}
-	compiler.vmConstantList = append(compiler.vmConstantList, c)
-	return len(compiler.vmConstantList) - 1
-}
-
 func getCurrentCompiler() *Compiler {
 	return stCurrentCompiler
 }
@@ -64,10 +42,10 @@ type Compiler struct {
 	// 语句列表
 	statementList []Statement
 
+	ConstantList []interface{}
+
 	// 当前块
 	currentBlock *Block
-
-	vmConstantList []vm.Constant
 }
 
 func NewCompiler(path string) *Compiler {
@@ -78,6 +56,7 @@ func NewCompiler(path string) *Compiler {
 		declarationList: []*Declaration{},
 		statementList:   []Statement{},
 		importedList:    []*Compiler{},
+		ConstantList:    []interface{}{},
 	}
 
 	c.SetLexer(path)
@@ -233,7 +212,7 @@ func (c *Compiler) Generate() *vm.Executable {
 	exe.LineNumberList = opCodeBuf.lineNumberList
 
 	// TODO: remove
-	exe.ConstantPool.SetPool(c.vmConstantList)
+	exe.ConstantPool.SetPool(c.GetVmConstantList())
 
 	return exe
 }
@@ -407,4 +386,32 @@ func (c *Compiler) AddNativeFunctions() {
 	}
 
 	c.funcList = append(c.funcList, fd)
+}
+
+func (c *Compiler) AddConstantList(value interface{}) int {
+	c.ConstantList = append(c.ConstantList, value)
+	return len(c.ConstantList) - 1
+}
+
+func (c *Compiler) GetVmConstantList() []vm.Constant {
+	var constantValue vm.Constant
+
+	constantList := make([]vm.Constant, 0)
+
+	for _, valueIFS := range c.ConstantList {
+		switch value := valueIFS.(type) {
+		case int:
+			constantValue = vm.NewConstantInt(value)
+		case float64:
+			constantValue = vm.NewConstantDouble(value)
+		case string:
+			constantValue = vm.NewConstantString(value)
+		default:
+			panic("TODO")
+		}
+
+		constantList = append(constantList, constantValue)
+	}
+
+	return constantList
 }

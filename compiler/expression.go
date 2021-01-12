@@ -141,7 +141,7 @@ func (expr *IntExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	} else if expr.intValue >= 0 && expr.intValue < 65536 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
 	} else {
-		cpIdx := TodoAddConstant(expr.intValue)
+		cpIdx := getCurrentCompiler().AddConstantList(expr.intValue)
 
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
 	}
@@ -183,7 +183,7 @@ func (expr *DoubleExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_1)
 
 	} else {
-		cpIdx := TodoAddConstant(expr.doubleValue)
+		cpIdx := getCurrentCompiler().AddConstantList(expr.doubleValue)
 
 		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
 	}
@@ -217,7 +217,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *StringExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	cpIdx := TodoAddConstant(expr.stringValue)
+	cpIdx := getCurrentCompiler().AddConstantList(expr.stringValue)
 
 	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }

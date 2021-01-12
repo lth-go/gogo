@@ -99,6 +99,7 @@ func (vm *VirtualMachine) addFunctions(exe *Executable) {
 	}
 
 	// add exe func to vm func
+	// TODO: 忽略未实现函数
 	for srcIdx, exeFunc := range exe.FunctionList {
 		vmFunc := &GFunction{
 			PackageName: exeFunc.PackageName,

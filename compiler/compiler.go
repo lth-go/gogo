@@ -47,10 +47,6 @@ type Compiler struct {
 
 	// 已加载compiler列表
 	importedList []*Compiler
-
-	// TODO 能否去掉
-	// vm函数列表
-	vmFunctionList []*vm.Function
 }
 
 func newCompiler() *Compiler {
@@ -61,7 +57,6 @@ func newCompiler() *Compiler {
 		declarationList: []*Declaration{},
 		statementList:   []Statement{},
 		importedList:    []*Compiler{},
-		vmFunctionList:  []*vm.Function{},
 	}
 	setCurrentCompiler(c)
 	// TODO 添加默认函数
@@ -181,18 +176,13 @@ func (c *Compiler) fixTree() {
 	// TODO: 添加原生函数
 	c.AddNativeFunctions()
 
-	// add function
-	for _, fd := range c.funcList {
-		c.addToVmFunctionList(fd)
-	}
-
-	// 修正表达式列表
-	fixStatementList(nil, c.statementList, nil)
-
 	// 修正函数
 	for _, fd := range c.funcList {
 		fd.fix()
 	}
+
+	// 修正表达式列表
+	fixStatementList(nil, c.statementList, nil)
 
 	// 修正全局声明
 	for varCount, declaration := range c.declarationList {
@@ -200,25 +190,19 @@ func (c *Compiler) fixTree() {
 	}
 }
 
-// 添加VmFunction
-func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
-	srcPackageName := src.getPackageName()
-	vmFuncName := src.getVmFuncName()
+func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
+	packageName := fd.getPackageName()
+	funcName := fd.getVmFuncName()
 
-	for i, vmFunction := range c.vmFunctionList {
-		if srcPackageName == vmFunction.PackageName && vmFuncName == vmFunction.Name {
+	for i, f := range c.funcList {
+		if packageName == f.getPackageName() && funcName == f.getVmFuncName() {
 			return i
 		}
 	}
 
-	dest := &vm.Function{
-		PackageName: srcPackageName,
-		Name:        vmFuncName,
-	}
+	c.funcList = append(c.funcList, fd)
 
-	c.vmFunctionList = append(c.vmFunctionList, dest)
-
-	return len(c.vmFunctionList) - 1
+	return len(c.funcList) - 1
 }
 
 //////////////////////////////
@@ -227,13 +211,11 @@ func (c *Compiler) addToVmFunctionList(src *FunctionDefinition) int {
 func (c *Compiler) generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.getPackageName()
-	exe.FunctionList = c.vmFunctionList
+	exe.FunctionList = c.GetVmFunctionList(exe)
 	exe.Path = c.path
 
 	// 添加全局变量声明
 	c.addGlobalVariable(exe)
-	// 添加函数信息
-	c.addFunctions(exe)
 	// 添加顶层代码
 	c.addTopLevel(exe)
 
@@ -248,38 +230,27 @@ func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
 	}
 }
 
-// 添加函数
-func (c *Compiler) addFunctions(exe *vm.Executable) {
-
-	inThisExes := make([]bool, len(exe.FunctionList))
+func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {
+	vmFuncList := make([]*vm.Function, 0)
 
 	for _, fd := range c.funcList {
-		destIdx := c.getFunctionIndex(fd, exe)
-		inThisExes[destIdx] = true
-
-		addFunction(exe, fd, exe.FunctionList[destIdx], true)
+		vmFunc := c.GetVmFunction(exe, fd, fd.getPackageName() == c.packageName)
+		vmFuncList = append(vmFuncList, vmFunc)
 	}
 
-	// 添加导入包的函数
-	for i, vmFunc := range exe.FunctionList {
-		if inThisExes[i] {
-			continue
-		}
-
-		p := c.searchPackage(vmFunc.PackageName)
-		if p != nil {
-			fd := p.compiler.searchFunction(vmFunc.Name)
-			addFunction(exe, fd, vmFunc, false)
-		}
-	}
+	return vmFuncList
 }
 
-func addFunction(exe *vm.Executable, src *FunctionDefinition, dest *vm.Function, inThisExe bool) {
+func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, inThisExe bool) *vm.Function {
 	ob := newCodeBuf()
 
-	dest.TypeSpecifier = copyTypeSpecifier(src.typeS())
-	dest.ParameterList = copyParameterList(src.parameterList)
-	dest.IsMethod = false
+	dest := &vm.Function{
+		PackageName:   src.getPackageName(),
+		Name:          src.name,
+		TypeSpecifier: copyTypeSpecifier(src.typeS()),
+		ParameterList: copyParameterList(src.parameterList),
+		IsMethod:      false,
+	}
 
 	if src.block != nil && inThisExe {
 		generateStatementList(exe, src.block, src.block.statementList, ob)
@@ -292,6 +263,8 @@ func addFunction(exe *vm.Executable, src *FunctionDefinition, dest *vm.Function,
 		dest.IsImplemented = false
 		dest.LocalVariableList = nil
 	}
+
+	return dest
 }
 
 func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable) int {

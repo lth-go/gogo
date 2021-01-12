@@ -268,6 +268,7 @@ type IdentifierInner interface{}
 type FunctionIdentifier struct {
 	functionDefinition *FunctionDefinition
 	functionIndex      int
+	Index              int
 }
 
 // IdentifierExpression 变量表达式
@@ -300,7 +301,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 		expr.setType(createFuncType(fd))
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			functionIndex:      compiler.addToVmFunctionList(fd),
+			Index:              compiler.AddFuncList(fd),
 		}
 		expr.typeS().fix()
 
@@ -325,7 +326,7 @@ func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Blo
 	switch inner := expr.inner.(type) {
 	// 函数
 	case *FunctionIdentifier:
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.functionIndex)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.Index)
 		// 变量
 	case *Declaration:
 		var code byte

@@ -23,7 +23,7 @@ const (
 var errMessageMap map[int]string = map[int]string{
 	BAD_MULTIBYTE_CHARACTER_ERR:      "不正确的多字节字符。",
 	FUNCTION_NOT_FOUND_ERR:           "找不到函数$(name)。",
-	FUNCTION_MULTIPLE_DEFINE_ERR:     "重复定义了函数$(package)#$(name)。",
+	FUNCTION_MULTIPLE_DEFINE_ERR:     "重复定义了函数%s.%s。",
 	INDEX_OUT_OF_BOUNDS_ERR:          "数组下标越界。数组大小为$(size)，访问的下标为[$(index)]。",
 	DIVISION_BY_ZERO_ERR:             "整数值不能被0除。",
 	NULL_POINTER_ERR:                 "引用了null。",
@@ -44,7 +44,8 @@ func vmError(errorNumber int, a ...interface{}) {
 
 	fmt.Println("运行错误")
 	//fmt.Printf("Line: %d\n", getLineNumberByPc(exe, functionList, pc))
-	log.Fatalf("%d\n%s\n", errorNumber, errMessageMap[errorNumber])
+	errMsg := fmt.Sprintf(errMessageMap[errorNumber], a...)
+	log.Fatalf("%d\n%s", errorNumber, errMsg)
 	//fmt.Printf(errMessageMap[errorNumber], a...)
 }
 

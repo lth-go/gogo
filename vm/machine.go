@@ -614,7 +614,6 @@ func (vm *VirtualMachine) convertCode(exe *Executable, codeList []byte, f *Funct
 
 // 查找函数
 func (vm *VirtualMachine) searchFunction(packageName, name string) int {
-
 	for i, f := range vm.functionList {
 		if f.getPackageName() == packageName && f.getName() == name {
 			return i

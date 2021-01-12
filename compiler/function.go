@@ -1,16 +1,11 @@
 package compiler
 
-import (
-	"strings"
-)
-
 //
 // Parameter 形参
 //
 type Parameter struct {
 	typeSpecifier *TypeSpecifier
-
-	name string
+	name          string
 }
 
 //
@@ -18,7 +13,7 @@ type Parameter struct {
 //
 type FunctionDefinition struct {
 	typeSpecifier     *TypeSpecifier
-	packageNameList   []string
+	packageName       string
 	name              string
 	receiver          *Parameter
 	parameterList     []*Parameter
@@ -48,14 +43,13 @@ func (fd *FunctionDefinition) addParameterAsDeclaration() {
 		if fd.block.searchDeclaration(param.name) != nil {
 			compileError(param.typeSpecifier.Position(), PARAMETER_MULTIPLE_DEFINE_ERR, param.name)
 		}
-		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
 
+		decl := &Declaration{name: param.name, typeSpecifier: param.typeSpecifier}
 		fd.block.addDeclaration(decl, fd, param.typeSpecifier.Position())
 	}
 }
 
 func (fd *FunctionDefinition) addReturnFunction() {
-
 	if fd.block.statementList == nil {
 		ret := &ReturnStatement{returnValue: nil}
 		ret.fix(fd.block, fd)
@@ -110,10 +104,10 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []
 	}
 }
 
-func (fd *FunctionDefinition) getPackageName() string {
-	return strings.Join(fd.packageNameList, ".")
+func (fd *FunctionDefinition) GetPackageName() string {
+	return fd.packageName
 }
 
-func (fd *FunctionDefinition) getVmFuncName() string {
+func (fd *FunctionDefinition) GetName() string {
 	return fd.name
 }

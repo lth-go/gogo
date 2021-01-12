@@ -47,9 +47,10 @@ type Lexer struct {
 	compiler *Compiler
 }
 
-func newLexerByFilePath(path string) *Lexer {
+func NewLexer(path string, compiler *Compiler) *Lexer {
 	return &Lexer{
-		s: newScannerByFilePath(path),
+		s:        newScannerByFilePath(path),
+		compiler: compiler,
 	}
 }
 

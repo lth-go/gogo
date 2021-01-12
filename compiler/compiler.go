@@ -21,31 +21,16 @@ func setCurrentCompiler(c *Compiler) {
 
 // Compiler 编译器
 type Compiler struct {
-	// 词法解析器
-	lexer *Lexer
-
-	// 包名
-	packageNameList []string // TODO: remove
-	packageName     string
-	// 源文件路径
-	path string
-
-	// 已加载compiler列表
-	importedList []*Compiler
-
-	// 依赖的包
-	importList []*ImportSpec
-	// 函数列表
-	funcList []*FunctionDefinition
-	// 声明列表
-	declarationList []*Declaration
-	// 语句列表
-	statementList []Statement
-
-	ConstantList []interface{}
-
-	// 当前块
-	currentBlock *Block
+	lexer           *Lexer                // 词法解析器
+	path            string                // 源文件路径
+	packageName     string                // 包名
+	importedList    []*Compiler           // 已加载compiler列表
+	importList      []*ImportSpec         // 依赖的包
+	funcList        []*FunctionDefinition // 函数列表
+	declarationList []*Declaration        // 声明列表
+	statementList   []Statement           // 语句列表
+	ConstantList    []interface{}         // constant
+	currentBlock    *Block                // 当前块
 }
 
 func NewCompiler(path string) *Compiler {
@@ -60,19 +45,11 @@ func NewCompiler(path string) *Compiler {
 	}
 
 	c.SetLexer(path)
-
 	return c
 }
 
-func (c *Compiler) getPackageName() string {
-	return strings.Join(c.packageNameList, ".")
-}
-
 func (c *Compiler) SetLexer(path string) {
-	lexer := newLexerByFilePath(path)
-	lexer.compiler = c
-
-	c.lexer = lexer
+	c.lexer = NewLexer(path, c)
 }
 
 //
@@ -81,6 +58,7 @@ func (c *Compiler) SetLexer(path string) {
 func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
 	var dummyBlock *Block
 
+	// TODO: check in fix
 	// 定义重复
 	if c.searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
 		compileError(pos, FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
@@ -89,7 +67,7 @@ func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier 
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
 		name:              identifier,
-		packageNameList:   c.GetPackageNameList(),
+		packageName:       c.packageName,
 		parameterList:     typ.funcType.Params,
 		block:             block,
 		localVariableList: nil,
@@ -118,25 +96,24 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 
 	for _, import_ := range c.importList {
 		// 判断是否已经被解析过
-		importedC := searchCompiler(stCompilerList, import_.getPackageNameList())
-		if importedC != nil {
-			c.importedList = append(c.importedList, importedC)
+		importedCompiler := searchCompiler(stCompilerList, import_.packageName)
+		if importedCompiler != nil {
+			c.importedList = append(c.importedList, importedCompiler)
 			continue
 		}
 
-		importedC = NewCompiler(import_.getFullPath())
-		importedC.packageNameList = import_.getPackageNameList()
-		importedC.packageName = import_.packageName
+		importedCompiler = NewCompiler(import_.getFullPath())
+		importedCompiler.packageName = import_.packageName
 
-		c.importedList = append(c.importedList, importedC)
-		stCompilerList = append(stCompilerList, importedC)
+		c.importedList = append(c.importedList, importedCompiler)
+		stCompilerList = append(stCompilerList, importedCompiler)
 
-		tmpExeList := importedC.compile(true)
+		tmpExeList := importedCompiler.compile(true)
 		exeList = append(exeList, tmpExeList...)
 	}
 
 	// fix and generate
-	c.fixTree()
+	c.FixTree()
 	exe := c.Generate()
 
 	exeList = append(exeList, exe)
@@ -162,7 +139,9 @@ func (c *Compiler) Show() {
 //////////////////////////////
 // 修正树
 //////////////////////////////
-func (c *Compiler) fixTree() {
+func (c *Compiler) FixTree() {
+	// TODO: add system package to use native function
+
 	// TODO: 添加原生函数
 	c.AddNativeFunctions()
 
@@ -173,19 +152,14 @@ func (c *Compiler) fixTree() {
 
 	// 修正表达式列表
 	fixStatementList(nil, c.statementList, nil)
-
-	// 修正全局声明
-	for varCount, declaration := range c.declarationList {
-		declaration.variableIndex = varCount
-	}
 }
 
 func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
-	packageName := fd.getPackageName()
-	funcName := fd.getVmFuncName()
+	packageName := fd.GetPackageName()
+	name := fd.GetName()
 
 	for i, f := range c.funcList {
-		if packageName == f.getPackageName() && funcName == f.getVmFuncName() {
+		if packageName == f.GetPackageName() && name == f.GetName() {
 			return i
 		}
 	}
@@ -200,7 +174,7 @@ func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 //
 func (c *Compiler) Generate() *vm.Executable {
 	exe := vm.NewExecutable()
-	exe.PackageName = c.getPackageName()
+	exe.PackageName = c.packageName
 	exe.FunctionList = c.GetVmFunctionList(exe)
 	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
 
@@ -232,7 +206,7 @@ func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {
 	vmFuncList := make([]*vm.Function, 0)
 
 	for _, fd := range c.funcList {
-		vmFunc := c.GetVmFunction(exe, fd, fd.getPackageName() == c.packageName)
+		vmFunc := c.GetVmFunction(exe, fd, fd.GetPackageName() == c.packageName)
 		vmFuncList = append(vmFuncList, vmFunc)
 	}
 
@@ -243,7 +217,7 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 	ob := newCodeBuf()
 
 	dest := &vm.Function{
-		PackageName:   src.getPackageName(),
+		PackageName:   src.GetPackageName(),
 		Name:          src.name,
 		TypeSpecifier: copyTypeSpecifier(src.typeS()),
 		ParameterList: copyParameterList(src.parameterList),
@@ -268,7 +242,7 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable) int {
 	var funcName string
 
-	srcPackageName := src.getPackageName()
+	srcPackageName := src.GetPackageName()
 	funcName = src.name
 
 	for i, vmFunc := range exe.FunctionList {
@@ -291,9 +265,7 @@ func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 
 func (c *Compiler) searchPackage(name string) *Package {
 	for _, importedC := range c.importedList {
-		// TODO: 暂无处理重名
-		lastName := importedC.packageNameList[len(importedC.packageNameList)-1]
-		if name == lastName {
+		if name == importedC.packageName {
 			return &Package{
 				compiler: importedC,
 				typ:      newTypeSpecifier(vm.BasicTypePackage),
@@ -321,8 +293,6 @@ func CompileFile(path string) *vm.ExecutableList {
 
 func createCompiler(path string) *Compiler {
 	compiler := NewCompiler(path)
-	compiler.SetLexer(path)
-
 	return compiler
 }
 
@@ -340,37 +310,13 @@ func (c *Compiler) GetPackageNameList() []string {
 	return strings.Split(c.packageName, "/")
 }
 
-func searchCompiler(list []*Compiler, packageName []string) *Compiler {
+func searchCompiler(list []*Compiler, packageName string) *Compiler {
 	for _, c := range list {
-		if comparePackageName(c.packageNameList, packageName) {
+		if c.packageName == packageName {
 			return c
 		}
 	}
 	return nil
-}
-
-func comparePackageName(packageNameList1, packageNameList2 []string) bool {
-	if packageNameList1 == nil {
-		if packageNameList2 == nil {
-			return true
-		}
-		return false
-	}
-
-	length1 := len(packageNameList1)
-	length2 := len(packageNameList2)
-
-	if length1 != length2 {
-		return false
-	}
-
-	for i := 0; i < length1; i++ {
-		if packageNameList1[i] != packageNameList2[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 func (c *Compiler) AddNativeFunctions() {
@@ -379,7 +325,7 @@ func (c *Compiler) AddNativeFunctions() {
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
 		name:              "print",
-		packageNameList:   c.GetPackageNameList(),
+		packageName:       c.packageName,
 		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
 		block:             nil,
 		localVariableList: nil,

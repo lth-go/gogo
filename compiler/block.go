@@ -58,6 +58,7 @@ func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition,
 		compiler := getCurrentCompiler()
 		declaration.isLocal = false
 		compiler.declarationList = append(compiler.declarationList, declaration)
+		declaration.variableIndex = len(compiler.declarationList) - 1
 	}
 }
 

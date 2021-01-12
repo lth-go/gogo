@@ -10,7 +10,6 @@ func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expre
 	switch leftExpr := binaryExpr.left.(type) {
 	case *IntExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-
 		case *IntExpression:
 			newExpr := evalMathExpressionInt(binaryExpr, leftExpr.intValue, rightExpr.intValue)
 			return newExpr
@@ -21,11 +20,9 @@ func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expre
 		}
 	case *DoubleExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-
 		case *IntExpression:
 			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.doubleValue, float64(rightExpr.intValue))
 			return newExpr
-
 		case *DoubleExpression:
 			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.doubleValue, rightExpr.doubleValue)
 			return newExpr

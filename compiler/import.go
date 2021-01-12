@@ -50,3 +50,8 @@ func createImportSpec(packageName string) *ImportSpec {
 		packageName: packageName,
 	}
 }
+
+func setImportList(importList []*ImportSpec) {
+	compiler := getCurrentCompiler()
+	compiler.importList = importList
+}

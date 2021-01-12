@@ -8,11 +8,8 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-// 全局compiler列表
-var stCompilerList []*Compiler
-
-// 全局compiler
-var stCurrentCompiler *Compiler
+var stCompilerList []*Compiler  // 全局compiler列表
+var stCurrentCompiler *Compiler // 全局compiler
 
 func getCurrentCompiler() *Compiler {
 	return stCurrentCompiler
@@ -32,9 +29,12 @@ type Compiler struct {
 	packageName     string
 	// 源文件路径
 	path string
+
+	// 已加载compiler列表
+	importedList []*Compiler
+
 	// 依赖的包
 	importList []*ImportSpec
-
 	// 函数列表
 	funcList []*FunctionDefinition
 	// 声明列表
@@ -44,24 +44,20 @@ type Compiler struct {
 
 	// 当前块
 	currentBlock *Block
-
-	// 已加载compiler列表
-	importedList []*Compiler
 }
 
-func newCompiler() *Compiler {
-	compilerBackup := getCurrentCompiler()
+func NewCompiler(path string) *Compiler {
 	c := &Compiler{
+		path:            path,
 		importList:      []*ImportSpec{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*Declaration{},
 		statementList:   []Statement{},
 		importedList:    []*Compiler{},
 	}
-	setCurrentCompiler(c)
-	// TODO 添加默认函数
 
-	setCurrentCompiler(compilerBackup)
+	c.SetLexer(path)
+
 	return c
 }
 
@@ -69,16 +65,11 @@ func (c *Compiler) getPackageName() string {
 	return strings.Join(c.packageNameList, ".")
 }
 
-func (c *Compiler) addLexer(lexer *Lexer) {
-	lexer.compiler = c
-	c.lexer = lexer
-}
-
-func (c *Compiler) addLexerByPath(path string) {
+func (c *Compiler) SetLexer(path string) {
 	lexer := newLexerByFilePath(path)
-	c.addLexer(lexer)
+	lexer.compiler = c
 
-	c.path = path
+	c.lexer = lexer
 }
 
 //
@@ -86,6 +77,7 @@ func (c *Compiler) addLexerByPath(path string) {
 //
 func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
 	var dummyBlock *Block
+
 	// 定义重复
 	if c.searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
 		compileError(pos, FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
@@ -123,31 +115,26 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 
 	for _, import_ := range c.importList {
 		// 判断是否已经被解析过
-		requireCompiler := searchCompiler(stCompilerList, import_.getPackageNameList())
-		if requireCompiler != nil {
-			c.importedList = append(c.importedList, requireCompiler)
+		importedC := searchCompiler(stCompilerList, import_.getPackageNameList())
+		if importedC != nil {
+			c.importedList = append(c.importedList, importedC)
 			continue
 		}
 
-		requireCompiler = newCompiler()
+		importedC = NewCompiler(import_.getFullPath())
+		importedC.packageNameList = import_.getPackageNameList()
+		importedC.packageName = import_.packageName
 
-		requireCompiler.packageNameList = import_.getPackageNameList()
-		requireCompiler.packageName = import_.packageName
+		c.importedList = append(c.importedList, importedC)
+		stCompilerList = append(stCompilerList, importedC)
 
-		c.importedList = append(c.importedList, requireCompiler)
-		stCompilerList = append(stCompilerList, requireCompiler)
-
-		// 获取要导入的全路径
-		foundPath := import_.getFullPath()
-
-		// 编译导入的包
-		requireCompiler.addLexerByPath(foundPath)
-		exeList = append(exeList, requireCompiler.compile(true)...)
+		tmpExeList := importedC.compile(true)
+		exeList = append(exeList, tmpExeList...)
 	}
 
 	// fix and generate
 	c.fixTree()
-	exe := c.generate()
+	exe := c.Generate()
 
 	exeList = append(exeList, exe)
 
@@ -205,29 +192,34 @@ func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 	return len(c.funcList) - 1
 }
 
-//////////////////////////////
+//
 // 生成字节码
-//////////////////////////////
-func (c *Compiler) generate() *vm.Executable {
+//
+func (c *Compiler) Generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.getPackageName()
 	exe.FunctionList = c.GetVmFunctionList(exe)
-	exe.Path = c.path
+	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
 
-	// 添加全局变量声明
-	c.addGlobalVariable(exe)
-	// 添加顶层代码
-	c.addTopLevel(exe)
+	// 添加字节码
+	opCodeBuf := newCodeBuf()
+	generateStatementList(exe, nil, c.statementList, opCodeBuf)
+
+	exe.CodeList = opCodeBuf.fixOpcodeBuf()
+	exe.LineNumberList = opCodeBuf.lineNumberList
 
 	return exe
 }
 
-// 添加全局变量
-func (c *Compiler) addGlobalVariable(exe *vm.Executable) {
+func (c *Compiler) GetVmVariableList() []*vm.Variable {
+	variableList := make([]*vm.Variable, 0)
+
 	for _, dl := range c.declarationList {
 		newValue := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
-		exe.VariableList.Append(newValue)
+		variableList = append(variableList, newValue)
 	}
+
+	return variableList
 }
 
 func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {
@@ -282,15 +274,6 @@ func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable)
 	panic("TODO")
 }
 
-// 添加字节码
-func (c *Compiler) addTopLevel(exe *vm.Executable) {
-	ob := newCodeBuf()
-	generateStatementList(exe, nil, c.statementList, ob)
-
-	exe.CodeList = ob.fixOpcodeBuf()
-	exe.LineNumberList = ob.lineNumberList
-}
-
 func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 	for _, func_ := range c.funcList {
 		if func_.name == name {
@@ -315,24 +298,24 @@ func (c *Compiler) searchPackage(name string) *Package {
 	return nil
 }
 
-// ==============================
+//
 // 编译文件
-// ==============================
+//
 
 func CompileFile(path string) *vm.ExecutableList {
 	// 输出yacc错误信息
-	yyErrorVerbose = true
+	if true {
+		yyErrorVerbose = true
+	}
 
-	compiler := createCompilerByPath(path)
+	compiler := createCompiler(path)
 
-	exeList := compiler.Compile()
-
-	return exeList
+	return compiler.Compile()
 }
 
-func createCompilerByPath(path string) *Compiler {
-	compiler := newCompiler()
-	compiler.addLexerByPath(path)
+func createCompiler(path string) *Compiler {
+	compiler := NewCompiler(path)
+	compiler.SetLexer(path)
 
 	return compiler
 }
@@ -340,12 +323,9 @@ func createCompilerByPath(path string) *Compiler {
 func (c *Compiler) Compile() *vm.ExecutableList {
 	exeList := vm.NewExecutableList()
 
-	eList := c.compile(false)
-	for _, exe := range eList {
+	for _, exe := range c.compile(false) {
 		exeList.AddExe(exe)
 	}
-
-	exeList.TopLevel = eList[len(eList)-1]
 
 	return exeList
 }

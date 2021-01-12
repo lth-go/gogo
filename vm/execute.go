@@ -59,7 +59,6 @@ func (exe *Executable) AddConstantPool(cp Constant) int {
 // ExecutableList
 //
 type ExecutableList struct {
-	TopLevel *Executable
 	List     []*Executable
 }
 
@@ -76,6 +75,10 @@ func (exeList *ExecutableList) AddExe(exe *Executable) bool {
 
 	exeList.List = append(exeList.List, exe)
 	return true
+}
+
+func (exeList *ExecutableList) GetTopExe() *Executable {
+	return exeList.List[len(exeList.List)-1]
 }
 
 // ==============================

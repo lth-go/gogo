@@ -60,8 +60,9 @@ func NewVirtualMachine() *VirtualMachine {
 
 // 添加executableList
 func (vm *VirtualMachine) SetExecutableList(exeList *ExecutableList) {
+	topExe := exeList.GetTopExe()
 	for _, exe := range exeList.List {
-		vm.addExecutable(exe, exe == exeList.TopLevel)
+		vm.addExecutable(exe, exe == topExe)
 	}
 
 }

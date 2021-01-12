@@ -56,7 +56,7 @@ const (
 type Expression interface {
 	Pos
 	fix(*Block) Expression                       // 用于类型修正,以及简单的类型转换
-	generate(*vm.Executable, *Block, *OpCodeBuf) // 生成字节码
+	generate(*Block, *OpCodeBuf) // 生成字节码
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
 	show(indent int)
@@ -74,7 +74,7 @@ type ExpressionImpl struct {
 }
 
 func (expr *ExpressionImpl) fix(currentBlock *Block) Expression                              { return nil }
-func (expr *ExpressionImpl) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {}
+func (expr *ExpressionImpl) generate(currentBlock *Block, ob *OpCodeBuf) {}
 func (expr *ExpressionImpl) show(indent int)                                                 {}
 func (expr *ExpressionImpl) typeS() *TypeSpecifier                                           { return expr.typeSpecifier }
 func (expr *ExpressionImpl) setType(t *TypeSpecifier)                                        { expr.typeSpecifier = t }
@@ -100,7 +100,7 @@ func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *BooleanExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *BooleanExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if expr.booleanValue {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, 1)
 	} else {
@@ -135,7 +135,7 @@ func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	expr.typeS().fix()
 	return expr
 }
-func (expr *IntExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *IntExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if expr.intValue >= 0 && expr.intValue < 256 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.intValue)
 	} else if expr.intValue >= 0 && expr.intValue < 65536 {
@@ -174,7 +174,7 @@ func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
 	expr.typeS().fix()
 	return expr
 }
-func (expr *DoubleExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *DoubleExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 	if expr.doubleValue == 0.0 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_0)
@@ -216,7 +216,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *StringExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *StringExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	cpIdx := TodoAddConstant(expr.stringValue)
 
 	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
@@ -246,7 +246,7 @@ func (expr *NullExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *NullExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *NullExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL)
 }
 
@@ -318,7 +318,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	return nil
 }
 
-func (expr *IdentifierExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *IdentifierExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	switch inner := expr.inner.(type) {
 	// 函数
 	case *FunctionIdentifier:
@@ -387,7 +387,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *BinaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 	switch operator := expr.operator; operator {
 	case GtOperator, GeOperator, LtOperator, LeOperator,
@@ -399,8 +399,8 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 		leftExpr := expr.left
 		rightExpr := expr.right
 
-		leftExpr.generate(exe, currentBlock, ob)
-		rightExpr.generate(exe, currentBlock, ob)
+		leftExpr.generate(currentBlock, ob)
+		rightExpr.generate(currentBlock, ob)
 
 		code, ok := operatorCodeMap[operator]
 		if !ok {
@@ -434,11 +434,11 @@ func (expr *BinaryExpression) generate(exe *vm.Executable, currentBlock *Block, 
 
 		label := ob.getLabel()
 
-		expr.left.generate(exe, currentBlock, ob)
+		expr.left.generate(currentBlock, ob)
 		ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
 		ob.generateCode(expr.Position(), jumpCode, label)
 
-		expr.right.generate(exe, currentBlock, ob)
+		expr.right.generate(currentBlock, ob)
 
 		// 判断结果
 		ob.generateCode(expr.Position(), logicalCode)
@@ -492,8 +492,8 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *MinusExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	expr.operand.generate(exe, currentBlock, ob)
+func (expr *MinusExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+	expr.operand.generate(currentBlock, ob)
 	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.typeS())
 	ob.generateCode(expr.Position(), code)
 }
@@ -540,8 +540,8 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *LogicalNotExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	expr.operand.generate(exe, currentBlock, ob)
+func (expr *LogicalNotExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+	expr.operand.generate(currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_LOGICAL_NOT)
 }
 
@@ -604,9 +604,9 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *FunctionCallExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	generatePushArgument(expr.argumentList, exe, currentBlock, ob)
-	expr.function.generate(exe, currentBlock, ob)
+func (expr *FunctionCallExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+	generatePushArgument(expr.argumentList, currentBlock, ob)
+	expr.function.generate(currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_INVOKE)
 }
 
@@ -645,7 +645,7 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *MemberExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *MemberExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 }
 
 func createMemberExpression(expression Expression, memberName string) *MemberExpression {
@@ -676,8 +676,8 @@ func (expr *CastExpression) show(indent int) {
 
 func (expr *CastExpression) fix(currentBlock *Block) Expression { return expr }
 
-func (expr *CastExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	expr.operand.generate(exe, currentBlock, ob)
+func (expr *CastExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+	expr.operand.generate(currentBlock, ob)
 
 	switch expr.castType {
 	case CastTypeIntToFloat:
@@ -732,7 +732,7 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (expr *ArrayLiteralExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if !expr.typeS().IsArray() {
 		panic("TODO")
 	}
@@ -743,7 +743,7 @@ func (expr *ArrayLiteralExpression) generate(exe *vm.Executable, currentBlock *B
 	}
 
 	for _, subExpr := range expr.arrayLiteral {
-		subExpr.generate(exe, currentBlock, ob)
+		subExpr.generate(currentBlock, ob)
 	}
 
 	itemType := expr.arrayLiteral[0].typeS()
@@ -792,9 +792,9 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *IndexExpression) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
-	expr.array.generate(exe, currentBlock, ob)
-	expr.index.generate(exe, currentBlock, ob)
+func (expr *IndexExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+	expr.array.generate(currentBlock, ob)
+	expr.index.generate(currentBlock, ob)
 
 	code := vm.VM_PUSH_ARRAY_INT + getOpcodeTypeOffset(expr.typeS())
 	ob.generateCode(expr.Position(), code)

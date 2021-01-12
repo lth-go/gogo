@@ -12,7 +12,7 @@ import (
 type Statement interface {
 	Pos
 	fix(*Block, *FunctionDefinition)
-	generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf)
+	generate(currentBlock *Block, ob *OpCodeBuf)
 	show(indent int)
 }
 
@@ -42,9 +42,9 @@ func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition
 	stmt.expression = stmt.expression.fix(currentBlock)
 }
 
-func (stmt *ExpressionStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *ExpressionStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	expr := stmt.expression
-	expr.generate(exe, currentBlock, ob)
+	expr.generate(currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_POP)
 }
 
@@ -112,16 +112,16 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *IfStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 
-	stmt.condition.generate(exe, currentBlock, ob)
+	stmt.condition.generate(currentBlock, ob)
 
 	// 获取false跳转地址
 	ifFalseLabel := ob.getLabel()
 	ob.generateCode(stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
 	if stmt.thenBlock != nil {
-		generateStatementList(exe, stmt.thenBlock, stmt.thenBlock.statementList, ob)
+		generateStatementList(stmt.thenBlock, stmt.thenBlock.statementList, ob)
 	}
 
 	// 获取结束跳转地址
@@ -134,13 +134,13 @@ func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *O
 	ob.setLabel(ifFalseLabel)
 
 	for _, elif := range stmt.elifList {
-		elif.condition.generate(exe, currentBlock, ob)
+		elif.condition.generate(currentBlock, ob)
 
 		// 获取false跳转地址
 		ifFalseLabel = ob.getLabel()
 		ob.generateCode(stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
 
-		generateStatementList(exe, elif.block, elif.block.statementList, ob)
+		generateStatementList(elif.block, elif.block.statementList, ob)
 
 		// 直接跳到最后
 		ob.generateCode(stmt.Position(), vm.VM_JUMP, endLabel)
@@ -150,7 +150,7 @@ func (stmt *IfStatement) generate(exe *vm.Executable, currentBlock *Block, ob *O
 	}
 
 	if stmt.elseBlock != nil {
-		generateStatementList(exe, stmt.elseBlock, stmt.elseBlock.statementList, ob)
+		generateStatementList(stmt.elseBlock, stmt.elseBlock.statementList, ob)
 	}
 
 	// 设置结束地址
@@ -212,9 +212,9 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *ForStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if stmt.init != nil {
-		stmt.init.generate(exe, currentBlock, ob)
+		stmt.init.generate(currentBlock, ob)
 	}
 
 	// 获取循环地址
@@ -224,7 +224,7 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 	ob.setLabel(loopLabel)
 
 	if stmt.condition != nil {
-		stmt.condition.generate(exe, currentBlock, ob)
+		stmt.condition.generate(currentBlock, ob)
 	}
 
 	label := ob.getLabel()
@@ -240,14 +240,14 @@ func (stmt *ForStatement) generate(exe *vm.Executable, currentBlock *Block, ob *
 		parent.breakLabel = label
 		parent.continueLabel = label
 
-		generateStatementList(exe, stmt.block, stmt.block.statementList, ob)
+		generateStatementList(stmt.block, stmt.block.statementList, ob)
 	}
 
 	// 如果有continue,直接跳过block,从这里执行, label = parent.continueLabel
 	ob.setLabel(label)
 
 	if stmt.post != nil {
-		stmt.post.generate(exe, currentBlock, ob)
+		stmt.post.generate(currentBlock, ob)
 	}
 
 	// 跳回到循环开头
@@ -327,12 +327,12 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *ReturnStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if stmt.returnValue == nil {
 		panic("Return value is nil.")
 	}
 
-	stmt.returnValue.generate(exe, currentBlock, ob)
+	stmt.returnValue.generate(currentBlock, ob)
 
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
@@ -352,7 +352,7 @@ func (stmt *BreakStatement) show(indent int) {
 
 func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
-func (stmt *BreakStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *BreakStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	// 向外寻找,直到找到for的block
 	for block := currentBlock; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
@@ -381,7 +381,7 @@ func (stmt *ContinueStatement) show(indent int) {
 
 func (stmt *ContinueStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
 
-func (stmt *ContinueStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *ContinueStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	// 向外寻找,直到找到for的block
 	for block := currentBlock; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
@@ -435,12 +435,12 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *Declaration) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *Declaration) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if stmt.initializer == nil {
 		return
 	}
 
-	stmt.initializer.generate(exe, currentBlock, ob)
+	stmt.initializer.generate(currentBlock, ob)
 	generatePopToIdentifier(stmt, stmt.Position(), ob)
 }
 
@@ -492,15 +492,15 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 }
 
-func (stmt *AssignStatement) generate(exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func (stmt *AssignStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	count := len(stmt.left)
 
 	for i := 0; i < count; i++ {
 		leftExpr := stmt.left[i]
 		rightExpr := stmt.right[i]
 
-		rightExpr.generate(exe, currentBlock, ob)
+		rightExpr.generate(currentBlock, ob)
 		ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
-		generatePopToLvalue(exe, currentBlock, leftExpr, ob)
+		generatePopToLvalue(currentBlock, leftExpr, ob)
 	}
 }

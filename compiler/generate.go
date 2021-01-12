@@ -126,9 +126,9 @@ func (ob *OpCodeBuf) fixLabels() {
 //
 // generateStatementList
 //
-func generateStatementList(exe *vm.Executable, currentBlock *Block, statementList []Statement, ob *OpCodeBuf) {
+func generateStatementList(currentBlock *Block, statementList []Statement, ob *OpCodeBuf) {
 	for _, stmt := range statementList {
-		stmt.generate(exe, currentBlock, ob)
+		stmt.generate(currentBlock, ob)
 	}
 }
 
@@ -179,13 +179,13 @@ func copyLocalVariables(fd *FunctionDefinition) []*vm.Variable {
 	return dest
 }
 
-func generatePopToLvalue(exe *vm.Executable, block *Block, expr Expression, ob *OpCodeBuf) {
+func generatePopToLvalue(block *Block, expr Expression, ob *OpCodeBuf) {
 	switch e := expr.(type) {
 	case *IdentifierExpression:
 		generatePopToIdentifier(e.inner.(*Declaration), expr.Position(), ob)
 	case *IndexExpression:
-		e.array.generate(exe, block, ob)
-		e.index.generate(exe, block, ob)
+		e.array.generate(block, ob)
+		e.index.generate(block, ob)
 		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT+getOpcodeTypeOffset(expr.typeS()))
 	}
 }
@@ -202,9 +202,9 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	ob.generateCode(pos, code+offset, decl.variableIndex)
 }
 
-func generatePushArgument(argList []Expression, exe *vm.Executable, currentBlock *Block, ob *OpCodeBuf) {
+func generatePushArgument(argList []Expression, currentBlock *Block, ob *OpCodeBuf) {
 	for _, arg := range argList {
-		arg.generate(exe, currentBlock, ob)
+		arg.generate(currentBlock, ob)
 	}
 }
 

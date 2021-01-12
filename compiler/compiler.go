@@ -227,7 +227,7 @@ func (c *Compiler) Generate() *vm.Executable {
 
 	// 添加字节码
 	opCodeBuf := newCodeBuf()
-	generateStatementList(exe, nil, c.statementList, opCodeBuf)
+	generateStatementList(nil, c.statementList, opCodeBuf)
 
 	exe.CodeList = opCodeBuf.fixOpcodeBuf()
 	exe.LineNumberList = opCodeBuf.lineNumberList
@@ -272,7 +272,7 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 	}
 
 	if src.block != nil && inThisExe {
-		generateStatementList(exe, src.block, src.block.statementList, ob)
+		generateStatementList(src.block, src.block.statementList, ob)
 
 		dest.IsImplemented = true
 		dest.CodeList = ob.fixOpcodeBuf()

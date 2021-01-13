@@ -199,7 +199,7 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	if decl.isLocal {
 		code = vm.VM_POP_STACK_INT
 	} else {
-		code = vm.VM_POP_STATIC_INT
+		code = vm.VM_POP_HEAP_INT
 	}
 	ob.generateCode(pos, code+offset, decl.variableIndex)
 }

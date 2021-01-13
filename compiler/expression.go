@@ -142,7 +142,6 @@ func (expr *IntExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.intValue)
 	} else {
 		cpIdx := getCurrentCompiler().AddConstantList(expr.intValue)
-
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
 	}
 }
@@ -331,7 +330,7 @@ func (expr *IdentifierExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 		if inner.isLocal {
 			code = vm.VM_PUSH_STACK_INT
 		} else {
-			code = vm.VM_PUSH_STATIC_INT
+			code = vm.VM_PUSH_HEAP_INT
 		}
 		ob.generateCode(expr.Position(), code+offset, inner.variableIndex)
 	}

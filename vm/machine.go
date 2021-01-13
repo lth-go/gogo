@@ -113,7 +113,7 @@ func (vm *VirtualMachine) Execute() {
 	// vm.currentFunction = nil
 	vm.pc = 0
 
-	vm.stack.expand(vm.topLevel.CodeList)
+	vm.stack.Expand(vm.topLevel.CodeList)
 
 	vm.execute(nil, vm.topLevel.CodeList)
 }
@@ -130,318 +130,318 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:
-			stack.setInt(0, int(codeList[pc+1]))
+			stack.SetIntPlus(0, int(codeList[pc+1]))
 			vm.stack.stackPointer++
 			pc += 2
 		case VM_PUSH_INT_2BYTE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setInt(0, index)
+			stack.SetIntPlus(0, index)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setInt(0, exe.ConstantPool.getInt(index))
+			stack.SetIntPlus(0, exe.ConstantPool.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_DOUBLE_0:
-			stack.setDouble(0, 0.0)
+			stack.SetDoublePlus(0, 0.0)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE_1:
-			stack.setDouble(0, 1.0)
+			stack.SetDoublePlus(0, 1.0)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setDouble(0, exe.ConstantPool.getDouble(index))
+			stack.SetDoublePlus(0, exe.ConstantPool.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STRING:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setObject(0, vm.createStringObject(exe.ConstantPool.getString(index)))
+			stack.SetObjectPlus(0, vm.createStringObject(exe.ConstantPool.getString(index)))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_NULL:
-			stack.setObject(0, vmNullObjectRef)
+			stack.SetObjectPlus(0, vmNullObjectRef)
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_STACK_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setInt(0, stack.getIntI(base+index))
+			stack.SetIntPlus(0, stack.GetInt(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setDouble(0, stack.getDoubleI(base+index))
+			stack.SetDoublePlus(0, stack.GetFloat(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STACK_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setObject(0, stack.getObjectI(base+index))
+			stack.SetObjectPlus(0, stack.GetObject(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STACK_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setIntI(base+index, stack.getInt(-1))
+			stack.SetInt(base+index, stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setDoubleI(base+index, stack.getDouble(-1))
+			stack.SetFloat(base+index, stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STACK_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setObjectI(base+index, stack.getObject(-1))
+			stack.SetObject(base+index, stack.GetObjectPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_STATIC_INT:
+		case VM_PUSH_HEAP_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setInt(0, vl.getInt(index))
+			stack.SetIntPlus(0, vl.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_STATIC_DOUBLE:
+		case VM_PUSH_HEAP_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setDouble(0, vl.getDouble(index))
+			stack.SetDoublePlus(0, vl.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_STATIC_OBJECT:
+		case VM_PUSH_HEAP_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.setObject(0, vl.getObject(index))
+			stack.SetObjectPlus(0, vl.getObject(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_POP_STATIC_INT:
+		case VM_POP_HEAP_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			vl.setInt(index, stack.getInt(-1))
+			vl.setInt(index, stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_STATIC_DOUBLE:
+		case VM_POP_HEAP_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
-			vl.setDouble(index, stack.getDouble(-1))
+			vl.setDouble(index, stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_STATIC_OBJECT:
+		case VM_POP_HEAP_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			vl.setObject(index, stack.getObject(-1))
+			vl.setObject(index, stack.GetObjectPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_PUSH_ARRAY_INT:
 			array := stack.getArrayInt(-2)
-			index := stack.getInt(-1)
+			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
 			intValue := array.getInt(index)
 
-			stack.setInt(-2, intValue)
+			stack.SetIntPlus(-2, intValue)
 			vm.stack.stackPointer--
 			pc++
 		case VM_PUSH_ARRAY_DOUBLE:
 			array := stack.getArrayDouble(-2)
-			index := stack.getInt(-1)
+			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
 			doubleValue := array.getDouble(index)
 
-			stack.setDouble(-2, doubleValue)
+			stack.SetDoublePlus(-2, doubleValue)
 			vm.stack.stackPointer--
 			pc++
 		case VM_PUSH_ARRAY_OBJECT:
 			array := stack.getArrayObject(-2)
-			index := stack.getInt(-1)
+			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
 			object := array.getObject(index)
 
-			stack.setObject(-2, object)
+			stack.SetObjectPlus(-2, object)
 			vm.stack.stackPointer--
 			pc++
 		case VM_POP_ARRAY_INT:
-			value := stack.getInt(-3)
+			value := stack.GetIntPlus(-3)
 			array := stack.getArrayInt(-2)
-			index := stack.getInt(-1)
+			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
 			array.setInt(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
 		case VM_POP_ARRAY_DOUBLE:
-			value := stack.getDouble(-3)
+			value := stack.GetFloatPlus(-3)
 			array := stack.getArrayDouble(-2)
-			index := stack.getInt(-1)
+			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
 			array.setDouble(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
 		case VM_POP_ARRAY_OBJECT:
-			value := stack.getObject(-3)
+			value := stack.GetObjectPlus(-3)
 			array := stack.getArrayObject(-2)
-			index := stack.getInt(-1)
+			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
 			array.setObject(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
 		case VM_ADD_INT:
-			stack.setInt(-2, stack.getInt(-2)+stack.getInt(-1))
+			stack.SetIntPlus(-2, stack.GetIntPlus(-2)+stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)+stack.getDouble(-1))
+			stack.SetDoublePlus(-2, stack.GetFloatPlus(-2)+stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_STRING:
-			stack.setObject(-2, vm.chainStringObject(stack.getObject(-2), stack.getObject(-1)))
+			stack.SetObjectPlus(-2, vm.chainStringObject(stack.GetObjectPlus(-2), stack.GetObjectPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_INT:
-			stack.setInt(-2, stack.getInt(-2)-stack.getInt(-1))
+			stack.SetIntPlus(-2, stack.GetIntPlus(-2)-stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)-stack.getDouble(-1))
+			stack.SetDoublePlus(-2, stack.GetFloatPlus(-2)-stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_INT:
-			stack.setInt(-2, stack.getInt(-2)*stack.getInt(-1))
+			stack.SetIntPlus(-2, stack.GetIntPlus(-2)*stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MUL_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)*stack.getDouble(-1))
+			stack.SetDoublePlus(-2, stack.GetFloatPlus(-2)*stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_INT:
-			if stack.getInt(-1) == 0 {
+			if stack.GetIntPlus(-1) == 0 {
 				vmError(DIVISION_BY_ZERO_ERR)
 			}
-			stack.setInt(-2, stack.getInt(-2)/stack.getInt(-1))
+			stack.SetIntPlus(-2, stack.GetIntPlus(-2)/stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_DIV_DOUBLE:
-			stack.setDouble(-2, stack.getDouble(-2)/stack.getDouble(-1))
+			stack.SetDoublePlus(-2, stack.GetFloatPlus(-2)/stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MINUS_INT:
-			stack.setInt(-1, -stack.getInt(-1))
+			stack.SetIntPlus(-1, -stack.GetIntPlus(-1))
 			pc++
 		case VM_MINUS_DOUBLE:
-			stack.setDouble(-1, -stack.getDouble(-1))
+			stack.SetDoublePlus(-1, -stack.GetFloatPlus(-1))
 			pc++
 		case VM_CAST_INT_TO_DOUBLE:
-			stack.setDouble(-1, float64(stack.getInt(-1)))
+			stack.SetDoublePlus(-1, float64(stack.GetIntPlus(-1)))
 			pc++
 		case VM_CAST_DOUBLE_TO_INT:
-			stack.setInt(-1, int(stack.getDouble(-1)))
+			stack.SetIntPlus(-1, int(stack.GetFloatPlus(-1)))
 			pc++
 		case VM_CAST_BOOLEAN_TO_STRING:
-			if stack.getInt(-1) != 0 {
-				stack.setObject(-1, vm.createStringObject("true"))
+			if stack.GetIntPlus(-1) != 0 {
+				stack.SetObjectPlus(-1, vm.createStringObject("true"))
 			} else {
-				stack.setObject(-1, vm.createStringObject("false"))
+				stack.SetObjectPlus(-1, vm.createStringObject("false"))
 			}
 			pc++
 		case VM_CAST_INT_TO_STRING:
 			// TODO 啥意思
 			vm.restorePc(exe, gFunc, pc)
-			buf := fmt.Sprintf("%d", stack.getInt(-1))
-			stack.setObject(-1, vm.createStringObject(buf))
+			buf := fmt.Sprintf("%d", stack.GetIntPlus(-1))
+			stack.SetObjectPlus(-1, vm.createStringObject(buf))
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
 			// TODO 啥意思
 			vm.restorePc(exe, gFunc, pc)
-			buf := fmt.Sprintf("%f", stack.getDouble(-1))
-			stack.setObject(-1, vm.createStringObject(buf))
+			buf := fmt.Sprintf("%f", stack.GetFloatPlus(-1))
+			stack.SetObjectPlus(-1, vm.createStringObject(buf))
 			pc++
 		case VM_EQ_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) == stack.getInt(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) == stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) == stack.getDouble(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) == stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_OBJECT:
-			stack.setInt(-2, boolToInt(stack.getObject(-2).data == stack.getObject(-1).data))
+			stack.SetIntPlus(-2, boolToInt(stack.GetObjectPlus(-2).data == stack.GetObjectPlus(-1).data))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
-			stack.setInt(-2, boolToInt(!(stack.getString(-2) == stack.getString(-1))))
+			stack.SetIntPlus(-2, boolToInt(!(stack.getString(-2) == stack.getString(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) > stack.getInt(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) > stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) > stack.getDouble(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) > stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
-			stack.setInt(-2, boolToInt(stack.getString(-2) > stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) > stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) >= stack.getInt(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) >= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) >= stack.getDouble(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) >= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
-			stack.setInt(-2, boolToInt(stack.getString(-2) >= stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) >= stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) < stack.getInt(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) < stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) < stack.getDouble(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) < stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
-			stack.setInt(-2, boolToInt(stack.getString(-2) < stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) < stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) <= stack.getInt(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) <= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) <= stack.getDouble(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) <= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
-			stack.setInt(-2, boolToInt(stack.getString(-2) <= stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) <= stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
-			stack.setInt(-2, boolToInt(stack.getInt(-2) != stack.getInt(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) != stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_DOUBLE:
-			stack.setInt(-2, boolToInt(stack.getDouble(-2) != stack.getDouble(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) != stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_OBJECT:
-			stack.setInt(-2, boolToInt(stack.getObject(-2).data != stack.getObject(-1).data))
+			stack.SetIntPlus(-2, boolToInt(stack.GetObjectPlus(-2).data != stack.GetObjectPlus(-1).data))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
-			stack.setInt(-2, boolToInt(stack.getString(-2) != stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) != stack.getString(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:
-			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) && intToBool(stack.getInt(-1))))
+			stack.SetIntPlus(-2, boolToInt(intToBool(stack.GetIntPlus(-2)) && intToBool(stack.GetIntPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_OR:
-			stack.setInt(-2, boolToInt(intToBool(stack.getInt(-2)) || intToBool(stack.getInt(-1))))
+			stack.SetIntPlus(-2, boolToInt(intToBool(stack.GetIntPlus(-2)) || intToBool(stack.GetIntPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_NOT:
-			stack.setInt(-1, boolToInt(!intToBool(stack.getInt(-1))))
+			stack.SetIntPlus(-1, boolToInt(!intToBool(stack.GetIntPlus(-1))))
 			pc++
 		case VM_POP:
 			vm.stack.stackPointer--
@@ -461,7 +461,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			index := get2ByteInt(codeList[pc+1:])
 			pc = index
 		case VM_JUMP_IF_TRUE:
-			if intToBool(stack.getInt(-1)) {
+			if intToBool(stack.GetIntPlus(-1)) {
 				index := get2ByteInt(codeList[pc+1:])
 				pc = index
 			} else {
@@ -469,7 +469,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			}
 			vm.stack.stackPointer--
 		case VM_JUMP_IF_FALSE:
-			if !intToBool(stack.getInt(-1)) {
+			if !intToBool(stack.GetIntPlus(-1)) {
 				index := get2ByteInt(codeList[pc+1:])
 				pc = index
 			} else {
@@ -478,11 +478,11 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 		case VM_PUSH_FUNCTION:
 			value := get2ByteInt(codeList[pc+1:])
-			stack.setInt(0, value)
+			stack.SetIntPlus(0, value)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_INVOKE:
-			funcIdx := stack.getInt(-1)
+			funcIdx := stack.GetIntPlus(-1)
 			switch f := vm.functionList[funcIdx].(type) {
 			case *NativeFunction:
 				vm.restorePc(exe, gFunc, pc)
@@ -505,7 +505,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.restorePc(exe, gFunc, pc)
 			array := vm.createArrayLiteralInt(size)
 			vm.stack.stackPointer -= size
-			stack.setObject(0, array)
+			stack.SetObjectPlus(0, array)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_NEW_ARRAY_LITERAL_DOUBLE:
@@ -514,7 +514,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.restorePc(exe, gFunc, pc)
 			array := vm.createArrayLiteralFloat(size)
 			vm.stack.stackPointer -= size
-			stack.setObject(0, array)
+			stack.SetObjectPlus(0, array)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_NEW_ARRAY_LITERAL_OBJECT:
@@ -523,7 +523,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.restorePc(exe, gFunc, pc)
 			array := vm.createArrayLiteralObject(size)
 			vm.stack.stackPointer -= size
-			stack.setObject(0, array)
+			stack.SetObjectPlus(0, array)
 			vm.stack.stackPointer++
 			pc += 3
 		default:
@@ -640,7 +640,7 @@ func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, 
 	calleeP := (*exe).FunctionList[callee.Index]
 
 	// 拓展栈大小
-	vm.stack.expand(calleeP.CodeList)
+	vm.stack.Expand(calleeP.CodeList)
 
 	// 设置返回值信息
 	callInfo := &CallInfo{
@@ -719,7 +719,7 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 	array := vm.createArrayInt(size)
 	for i := 0; i < size; i++ {
-		array.data.(*ObjectArrayInt).intArray[i] = vm.stack.getInt(-size + i)
+		array.data.(*ObjectArrayInt).intArray[i] = vm.stack.GetIntPlus(-size + i)
 	}
 
 	return array
@@ -728,7 +728,7 @@ func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 func (vm *VirtualMachine) createArrayLiteralFloat(size int) *ObjectRef {
 	array := vm.createArrayDouble(size)
 	for i := 0; i < size; i++ {
-		array.data.(*ObjectArrayDouble).doubleArray[i] = vm.stack.getDouble(-size + i)
+		array.data.(*ObjectArrayDouble).doubleArray[i] = vm.stack.GetFloatPlus(-size + i)
 	}
 
 	return array
@@ -737,7 +737,7 @@ func (vm *VirtualMachine) createArrayLiteralFloat(size int) *ObjectRef {
 func (vm *VirtualMachine) createArrayLiteralObject(size int) *ObjectRef {
 	array := vm.createArrayObject(size)
 	for i := 0; i < size; i++ {
-		array.data.(*ObjectArrayObject).objectArray[i] = vm.stack.getObject(-size + i)
+		array.data.(*ObjectArrayObject).objectArray[i] = vm.stack.GetObjectPlus(-size + i)
 	}
 
 	return array

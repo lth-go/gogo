@@ -21,9 +21,7 @@ func (vm *VirtualMachine) addNativeFunction(funcName string, proc NativeFunction
 func printProc(vm *VirtualMachine, argCount int, args []Value) Value {
 	var str = "null"
 
-	ret := &IntValue{
-		intValue: 0,
-	}
+	ret := NewIntValue(0)
 
 	obj := args[0].(*ObjectRef).data
 

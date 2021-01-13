@@ -37,9 +37,9 @@ func initializeValue(typ *TypeSpecifier) Value {
 
 	switch typ.BasicType {
 	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
-		value = &IntValue{intValue: 0}
+		value = NewIntValue(0)
 	case BasicTypeFloat:
-		value = &DoubleValue{doubleValue: 0.0}
+		value = NewDoubleValue(0.0)
 	case BasicTypeString:
 		value = vmNullObjectRef
 	case BasicTypeNil, BasicTypeBase:

@@ -13,15 +13,15 @@ type Stack struct {
 
 func NewStack() *Stack {
 	s := &Stack{
-		stack:        make([]Value, stackAllocSize, (stackAllocSize+1)*2),
 		stackPointer: 0,
+		stack:        make([]Value, stackAllocSize, (stackAllocSize+1)*2),
 		objectList:   make([]Object, stackAllocSize, (stackAllocSize+1)*2),
 	}
 	return s
 }
 
-// expand
-func (s *Stack) expand(codeList []byte) {
+// 栈伸缩
+func (s *Stack) Expand(codeList []byte) {
 	needStackSize := calcNeedStackSize(codeList)
 
 	rest := len(s.stack) - s.stackPointer
@@ -59,79 +59,79 @@ func calcNeedStackSize(codeList []byte) int {
 	return stackSize
 }
 
-// 根据sp以及stackPointer返回栈的位置
-func (s *Stack) getIndexOverSp(sp int) int {
-	index := s.stackPointer + sp
+// 根据incr以及stackPointer返回栈的位置
+func (s *Stack) getIndex(incr int) int {
+	index := s.stackPointer + incr
 	if index == -1 {
 		index = len(s.stack) - 1
 	}
 	return index
 }
 
-// 根据sp以及stackPointer返回栈中元素
-func (s *Stack) getInt(sp int) int {
-	index := s.getIndexOverSp(sp)
-	return s.getIntI(index)
+// 根据incr以及stackPointer返回栈中元素
+func (s *Stack) GetIntPlus(incr int) int {
+	index := s.getIndex(incr)
+	return s.GetInt(index)
 }
 
-func (s *Stack) getDouble(sp int) float64 {
-	index := s.getIndexOverSp(sp)
-	return s.getDoubleI(index)
+func (s *Stack) GetFloatPlus(incr int) float64 {
+	index := s.getIndex(incr)
+	return s.GetFloat(index)
 }
 
-func (s *Stack) getObject(sp int) *ObjectRef {
-	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index)
+func (s *Stack) GetObjectPlus(incr int) *ObjectRef {
+	index := s.getIndex(incr)
+	return s.GetObject(index)
 }
 
 // 直据sp返回栈中元素
-func (s *Stack) getIntI(sp int) int {
+func (s *Stack) GetInt(sp int) int {
 	value := s.stack[sp].(*IntValue)
 	return value.intValue
 }
 
-func (s *Stack) getDoubleI(sp int) float64 {
+func (s *Stack) GetFloat(sp int) float64 {
 	value := s.stack[sp].(*DoubleValue)
 	return value.doubleValue
 }
 
-func (s *Stack) getObjectI(sp int) *ObjectRef {
+func (s *Stack) GetObject(sp int) *ObjectRef {
 	value := s.stack[sp].(*ObjectRef)
 	return value
 }
 
-// 根据sp以及stackPointer向栈中写入元素
-func (s *Stack) setInt(sp int, value int) {
-	index := s.getIndexOverSp(sp)
-	s.setIntI(index, value)
+// 根据incr以及stackPointer向栈中写入元素
+func (s *Stack) SetIntPlus(incr int, value int) {
+	index := s.getIndex(incr)
+	s.SetInt(index, value)
 }
 
-func (s *Stack) setDouble(sp int, value float64) {
-	index := s.getIndexOverSp(sp)
-	s.setDoubleI(index, value)
+func (s *Stack) SetDoublePlus(incr int, value float64) {
+	index := s.getIndex(incr)
+	s.SetFloat(index, value)
 }
 
-func (s *Stack) setObject(sp int, value *ObjectRef) {
-	index := s.getIndexOverSp(sp)
-	s.setObjectI(index, value)
+func (s *Stack) SetObjectPlus(incr int, value *ObjectRef) {
+	index := s.getIndex(incr)
+	s.SetObject(index, value)
 }
 
 // 根据sp向栈中写入元素
-func (s *Stack) setIntI(sp int, value int) {
+func (s *Stack) SetInt(sp int, value int) {
 	v := NewIntValue(value)
 	v.setPointer(false)
 
 	s.stack[sp] = v
 }
 
-func (s *Stack) setDoubleI(sp int, value float64) {
+func (s *Stack) SetFloat(sp int, value float64) {
 	v := NewDoubleValue(value)
 	v.setPointer(false)
 
 	s.stack[sp] = v
 }
 
-func (s *Stack) setObjectI(sp int, value *ObjectRef) {
+func (s *Stack) SetObject(sp int, value *ObjectRef) {
 	v := value
 	v.setPointer(true)
 
@@ -140,21 +140,21 @@ func (s *Stack) setObjectI(sp int, value *ObjectRef) {
 
 // other get
 func (s *Stack) getString(sp int) string {
-	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*ObjectString).stringValue
+	index := s.getIndex(sp)
+	return s.GetObject(index).data.(*ObjectString).stringValue
 }
 
 func (s *Stack) getArrayInt(sp int) *ObjectArrayInt {
-	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*ObjectArrayInt)
+	index := s.getIndex(sp)
+	return s.GetObject(index).data.(*ObjectArrayInt)
 }
 
 func (s *Stack) getArrayDouble(sp int) *ObjectArrayDouble {
-	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*ObjectArrayDouble)
+	index := s.getIndex(sp)
+	return s.GetObject(index).data.(*ObjectArrayDouble)
 }
 
 func (s *Stack) getArrayObject(sp int) *ObjectArrayObject {
-	index := s.getIndexOverSp(sp)
-	return s.getObjectI(index).data.(*ObjectArrayObject)
+	index := s.getIndex(sp)
+	return s.GetObject(index).data.(*ObjectArrayObject)
 }

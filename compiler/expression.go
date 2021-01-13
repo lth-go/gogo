@@ -55,7 +55,7 @@ const (
 //
 type Expression interface {
 	Pos
-	fix(*Block) Expression                       // 用于类型修正,以及简单的类型转换
+	fix(*Block) Expression       // 用于类型修正,以及简单的类型转换
 	generate(*Block, *OpCodeBuf) // 生成字节码
 	typeS() *TypeSpecifier
 	setType(*TypeSpecifier)
@@ -73,11 +73,11 @@ type ExpressionImpl struct {
 	typeSpecifier *TypeSpecifier
 }
 
-func (expr *ExpressionImpl) fix(currentBlock *Block) Expression                              { return nil }
+func (expr *ExpressionImpl) fix(currentBlock *Block) Expression          { return nil }
 func (expr *ExpressionImpl) generate(currentBlock *Block, ob *OpCodeBuf) {}
-func (expr *ExpressionImpl) show(indent int)                                                 {}
-func (expr *ExpressionImpl) typeS() *TypeSpecifier                                           { return expr.typeSpecifier }
-func (expr *ExpressionImpl) setType(t *TypeSpecifier)                                        { expr.typeSpecifier = t }
+func (expr *ExpressionImpl) show(indent int)                             {}
+func (expr *ExpressionImpl) typeS() *TypeSpecifier                       { return expr.typeSpecifier }
+func (expr *ExpressionImpl) setType(t *TypeSpecifier)                    { expr.typeSpecifier = t }
 
 // ==============================
 // BooleanExpression
@@ -630,7 +630,6 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 
 	expr.expression = expr.expression.fix(currentBlock)
-
 	typ := expr.expression.typeS()
 
 	switch {
@@ -645,7 +644,36 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *MemberExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *MemberExpression) generate(currentBlock *Block, ob *OpCodeBuf) {}
+
+// 仅限函数
+func fixPackageMemberExpression(expr *MemberExpression, memberName string) Expression {
+	innerExpr := expr.expression
+
+	innerExpr.typeS().fix()
+
+	p := innerExpr.(*IdentifierExpression).inner.(*Package)
+
+	fd := p.compiler.searchFunction(memberName)
+	if fd == nil {
+		panic("TODO")
+	}
+
+	// TODO 得用当前compiler来添加
+	currentCompiler := getCurrentCompiler()
+
+	newExpr := &IdentifierExpression{
+		name: memberName,
+		inner: &FunctionIdentifier{
+			functionDefinition: fd,
+			Index:              currentCompiler.AddFuncList(fd),
+		},
+	}
+
+	newExpr.setType(createFuncType(fd))
+	newExpr.typeS().fix()
+
+	return newExpr
 }
 
 func createMemberExpression(expression Expression, memberName string) *MemberExpression {

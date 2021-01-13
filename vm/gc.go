@@ -5,43 +5,24 @@ var HeapThresholdSize = 1024 * 256
 //
 // 判断是否下需要gc
 //
-func (vm *VirtualMachine) checkGC() {
+func (vm *VirtualMachine) Check() {
 	if len(vm.heap.objectList) > vm.heap.currentThreshold {
-		vm.garbageCollect()
-
+		vm.GC()
 		vm.heap.currentThreshold += HeapThresholdSize
 	}
 }
 
-//
-// 标记，取消标记
-//
-func mark(ref *ObjectRef) {
-	obj := ref.data
-	if obj == nil {
-		return
-	}
-	obj.setMark(true)
-
-	switch o := obj.(type) {
-	case *ObjectArrayObject:
-		for _, subObj := range o.objectArray {
-			mark(subObj)
-		}
-	}
-}
-
-func resetMark(obj Object) {
-	obj.setMark(false)
+func (vm *VirtualMachine) GC() {
+	vm.Mark()
+	vm.Sweep()
 }
 
 //
 // 标记
 //
-// TODO
-func (vm *VirtualMachine) markObjects() {
+func (vm *VirtualMachine) Mark() {
 	for _, obj := range vm.heap.objectList {
-		resetMark(obj)
+		obj.ResetMark()
 	}
 
 	for _, exe := range vm.executableList {
@@ -54,8 +35,40 @@ func (vm *VirtualMachine) markObjects() {
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
 		if vm.stack.stack[i].isPointer() {
-			o := vm.stack.stack[i].(*ObjectRef)
-			mark(o)
+			mark(vm.stack.stack[i].(*ObjectRef))
+		}
+	}
+}
+
+//
+// 清理
+//
+func (vm *VirtualMachine) Sweep() {
+	newObjectList := []Object{}
+	for _, obj := range vm.heap.objectList {
+		if !obj.isMarked() {
+			vm.disposeObject(obj)
+		} else {
+			newObjectList = append(newObjectList, obj)
+		}
+	}
+	vm.heap.objectList = newObjectList
+}
+
+//
+// 标记，取消标记
+//
+func mark(ref *ObjectRef) {
+	obj := ref.data
+	if obj == nil {
+		return
+	}
+	obj.Mark()
+
+	switch o := obj.(type) {
+	case *ObjectArrayObject:
+		for _, subObj := range o.objectArray {
+			mark(subObj)
 		}
 	}
 }
@@ -81,36 +94,16 @@ func (vm *VirtualMachine) disposeObject(obj Object) {
 }
 
 //
-// 清理
-//
-func (vm *VirtualMachine) sweepObjects() {
-	newObjectList := []Object{}
-	for _, obj := range vm.heap.objectList {
-		if !obj.isMarked() {
-			vm.disposeObject(obj)
-		} else {
-			newObjectList = append(newObjectList, obj)
-		}
-	}
-	vm.heap.objectList = newObjectList
-}
-
-func (vm *VirtualMachine) garbageCollect() {
-	vm.markObjects()
-	vm.sweepObjects()
-}
-
-//
 // 创建对象
 //
 
 //
 // 添加对象到堆, 用于垃圾回收
 //
-func (vm *VirtualMachine) addObject(value Object) {
-	vm.checkGC()
-	value.setMark(false)
-	vm.heap.append(value)
+func (vm *VirtualMachine) AddObject(value Object) {
+	vm.Check()
+	value.ResetMark()
+	vm.heap.Append(value)
 }
 
 //
@@ -118,7 +111,7 @@ func (vm *VirtualMachine) addObject(value Object) {
 //
 func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
 	ret := &ObjectString{}
-	vm.addObject(ret)
+	vm.AddObject(ret)
 
 	ret.stringValue = str
 
@@ -132,7 +125,7 @@ func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
 //
 func (vm *VirtualMachine) createArrayInt(size int) *ObjectRef {
 	obj := &ObjectArrayInt{intArray: make([]int, size)}
-	vm.addObject(obj)
+	vm.AddObject(obj)
 
 	ref := &ObjectRef{data: obj}
 
@@ -141,7 +134,7 @@ func (vm *VirtualMachine) createArrayInt(size int) *ObjectRef {
 
 func (vm *VirtualMachine) createArrayDouble(size int) *ObjectRef {
 	obj := &ObjectArrayDouble{doubleArray: make([]float64, size)}
-	vm.addObject(obj)
+	vm.AddObject(obj)
 
 	ref := &ObjectRef{data: obj}
 
@@ -150,7 +143,7 @@ func (vm *VirtualMachine) createArrayDouble(size int) *ObjectRef {
 
 func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
 	obj := &ObjectArrayObject{objectArray: make([]*ObjectRef, size)}
-	vm.addObject(obj)
+	vm.AddObject(obj)
 
 	ref := &ObjectRef{data: obj}
 

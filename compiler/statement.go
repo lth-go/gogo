@@ -403,15 +403,11 @@ func (stmt *ContinueStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 // Declaration 声明语句
 type Declaration struct {
 	StatementImpl
-
 	typeSpecifier *TypeSpecifier
-
-	name        string
-	initializer Expression
-
+	name          string
+	initializer   Expression
 	variableIndex int
-
-	isLocal bool
+	isLocal       bool
 }
 
 func (stmt *Declaration) show(indent int) {

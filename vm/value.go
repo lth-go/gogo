@@ -1,17 +1,11 @@
 package vm
 
-//
-// Value
-//
 // 虚拟机基本值接口
 type Value interface {
 	isPointer() bool
 	setPointer(bool)
 }
 
-//
-// ValueImpl
-//
 type ValueImpl struct {
 	// 是否是指针
 	pointerFlags bool
@@ -72,7 +66,7 @@ func NewDoubleValue(value float64) *DoubleValue {
 // 引用对象
 type ObjectRef struct {
 	ValueImpl
-	data   Object
+	data Object
 }
 
 //
@@ -81,7 +75,8 @@ type ObjectRef struct {
 // 虚拟机对象接口, 包含string,
 type Object interface {
 	isMarked() bool
-	setMark(bool)
+	Mark()
+	ResetMark()
 }
 
 type ObjectImpl struct {
@@ -93,8 +88,12 @@ func (obj *ObjectImpl) isMarked() bool {
 	return obj.marked
 }
 
-func (obj *ObjectImpl) setMark(m bool) {
-	obj.marked = m
+func (obj *ObjectImpl) Mark() {
+	obj.marked = true
+}
+
+func (obj *ObjectImpl) ResetMark() {
+	obj.marked = false
 }
 
 //

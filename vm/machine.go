@@ -12,23 +12,15 @@ var vmNullObjectRef = &ObjectRef{}
 // 虚拟机
 //
 type VirtualMachine struct {
-	// 栈
-	stack *Stack
-	// 堆
-	heap *Heap
-	// 程序计数器
-	pc int
+	stack *Stack // 栈
+	heap  *Heap  // 堆
+	pc    int    // 程序计数器
 
-	// 全局函数列表
-	functionList []ExecFunction
+	functionList []ExecFunction // 全局函数列表
 
-	// 当前exe
-	currentExecutable *Executable
-	// exe列表
-	executableList []*Executable
-
-	// 顶层exe
-	topLevel *Executable
+	currentExecutable *Executable   // 当前exe
+	executableList    []*Executable // exe列表
+	topLevel          *Executable   // 顶层exe
 }
 
 func NewVirtualMachine() *VirtualMachine {

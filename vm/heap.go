@@ -19,7 +19,7 @@ func NewHeap() *Heap {
 	return h
 }
 
-func (h *Heap) append(value Object) {
+func (h *Heap) Append(value Object) {
 	h.objectList = append(h.objectList, value)
 	// TODO 列表大小
 	h.currentThreshold += 1

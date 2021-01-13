@@ -60,23 +60,10 @@ func NewDoubleValue(value float64) *DoubleValue {
 	}
 }
 
-//
-// ObjectRef
-//
 // 引用对象
 type ObjectRef struct {
 	ValueImpl
 	data Object
-}
-
-//
-// Object
-//
-// 虚拟机对象接口, 包含string,
-type Object interface {
-	isMarked() bool
-	Mark()
-	ResetMark()
 }
 
 type ObjectImpl struct {
@@ -94,6 +81,14 @@ func (obj *ObjectImpl) Mark() {
 
 func (obj *ObjectImpl) ResetMark() {
 	obj.marked = false
+}
+
+func (obj *ObjectImpl) Sweep() {
+	// TODO:
+}
+
+func (obj *ObjectImpl) Len() int {
+	return 1
 }
 
 //

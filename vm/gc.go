@@ -47,6 +47,8 @@ func (vm *VirtualMachine) Sweep() {
 	newObjectList := []Object{}
 	for _, obj := range vm.heap.objectList {
 		if !obj.isMarked() {
+			// TODO: 对象自身sweep
+			obj.Sweep()
 			vm.disposeObject(obj)
 		} else {
 			newObjectList = append(newObjectList, obj)

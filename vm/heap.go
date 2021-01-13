@@ -21,6 +21,5 @@ func NewHeap() *Heap {
 
 func (h *Heap) Append(value Object) {
 	h.objectList = append(h.objectList, value)
-	// TODO 列表大小
-	h.currentThreshold += 1
+	h.currentThreshold += value.Len()
 }

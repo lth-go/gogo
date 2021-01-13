@@ -717,7 +717,6 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 }
 
 func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
-
 	array := vm.createArrayInt(size)
 	for i := 0; i < size; i++ {
 		array.data.(*ObjectArrayInt).intArray[i] = vm.stack.getInt(-size + i)
@@ -727,7 +726,6 @@ func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 }
 
 func (vm *VirtualMachine) createArrayLiteralFloat(size int) *ObjectRef {
-
 	array := vm.createArrayDouble(size)
 	for i := 0; i < size; i++ {
 		array.data.(*ObjectArrayDouble).doubleArray[i] = vm.stack.getDouble(-size + i)

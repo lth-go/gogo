@@ -8,12 +8,14 @@ const (
 type Stack struct {
 	stackPointer int
 	stack        []Value
+	objectList   []Object
 }
 
 func NewStack() *Stack {
 	s := &Stack{
 		stack:        make([]Value, stackAllocSize, (stackAllocSize+1)*2),
 		stackPointer: 0,
+		objectList:   make([]Object, stackAllocSize, (stackAllocSize+1)*2),
 	}
 	return s
 }

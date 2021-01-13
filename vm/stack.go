@@ -22,21 +22,25 @@ func NewStack() *Stack {
 
 // 栈伸缩
 func (s *Stack) Expand(codeList []byte) {
-	needStackSize := calcNeedStackSize(codeList)
+	needStackSize := getNeedStackSize(codeList)
 
 	rest := len(s.stack) - s.stackPointer
 
 	if rest <= needStackSize {
 		size := len(s.stack) + needStackSize - rest
 
+		// TODO: remove
 		newStack := make([]Value, size, (size+1)*2)
 		copy(newStack, s.stack)
-
 		s.stack = newStack
+
+		newObjectList := make([]Object, size, (size+1)*2)
+		copy(newObjectList, s.objectList)
+		s.objectList = newObjectList
 	}
 }
 
-func calcNeedStackSize(codeList []byte) int {
+func getNeedStackSize(codeList []byte) int {
 	stackSize := 0
 
 	for i := 0; i < len(codeList); i++ {
@@ -68,22 +72,6 @@ func (s *Stack) getIndex(incr int) int {
 	return index
 }
 
-// 根据incr以及stackPointer返回栈中元素
-func (s *Stack) GetIntPlus(incr int) int {
-	index := s.getIndex(incr)
-	return s.GetInt(index)
-}
-
-func (s *Stack) GetFloatPlus(incr int) float64 {
-	index := s.getIndex(incr)
-	return s.GetFloat(index)
-}
-
-func (s *Stack) GetObjectPlus(incr int) *ObjectRef {
-	index := s.getIndex(incr)
-	return s.GetObject(index)
-}
-
 // 直据sp返回栈中元素
 func (s *Stack) GetInt(sp int) int {
 	value := s.stack[sp].(*IntValue)
@@ -100,6 +88,45 @@ func (s *Stack) GetObject(sp int) *ObjectRef {
 	return value
 }
 
+// 根据incr以及stackPointer返回栈中元素
+func (s *Stack) GetIntPlus(incr int) int {
+	index := s.getIndex(incr)
+	return s.GetInt(index)
+}
+
+func (s *Stack) GetFloatPlus(incr int) float64 {
+	index := s.getIndex(incr)
+	return s.GetFloat(index)
+}
+
+func (s *Stack) GetObjectPlus(incr int) *ObjectRef {
+	index := s.getIndex(incr)
+	return s.GetObject(index)
+}
+
+// 根据sp向栈中写入元素
+func (s *Stack) SetInt(sp int, value int) {
+	v := NewIntValue(value)
+	v.setPointer(false)
+	s.stack[sp] = v
+
+	s.objectList[sp] = NewObjectInt(value)
+}
+
+func (s *Stack) SetFloat(sp int, value float64) {
+	v := NewDoubleValue(value)
+	v.setPointer(false)
+	s.stack[sp] = v
+
+	s.objectList[sp] = NewObjectFloat(value)
+}
+
+func (s *Stack) SetObject(sp int, value *ObjectRef) {
+	v := value
+	v.setPointer(true)
+	s.stack[sp] = v
+}
+
 // 根据incr以及stackPointer向栈中写入元素
 func (s *Stack) SetIntPlus(incr int, value int) {
 	index := s.getIndex(incr)
@@ -114,28 +141,6 @@ func (s *Stack) SetDoublePlus(incr int, value float64) {
 func (s *Stack) SetObjectPlus(incr int, value *ObjectRef) {
 	index := s.getIndex(incr)
 	s.SetObject(index, value)
-}
-
-// 根据sp向栈中写入元素
-func (s *Stack) SetInt(sp int, value int) {
-	v := NewIntValue(value)
-	v.setPointer(false)
-
-	s.stack[sp] = v
-}
-
-func (s *Stack) SetFloat(sp int, value float64) {
-	v := NewDoubleValue(value)
-	v.setPointer(false)
-
-	s.stack[sp] = v
-}
-
-func (s *Stack) SetObject(sp int, value *ObjectRef) {
-	v := value
-	v.setPointer(true)
-
-	s.stack[sp] = v
 }
 
 // other get

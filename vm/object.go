@@ -97,3 +97,21 @@ type ObjectStruct struct {
 type ObjectPointer struct {
 	ObjectBase
 }
+
+func NewObjectInt(value int) *ObjectInt {
+	return &ObjectInt{
+		Value: value,
+	}
+}
+
+func NewObjectFloat(value float64) *ObjectFloat {
+	return &ObjectFloat{
+		Value: value,
+	}
+}
+
+func NewObjectString(value string) *ObjectString_ {
+	return &ObjectString_{
+		Value: value,
+	}
+}

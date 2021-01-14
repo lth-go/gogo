@@ -34,8 +34,8 @@ func (vm *VirtualMachine) Mark() {
 	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
-		if vm.stack.stack[i].isPointer() {
-			mark(vm.stack.stack[i].(*ObjectRef))
+		if vm.stack.Get(i).isPointer() {
+			mark(vm.stack.GetObject(i))
 		}
 	}
 }

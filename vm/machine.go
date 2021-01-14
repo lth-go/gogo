@@ -445,14 +445,13 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_DUPLICATE:
-			// TODO
-			stack.stack[vm.stack.stackPointer] = stack.stack[vm.stack.stackPointer-1]
-			stack.stack[vm.stack.stackPointer].setPointer(stack.stack[vm.stack.stackPointer-1].isPointer())
+			stack.Set(vm.stack.stackPointer, stack.Get(vm.stack.stackPointer-1))
+			stack.Get(vm.stack.stackPointer).setPointer(stack.Get(vm.stack.stackPointer - 1).isPointer())
 			vm.stack.stackPointer++
 			pc++
 		case VM_DUPLICATE_OFFSET:
 			offset := get2ByteInt(codeList[pc+1:])
-			stack.stack[vm.stack.stackPointer] = stack.stack[vm.stack.stackPointer-1-offset]
+			stack.Set(vm.stack.stackPointer, stack.Get(vm.stack.stackPointer-1-offset))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_JUMP:
@@ -493,7 +492,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			}
 		case VM_RETURN:
 			if vm.returnFunction(&gFunc, &codeList, &pc, &base, &exe) {
-				ret = stack.stack[stack.stackPointer-1]
+				ret = stack.Get(stack.stackPointer - 1)
 				// TODO goto
 				return ret
 			}
@@ -535,15 +534,15 @@ func (vm *VirtualMachine) initializeLocalVariables(f *Function, fromSp int) {
 	var i, spIdx int
 
 	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.stack[i].setPointer(false)
+		vm.stack.Get(i).setPointer(false)
 	}
 
 	spIdx = fromSp
 	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.stack[spIdx] = initializeValue(f.LocalVariableList[i].TypeSpecifier)
+		vm.stack.Set(spIdx, initializeValue(f.LocalVariableList[i].TypeSpecifier))
 
 		if f.LocalVariableList[i].TypeSpecifier.IsReferenceType() {
-			vm.stack.stack[i].setPointer(true)
+			vm.stack.Get(i).setPointer(true)
 		}
 		spIdx++
 	}
@@ -617,13 +616,12 @@ func (vm *VirtualMachine) searchFunction(packageName, name string) int {
 //
 // 执行原生函数
 func (vm *VirtualMachine) InvokeNativeFunction(f *NativeFunction, spP *int) {
-
-	stack := vm.stack.stack
 	sp := *spP
 
-	ret := f.proc(vm, f.argCount, stack[sp-f.argCount-1:])
+	ret := f.proc(vm, f.argCount, vm.stack.stack[sp-f.argCount-1:])
 
-	stack[sp-f.argCount-1] = ret
+	vm.stack.Set(sp-f.argCount-1, ret)
+
 	*spP = sp - f.argCount
 }
 
@@ -648,7 +646,7 @@ func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, 
 	}
 
 	// 栈上保存返回信息
-	vm.stack.stack[*spP-1] = callInfo
+	vm.stack.Set(*spP-1, callInfo)
 
 	// 设置base
 	*baseP = *spP - len(calleeP.ParameterList) - 1
@@ -672,15 +670,15 @@ func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, 
 
 func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, exe **Executable) bool {
 
-	returnValue := vm.stack.stack[vm.stack.stackPointer-1]
+	returnValue := vm.stack.Get(vm.stack.stackPointer - 1)
 	vm.stack.stackPointer--
 
 	calleeFunc := (*exe).FunctionList[(*funcP).Index]
 
 	ret := doReturn(vm, funcP, codeP, pcP, baseP, exe)
 
-	vm.stack.stack[vm.stack.stackPointer] = returnValue
-	vm.stack.stack[vm.stack.stackPointer].setPointer(calleeFunc.TypeSpecifier.IsReferenceType())
+	vm.stack.Set(vm.stack.stackPointer, returnValue)
+	vm.stack.Get(vm.stack.stackPointer).setPointer(calleeFunc.TypeSpecifier.IsReferenceType())
 	vm.stack.stackPointer++
 
 	return ret
@@ -695,7 +693,7 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 	if calleeP.IsMethod {
 		argCount++
 	}
-	callInfo := vm.stack.stack[*baseP+argCount].(*CallInfo)
+	callInfo := vm.stack.Get(*baseP + argCount).(*CallInfo)
 
 	if callInfo.caller != nil {
 		*exeP = callInfo.caller.Executable

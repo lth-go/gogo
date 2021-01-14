@@ -128,6 +128,12 @@ func (obj *ObjectArray) Check(index int) {
 	}
 }
 
+func NewObjectArray(size int) *ObjectArray {
+	return &ObjectArray{
+		List: make([]Object, size),
+	}
+}
+
 type ObjectMap struct {
 	ObjectBase
 	KeyType   int

@@ -155,7 +155,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			pc += 3
 		case VM_PUSH_STRING:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetPlus(0, vm.createStringObject(exe.ConstantPool.GetString(index)))
+			stack.SetStringPlus(0, exe.ConstantPool.GetString(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_NULL:
@@ -332,22 +332,22 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			pc++
 		case VM_CAST_BOOLEAN_TO_STRING:
 			if stack.GetIntPlus(-1) != 0 {
-				stack.SetPlus(-1, vm.createStringObject("true"))
+				stack.SetStringPlus(-1, "true")
 			} else {
-				stack.SetPlus(-1, vm.createStringObject("false"))
+				stack.SetStringPlus(-1, "false")
 			}
 			pc++
 		case VM_CAST_INT_TO_STRING:
 			// TODO 啥意思
 			vm.restorePc(exe, gFunc, pc)
 			buf := fmt.Sprintf("%d", stack.GetIntPlus(-1))
-			stack.SetPlus(-1, vm.createStringObject(buf))
+			stack.SetStringPlus(-1, buf)
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
 			// TODO 啥意思
 			vm.restorePc(exe, gFunc, pc)
 			buf := fmt.Sprintf("%f", stack.GetFloatPlus(-1))
-			stack.SetPlus(-1, vm.createStringObject(buf))
+			stack.SetStringPlus(-1, buf)
 			pc++
 		case VM_EQ_INT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) == stack.GetIntPlus(-1)))
@@ -498,7 +498,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			size := get2ByteInt(codeList[pc+1:])
 
 			vm.restorePc(exe, gFunc, pc)
-			array := vm.createArrayLiteralInt(size)
+			array := vm.NewObjectArray(size)
 			vm.stack.stackPointer -= size
 			stack.SetPlus(0, array)
 			vm.stack.stackPointer++
@@ -507,7 +507,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			size := get2ByteInt(codeList[pc+1:])
 
 			vm.restorePc(exe, gFunc, pc)
-			array := vm.createArrayLiteralFloat(size)
+			array := vm.NewObjectArray(size)
 			vm.stack.stackPointer -= size
 			stack.SetPlus(0, array)
 			vm.stack.stackPointer++
@@ -516,7 +516,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			size := get2ByteInt(codeList[pc+1:])
 
 			vm.restorePc(exe, gFunc, pc)
-			array := vm.createArrayLiteralObject(size)
+			array := vm.NewObjectArray(size)
 			vm.stack.stackPointer -= size
 			stack.SetPlus(0, array)
 			vm.stack.stackPointer++
@@ -697,33 +697,6 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 	*baseP = callInfo.base
 
 	return callInfo.callerAddress == callFromNative
-}
-
-func (vm *VirtualMachine) createArrayLiteralInt(size int) Object {
-	array := vm.createArrayInt(size)
-	for i := 0; i < size; i++ {
-		array.(*ObjectArray).SetInt(i, vm.stack.GetIntPlus(-size+i))
-	}
-
-	return array
-}
-
-func (vm *VirtualMachine) createArrayLiteralFloat(size int) Object {
-	array := vm.createArrayDouble(size)
-	for i := 0; i < size; i++ {
-		array.(*ObjectArray).SetFloat(i, vm.stack.GetFloatPlus(-size+i))
-	}
-
-	return array
-}
-
-func (vm *VirtualMachine) createArrayLiteralObject(size int) Object {
-	array := vm.createArrayObject(size)
-	for i := 0; i < size; i++ {
-		array.(*ObjectArray).Set(i, vm.stack.GetPlus(-size+i))
-	}
-
-	return array
 }
 
 func (vm *VirtualMachine) restorePc(ee *Executable, function *GFunction, pc int) {

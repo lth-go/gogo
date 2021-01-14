@@ -67,48 +67,23 @@ func mark(obj Object) {
 // 创建对象
 //
 
-//
 // 添加对象到堆, 用于垃圾回收
-//
 func (vm *VirtualMachine) AddObject(value Object) {
 	vm.Check()
 	value.ResetMark()
 	vm.heap.Append(value)
 }
 
-//
-// string object
-//
-func (vm *VirtualMachine) createStringObject(str string) Object {
-	return &ObjectString{Value: str}
-}
+func (vm *VirtualMachine) NewObjectArray(size int) Object {
+	obj := NewObjectArray(size)
 
-//
-// Array object
-//
-func (vm *VirtualMachine) createArrayInt(size int) Object {
-	obj := &ObjectArray{
-		List: make([]Object, size),
-	}
+	// add heap
 	vm.AddObject(obj)
 
-	return obj
-}
-
-func (vm *VirtualMachine) createArrayDouble(size int) Object {
-	obj := &ObjectArray{
-		List: make([]Object, size),
+	// init
+	for i := 0; i < size; i++ {
+		obj.Set(i, vm.stack.GetPlus(-size+i))
 	}
-	vm.AddObject(obj)
-
-	return obj
-}
-
-func (vm *VirtualMachine) createArrayObject(size int) Object {
-	obj := &ObjectArray{
-		List: make([]Object, size),
-	}
-	vm.AddObject(obj)
 
 	return obj
 }

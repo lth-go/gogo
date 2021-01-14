@@ -108,7 +108,6 @@ func (vm *VirtualMachine) addFunctions(exe *Executable) {
 //
 func (vm *VirtualMachine) Execute() {
 	vm.currentExecutable = vm.topLevel
-	// vm.currentFunction = nil
 	vm.pc = 0
 
 	vm.stack.Expand(vm.topLevel.CodeList)
@@ -289,7 +288,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_ADD_STRING:
-			stack.SetObjectPlus(-2, vm.chainStringObject(stack.GetObjectPlus(-2), stack.GetObjectPlus(-1)))
+			stack.SetStringPlus(-2, stack.GetStringPlus(-2)+stack.GetStringPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_SUB_INT:
@@ -741,6 +740,5 @@ func (vm *VirtualMachine) createArrayLiteralObject(size int) *ObjectRef {
 
 func (vm *VirtualMachine) restorePc(ee *Executable, function *GFunction, pc int) {
 	vm.currentExecutable = ee
-	// vm.currentFunction = function
 	vm.pc = pc
 }

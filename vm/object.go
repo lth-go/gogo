@@ -43,7 +43,7 @@ type ObjectFloat struct {
 	Value float64
 }
 
-type ObjectString_ struct {
+type ObjectString struct {
 	ObjectBase
 	Value string
 }
@@ -110,8 +110,8 @@ func NewObjectFloat(value float64) *ObjectFloat {
 	}
 }
 
-func NewObjectString(value string) *ObjectString_ {
-	return &ObjectString_{
+func NewObjectString(value string) *ObjectString {
+	return &ObjectString{
 		Value: value,
 	}
 }

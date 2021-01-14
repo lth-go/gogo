@@ -110,9 +110,7 @@ func (vm *VirtualMachine) AddObject(value Object) {
 // string object
 //
 func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
-	ret := &ObjectString_{Value: str}
-	ref := &ObjectRef{data: ret}
-	return ref
+	return &ObjectRef{data: &ObjectString{Value: str}}
 }
 
 //
@@ -143,24 +141,4 @@ func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
 	ref := &ObjectRef{data: obj}
 
 	return ref
-}
-
-// 连接字符对象
-func (vm *VirtualMachine) chainStringObject(str1, str2 *ObjectRef) *ObjectRef {
-	var left, right string
-	if str1.data == nil {
-		left = "null"
-	} else {
-		left = str1.data.(*ObjectString_).Value
-	}
-
-	if str2.data == nil {
-		right = "null"
-	} else {
-		right = str2.data.(*ObjectString_).Value
-	}
-
-	str := left + right
-	ret := vm.createStringObject(str)
-	return ret
 }

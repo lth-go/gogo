@@ -92,14 +92,6 @@ func (obj *ObjectImpl) Len() int {
 }
 
 //
-// object string
-//
-type ObjectString struct {
-	ObjectImpl
-	stringValue string
-}
-
-//
 // object array interface
 //
 type ObjectArray interface {

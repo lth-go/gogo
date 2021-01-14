@@ -103,7 +103,7 @@ func (s *Stack) GetFloat(sp int) float64 {
 }
 
 func (s *Stack) GetString(sp int) string {
-	return s.objectList[sp].(*ObjectString_).Value
+	return s.objectList[sp].(*ObjectString).Value
 }
 
 func (s *Stack) GetObject(sp int) *ObjectRef {

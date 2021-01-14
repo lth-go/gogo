@@ -26,7 +26,7 @@ func printProc(vm *VirtualMachine, argCount int, args []Value) Value {
 	obj := args[0].(*ObjectRef).data
 
 	if obj != nil {
-		str = obj.(*ObjectString).stringValue
+		str = obj.(*ObjectString_).Value
 	}
 
 	fmt.Println(str)

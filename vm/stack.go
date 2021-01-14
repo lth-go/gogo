@@ -81,23 +81,38 @@ func (s *Stack) Get(sp int) Value {
 }
 
 func (s *Stack) Set(sp int, v Value) {
+	switch value := v.(type) {
+	case *IntValue:
+		s.objectList[sp] = NewObjectInt(value.intValue)
+	case *DoubleValue:
+		s.objectList[sp] = NewObjectFloat(value.doubleValue)
+	case *ObjectRef:
+		s.objectList[sp] = value.data
+	}
+
 	s.stack[sp] = v
 }
 
 // 直据sp返回栈中元素
 func (s *Stack) GetInt(sp int) int {
-	value := s.Get(sp).(*IntValue)
-	return value.intValue
+	return s.objectList[sp].(*ObjectInt).Value
 }
 
 func (s *Stack) GetFloat(sp int) float64 {
-	value := s.Get(sp).(*DoubleValue)
-	return value.doubleValue
+	return s.objectList[sp].(*ObjectFloat).Value
+}
+
+func (s *Stack) GetString(sp int) string {
+	return s.objectList[sp].(*ObjectString_).Value
 }
 
 func (s *Stack) GetObject(sp int) *ObjectRef {
-	value := s.Get(sp).(*ObjectRef)
-	return value
+	return &ObjectRef{
+		ValueImpl: ValueImpl{
+			pointerFlags: true,
+		},
+		data: s.objectList[sp],
+	}
 }
 
 // 根据incr以及stackPointer返回栈中元素
@@ -111,6 +126,11 @@ func (s *Stack) GetFloatPlus(incr int) float64 {
 	return s.GetFloat(index)
 }
 
+func (s *Stack) GetStringPlus(incr int) string {
+	index := s.getIndex(incr)
+	return s.GetString(index)
+}
+
 func (s *Stack) GetObjectPlus(incr int) *ObjectRef {
 	index := s.getIndex(incr)
 	return s.GetObject(index)
@@ -121,22 +141,22 @@ func (s *Stack) SetInt(sp int, value int) {
 	v := NewIntValue(value)
 	v.setPointer(false)
 	s.Set(sp, v)
-
-	s.objectList[sp] = NewObjectInt(value)
 }
 
 func (s *Stack) SetFloat(sp int, value float64) {
 	v := NewDoubleValue(value)
 	v.setPointer(false)
 	s.Set(sp, v)
+}
 
-	s.objectList[sp] = NewObjectFloat(value)
+func (s *Stack) SetString(sp int, value string) {
+	v := NewObjectString(value)
+	s.objectList[sp] = v
 }
 
 func (s *Stack) SetObject(sp int, value *ObjectRef) {
-	v := value
-	v.setPointer(true)
-	s.Set(sp, v)
+	value.setPointer(true)
+	s.Set(sp, value)
 }
 
 // 根据incr以及stackPointer向栈中写入元素
@@ -150,15 +170,14 @@ func (s *Stack) SetDoublePlus(incr int, value float64) {
 	s.SetFloat(index, value)
 }
 
+func (s *Stack) SetStringPlus(incr int, value string) {
+	index := s.getIndex(incr)
+	s.SetString(index, value)
+}
+
 func (s *Stack) SetObjectPlus(incr int, value *ObjectRef) {
 	index := s.getIndex(incr)
 	s.SetObject(index, value)
-}
-
-// other get
-func (s *Stack) getString(sp int) string {
-	index := s.getIndex(sp)
-	return s.GetObject(index).data.(*ObjectString).stringValue
 }
 
 func (s *Stack) getArrayInt(sp int) *ObjectArrayInt {

@@ -363,7 +363,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
-			stack.SetIntPlus(-2, boolToInt(!(stack.getString(-2) == stack.getString(-1))))
+			stack.SetIntPlus(-2, boolToInt(!(stack.GetStringPlus(-2) == stack.GetStringPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
@@ -375,7 +375,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) > stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) > stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
@@ -387,7 +387,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) >= stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) >= stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
@@ -399,7 +399,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) < stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) < stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
@@ -411,7 +411,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) <= stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) <= stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
@@ -427,7 +427,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.getString(-2) != stack.getString(-1)))
+			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) != stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:

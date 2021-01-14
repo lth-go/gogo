@@ -500,7 +500,7 @@ for (i = 0; i < 5; i = i + 1) {
 #
 # Check null
 #
-var null_str string = null;
+var null_str string = "";
 
 str_val = "abc";
 
@@ -511,13 +511,13 @@ print(str_val + null_str + "\n");
 print(null_str);
 print("\n");
 
-if (null_str == null) {
+if (null_str == "") {
     print("OK\n");
 } else {
     print("NG\n");
 };
 
-if (str_val != null) {
+if (str_val != "") {
     print("OK\n");
 } else {
     print("NG\n");

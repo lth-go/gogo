@@ -80,8 +80,6 @@ func mark(ref *ObjectRef) {
 //
 func (vm *VirtualMachine) disposeObject(obj Object) {
 	switch o := obj.(type) {
-	case *ObjectString:
-		//
 	case *ObjectArrayInt:
 		o.intArray = nil
 	case *ObjectArrayDouble:
@@ -112,13 +110,8 @@ func (vm *VirtualMachine) AddObject(value Object) {
 // string object
 //
 func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
-	ret := &ObjectString{}
-	vm.AddObject(ret)
-
-	ret.stringValue = str
-
+	ret := &ObjectString_{Value: str}
 	ref := &ObjectRef{data: ret}
-
 	return ref
 }
 
@@ -158,13 +151,13 @@ func (vm *VirtualMachine) chainStringObject(str1, str2 *ObjectRef) *ObjectRef {
 	if str1.data == nil {
 		left = "null"
 	} else {
-		left = str1.data.(*ObjectString).stringValue
+		left = str1.data.(*ObjectString_).Value
 	}
 
 	if str2.data == nil {
 		right = "null"
 	} else {
-		right = str2.data.(*ObjectString).stringValue
+		right = str2.data.(*ObjectString_).Value
 	}
 
 	str := left + right

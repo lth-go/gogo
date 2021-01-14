@@ -18,7 +18,7 @@ type NativeFunction struct {
 func (f *NativeFunction) getName() string        { return f.Name }
 func (f *NativeFunction) getPackageName() string { return f.PackageName }
 
-type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Object) Value
+type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Object) Object
 
 // 保存调用函数的索引
 type GFunction struct {

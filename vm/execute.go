@@ -94,26 +94,26 @@ func (vl *VariableList) Init() {
 }
 
 func (vl *VariableList) getInt(index int) int {
-	return vl.VariableList[index].Value.(*IntValue).intValue
+	return vl.VariableList[index].Value.(int)
 }
 
 func (vl *VariableList) getDouble(index int) float64 {
-	return vl.VariableList[index].Value.(*DoubleValue).doubleValue
+	return vl.VariableList[index].Value.(float64)
 }
 
-func (vl *VariableList) getObject(index int) *ObjectRef {
-	return vl.VariableList[index].Value.(*ObjectRef)
+func (vl *VariableList) getObject(index int) Object {
+	return vl.VariableList[index].Value.(Object)
 }
 
 func (vl *VariableList) setInt(index int, value int) {
-	vl.VariableList[index].Value.(*IntValue).intValue = value
+	vl.VariableList[index].Value = value
 }
 
 func (vl *VariableList) setDouble(index int, value float64) {
-	vl.VariableList[index].Value.(*DoubleValue).doubleValue = value
+	vl.VariableList[index].Value = value
 }
 
-func (vl *VariableList) setObject(index int, value *ObjectRef) {
+func (vl *VariableList) setObject(index int, value Object) {
 	vl.VariableList[index].Value = value
 }
 
@@ -126,7 +126,7 @@ func NewVmVariableList() *VariableList {
 type Variable struct {
 	Name          string
 	TypeSpecifier *TypeSpecifier
-	Value         Value
+	Value         interface{}
 }
 
 func (v *Variable) Init() {

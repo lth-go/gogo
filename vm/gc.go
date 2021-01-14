@@ -28,15 +28,13 @@ func (vm *VirtualMachine) Mark() {
 	for _, exe := range vm.executableList {
 		for _, variable := range exe.VariableList.VariableList {
 			if variable.IsReferenceType() {
-				mark(variable.Value.(*ObjectRef))
+				mark(variable.Value.(Object))
 			}
 		}
 	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
-		if vm.stack.Get(i).isPointer() {
-			mark(vm.stack.GetObject(i))
-		}
+		mark(vm.stack.Get(i))
 	}
 }
 
@@ -47,9 +45,7 @@ func (vm *VirtualMachine) Sweep() {
 	newObjectList := []Object{}
 	for _, obj := range vm.heap.objectList {
 		if !obj.isMarked() {
-			// TODO: 对象自身sweep
 			obj.Sweep()
-			vm.disposeObject(obj)
 		} else {
 			newObjectList = append(newObjectList, obj)
 		}
@@ -60,35 +56,11 @@ func (vm *VirtualMachine) Sweep() {
 //
 // 标记，取消标记
 //
-func mark(ref *ObjectRef) {
-	obj := ref.data
+func mark(obj Object) {
 	if obj == nil {
 		return
 	}
 	obj.Mark()
-
-	switch o := obj.(type) {
-	case *ObjectArrayObject:
-		for _, subObj := range o.objectArray {
-			mark(subObj)
-		}
-	}
-}
-
-//
-// 删除对象
-//
-func (vm *VirtualMachine) disposeObject(obj Object) {
-	switch o := obj.(type) {
-	case *ObjectArray:
-		// remove
-	case *ObjectArrayObject:
-		o.objectArray = nil
-	default:
-		panic("TODO")
-	}
-
-	obj = nil
 }
 
 //
@@ -107,43 +79,36 @@ func (vm *VirtualMachine) AddObject(value Object) {
 //
 // string object
 //
-func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
-	return &ObjectRef{data: &ObjectString{Value: str}}
+func (vm *VirtualMachine) createStringObject(str string) Object {
+	return &ObjectString{Value: str}
 }
 
 //
 // Array object
 //
-func (vm *VirtualMachine) createArrayInt(size int) *ObjectRef {
+func (vm *VirtualMachine) createArrayInt(size int) Object {
 	obj := &ObjectArray{
-		List:     make([]Object, size),
+		List: make([]Object, size),
 	}
 	vm.AddObject(obj)
 
-	ref := &ObjectRef{data: obj}
-
-	return ref
+	return obj
 }
 
-func (vm *VirtualMachine) createArrayDouble(size int) *ObjectRef {
+func (vm *VirtualMachine) createArrayDouble(size int) Object {
 	obj := &ObjectArray{
-		List:        make([]Object, size),
+		List: make([]Object, size),
 	}
 	vm.AddObject(obj)
 
-	ref := &ObjectRef{data: obj}
-
-	return ref
+	return obj
 }
 
-func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
-	obj := &ObjectArrayObject{
-		objectArray: make([]*ObjectRef, size),
-		List:        make([]Object, size),
+func (vm *VirtualMachine) createArrayObject(size int) Object {
+	obj := &ObjectArray{
+		List: make([]Object, size),
 	}
 	vm.AddObject(obj)
 
-	ref := &ObjectRef{data: obj}
-
-	return ref
+	return obj
 }

@@ -18,12 +18,10 @@ func (vm *VirtualMachine) addNativeFunction(funcName string, proc NativeFunction
 	vm.functionList = append(vm.functionList, function)
 }
 
-func printProc(vm *VirtualMachine, argCount int, args []Object) Value {
-	ret := NewIntValue(0)
-
+func printProc(vm *VirtualMachine, argCount int, args []Object) Object {
 	str := args[0].(*ObjectString).Value
 
 	fmt.Println(str)
 
-	return ret
+	return NilObject
 }

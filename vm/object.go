@@ -48,6 +48,10 @@ type ObjectString struct {
 	Value string
 }
 
+type ObjectNil struct {
+	ObjectBase
+}
+
 type ObjectArray struct {
 	ObjectBase
 	// Length int
@@ -157,4 +161,15 @@ func NewObjectString(value string) *ObjectString {
 	return &ObjectString{
 		Value: value,
 	}
+}
+
+//
+// ObjectCallInfo 函数返回体
+// TODO: 临时定义为对象
+//
+type ObjectCallInfo struct {
+	ObjectBase               // TODO: 兼容
+	caller        *GFunction // 调用的函数
+	callerAddress int        // 保存执行函数前的pc
+	base          int
 }

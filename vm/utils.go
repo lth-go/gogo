@@ -27,21 +27,21 @@ func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
 
-func initializeValue(typ *TypeSpecifier) Value {
-	var value Value
+func initializeValue(typ *TypeSpecifier) interface{} {
+	var value interface{}
 
 	if typ.IsSliceType() {
-		value = vmNullObjectRef
+		value = NilObject
 		return value
 	}
 
 	switch typ.BasicType {
 	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
-		value = NewIntValue(0)
+		value = 0
 	case BasicTypeFloat:
-		value = NewDoubleValue(0.0)
+		value = 0.0
 	case BasicTypeString:
-		value = vmNullObjectRef
+		value = NilObject
 	case BasicTypeNil, BasicTypeBase:
 		fallthrough
 	default:
@@ -56,8 +56,33 @@ func createMethodFunctionName(className, methodName string) string {
 	return ret
 }
 
-func checkNullPointer(obj *ObjectRef) {
-	if obj.data == nil {
+func checkNullPointer(obj Object) {
+	_, ok := obj.(*ObjectNil)
+	if ok {
 		vmError(NULL_POINTER_ERR)
 	}
+}
+
+func GetObjectByType(typ *TypeSpecifier) Object {
+	var value Object
+
+	if typ.IsSliceType() {
+		value = NilObject
+		return value
+	}
+
+	switch typ.BasicType {
+	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
+		value = NewObjectInt(0)
+	case BasicTypeFloat:
+		value = NewObjectFloat(0.0)
+	case BasicTypeString:
+		value = NewObjectString("")
+	case BasicTypeNil, BasicTypeBase:
+		fallthrough
+	default:
+		panic("TODO")
+	}
+
+	return value
 }

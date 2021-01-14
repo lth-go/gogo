@@ -80,10 +80,8 @@ func mark(ref *ObjectRef) {
 //
 func (vm *VirtualMachine) disposeObject(obj Object) {
 	switch o := obj.(type) {
-	case *ObjectArrayInt:
-		o.intArray = nil
-	case *ObjectArrayDouble:
-		o.doubleArray = nil
+	case *ObjectArray:
+		// remove
 	case *ObjectArrayObject:
 		o.objectArray = nil
 	default:
@@ -117,7 +115,9 @@ func (vm *VirtualMachine) createStringObject(str string) *ObjectRef {
 // Array object
 //
 func (vm *VirtualMachine) createArrayInt(size int) *ObjectRef {
-	obj := &ObjectArrayInt{intArray: make([]int, size)}
+	obj := &ObjectArray{
+		List:     make([]Object, size),
+	}
 	vm.AddObject(obj)
 
 	ref := &ObjectRef{data: obj}
@@ -126,7 +126,9 @@ func (vm *VirtualMachine) createArrayInt(size int) *ObjectRef {
 }
 
 func (vm *VirtualMachine) createArrayDouble(size int) *ObjectRef {
-	obj := &ObjectArrayDouble{doubleArray: make([]float64, size)}
+	obj := &ObjectArray{
+		List:        make([]Object, size),
+	}
 	vm.AddObject(obj)
 
 	ref := &ObjectRef{data: obj}
@@ -135,7 +137,10 @@ func (vm *VirtualMachine) createArrayDouble(size int) *ObjectRef {
 }
 
 func (vm *VirtualMachine) createArrayObject(size int) *ObjectRef {
-	obj := &ObjectArrayObject{objectArray: make([]*ObjectRef, size)}
+	obj := &ObjectArrayObject{
+		objectArray: make([]*ObjectRef, size),
+		List:        make([]Object, size),
+	}
 	vm.AddObject(obj)
 
 	ref := &ObjectRef{data: obj}

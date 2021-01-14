@@ -227,7 +227,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
-			intValue := array.getInt(index)
+			intValue := array.GetInt(index)
 
 			stack.SetIntPlus(-2, intValue)
 			vm.stack.stackPointer--
@@ -237,7 +237,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
-			doubleValue := array.getDouble(index)
+			doubleValue := array.GetFloat(index)
 
 			stack.SetDoublePlus(-2, doubleValue)
 			vm.stack.stackPointer--
@@ -258,7 +258,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
-			array.setInt(index, value)
+			array.SetInt(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
 		case VM_POP_ARRAY_DOUBLE:
@@ -267,7 +267,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			index := stack.GetIntPlus(-1)
 
 			vm.restorePc(exe, gFunc, pc)
-			array.setDouble(index, value)
+			array.SetFloat(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
 		case VM_POP_ARRAY_OBJECT:
@@ -617,7 +617,7 @@ func (vm *VirtualMachine) searchFunction(packageName, name string) int {
 func (vm *VirtualMachine) InvokeNativeFunction(f *NativeFunction, spP *int) {
 	sp := *spP
 
-	ret := f.proc(vm, f.argCount, vm.stack.stack[sp-f.argCount-1:])
+	ret := f.proc(vm, f.argCount, vm.stack.objectList[sp-f.argCount-1:])
 
 	vm.stack.Set(sp-f.argCount-1, ret)
 
@@ -714,7 +714,7 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 	array := vm.createArrayInt(size)
 	for i := 0; i < size; i++ {
-		array.data.(*ObjectArrayInt).intArray[i] = vm.stack.GetIntPlus(-size + i)
+		array.data.(*ObjectArray).SetInt(i, vm.stack.GetIntPlus(-size+i))
 	}
 
 	return array
@@ -723,7 +723,7 @@ func (vm *VirtualMachine) createArrayLiteralInt(size int) *ObjectRef {
 func (vm *VirtualMachine) createArrayLiteralFloat(size int) *ObjectRef {
 	array := vm.createArrayDouble(size)
 	for i := 0; i < size; i++ {
-		array.data.(*ObjectArrayDouble).doubleArray[i] = vm.stack.GetFloatPlus(-size + i)
+		array.data.(*ObjectArray).SetFloat(i, vm.stack.GetFloatPlus(-size+i))
 	}
 
 	return array
@@ -732,7 +732,7 @@ func (vm *VirtualMachine) createArrayLiteralFloat(size int) *ObjectRef {
 func (vm *VirtualMachine) createArrayLiteralObject(size int) *ObjectRef {
 	array := vm.createArrayObject(size)
 	for i := 0; i < size; i++ {
-		array.data.(*ObjectArrayObject).objectArray[i] = vm.stack.GetObjectPlus(-size + i)
+		array.data.(*ObjectArrayObject).setObject(i, vm.stack.GetObjectPlus(-size+i))
 	}
 
 	return array

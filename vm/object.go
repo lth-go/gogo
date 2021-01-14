@@ -48,37 +48,80 @@ type ObjectString struct {
 	Value string
 }
 
-type _ObjectArray struct {
+type ObjectArray struct {
 	ObjectBase
 	// Length int
 	// ValueType int
 	List []Object
 }
 
-func (obj *_ObjectArray) Mark() {
+func (obj *ObjectArray) Mark() {
 	obj.ObjectBase.Mark()
 
 	for _, subObj := range obj.List {
+		if subObj == nil {
+			continue
+		}
 		subObj.Mark()
 	}
 }
 
-func (obj *_ObjectArray) ResetMark() {
+func (obj *ObjectArray) ResetMark() {
 	obj.ObjectBase.ResetMark()
 
 	for _, subObj := range obj.List {
+		if subObj == nil {
+			continue
+		}
 		subObj.ResetMark()
 	}
 }
 
-func (obj *_ObjectArray) Sweep() {
+func (obj *ObjectArray) Sweep() {
 	for _, subObj := range obj.List {
 		subObj.Sweep()
 	}
 }
 
-func (obj *_ObjectArray) Len() int {
+func (obj *ObjectArray) Len() int {
 	return len(obj.List)
+}
+
+func (obj *ObjectArray) Set(index int, value Object) {
+	obj.Check(index)
+	obj.List[index] = value
+}
+
+func (obj *ObjectArray) SetInt(index int, value int) {
+	obj.Set(index, NewObjectInt(value))
+}
+
+func (obj *ObjectArray) SetFloat(index int, value float64) {
+	obj.Set(index, NewObjectFloat(value))
+}
+
+func (obj *ObjectArray) Get(index int) Object {
+	obj.Check(index)
+	return obj.List[index]
+}
+
+func (obj *ObjectArray) GetInt(index int) int {
+	return obj.Get(index).(*ObjectInt).Value
+}
+
+func (obj *ObjectArray) GetFloat(index int) float64 {
+	return obj.Get(index).(*ObjectFloat).Value
+}
+
+func (obj *ObjectArray) Check(index int) {
+	if obj.List == nil {
+		vmError(NULL_POINTER_ERR)
+		return
+	}
+	length := obj.Len()
+	if length < 0 || index >= length {
+		vmError(INDEX_OUT_OF_BOUNDS_ERR, index, length)
+	}
 }
 
 type ObjectMap struct {

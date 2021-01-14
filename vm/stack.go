@@ -180,14 +180,14 @@ func (s *Stack) SetObjectPlus(incr int, value *ObjectRef) {
 	s.SetObject(index, value)
 }
 
-func (s *Stack) getArrayInt(sp int) *ObjectArrayInt {
+func (s *Stack) getArrayInt(sp int) *ObjectArray {
 	index := s.getIndex(sp)
-	return s.GetObject(index).data.(*ObjectArrayInt)
+	return s.GetObject(index).data.(*ObjectArray)
 }
 
-func (s *Stack) getArrayDouble(sp int) *ObjectArrayDouble {
+func (s *Stack) getArrayDouble(sp int) *ObjectArray {
 	index := s.getIndex(sp)
-	return s.GetObject(index).data.(*ObjectArrayDouble)
+	return s.GetObject(index).data.(*ObjectArray)
 }
 
 func (s *Stack) getArrayObject(sp int) *ObjectArrayObject {

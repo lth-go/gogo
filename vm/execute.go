@@ -50,11 +50,6 @@ func (exe *Executable) ShowCode() {
 	}
 }
 
-func (exe *Executable) AddConstantPool(cp Constant) int {
-	exe.ConstantPool.Append(cp)
-	return exe.ConstantPool.Length() - 1
-}
-
 //
 // ExecutableList
 //
@@ -79,69 +74,6 @@ func (exeList *ExecutableList) AddExe(exe *Executable) bool {
 
 func (exeList *ExecutableList) GetTopExe() *Executable {
 	return exeList.List[len(exeList.List)-1]
-}
-
-// ==============================
-// 常量池
-// ==============================
-
-type Constant interface {
-	getInt() int
-	getDouble() float64
-	getString() string
-}
-
-type ConstantImpl struct{}
-
-func (c *ConstantImpl) getInt() int {
-	panic("error")
-}
-
-func (c *ConstantImpl) getDouble() float64 {
-	panic("error")
-}
-
-func (c *ConstantImpl) getString() string {
-	panic("error")
-}
-
-type ConstantInt struct {
-	ConstantImpl
-	intValue int
-}
-
-func NewConstantInt(value int) *ConstantInt {
-	return &ConstantInt{intValue: value}
-}
-
-func (c *ConstantInt) getInt() int {
-	return c.intValue
-}
-
-type ConstantDouble struct {
-	ConstantImpl
-	doubleValue float64
-}
-
-func NewConstantDouble(value float64) *ConstantDouble {
-	return &ConstantDouble{doubleValue: value}
-}
-
-func (c *ConstantDouble) getDouble() float64 {
-	return c.doubleValue
-}
-
-type ConstantString struct {
-	ConstantImpl
-	stringValue string
-}
-
-func NewConstantString(value string) *ConstantString {
-	return &ConstantString{stringValue: value}
-}
-
-func (c *ConstantString) getString() string {
-	return c.stringValue
 }
 
 //

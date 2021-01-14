@@ -12,15 +12,13 @@ var vmNullObjectRef = &ObjectRef{}
 // 虚拟机
 //
 type VirtualMachine struct {
-	stack *Stack // 栈
-	heap  *Heap  // 堆
-	pc    int    // 程序计数器
-
-	functionList []ExecFunction // 全局函数列表
-
-	currentExecutable *Executable   // 当前exe
-	executableList    []*Executable // exe列表
-	topLevel          *Executable   // 顶层exe
+	stack             *Stack         // 栈
+	heap              *Heap          // 堆
+	pc                int            // 程序计数器
+	functionList      []ExecFunction // 全局函数列表
+	currentExecutable *Executable    // 当前exe
+	executableList    []*Executable  // exe列表
+	topLevel          *Executable    // 顶层exe
 }
 
 func NewVirtualMachine() *VirtualMachine {
@@ -140,7 +138,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			pc += 3
 		case VM_PUSH_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetIntPlus(0, exe.ConstantPool.getInt(index))
+			stack.SetIntPlus(0, exe.ConstantPool.GetInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_DOUBLE_0:
@@ -153,12 +151,12 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Value {
 			pc++
 		case VM_PUSH_DOUBLE:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetDoublePlus(0, exe.ConstantPool.getDouble(index))
+			stack.SetDoublePlus(0, exe.ConstantPool.GetFloat(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STRING:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetObjectPlus(0, vm.createStringObject(exe.ConstantPool.getString(index)))
+			stack.SetObjectPlus(0, vm.createStringObject(exe.ConstantPool.GetString(index)))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_NULL:

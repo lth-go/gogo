@@ -186,7 +186,7 @@ func (c *Compiler) Generate() *vm.Executable {
 	exe.LineNumberList = opCodeBuf.lineNumberList
 
 	// TODO: remove
-	exe.ConstantPool.SetPool(c.GetVmConstantList())
+	exe.ConstantPool.SetPool(c.ConstantList)
 
 	return exe
 }
@@ -335,29 +335,12 @@ func (c *Compiler) AddNativeFunctions() {
 }
 
 func (c *Compiler) AddConstantList(value interface{}) int {
-	c.ConstantList = append(c.ConstantList, value)
-	return len(c.ConstantList) - 1
-}
-
-func (c *Compiler) GetVmConstantList() []vm.Constant {
-	var constantValue vm.Constant
-
-	constantList := make([]vm.Constant, 0)
-
-	for _, valueIFS := range c.ConstantList {
-		switch value := valueIFS.(type) {
-		case int:
-			constantValue = vm.NewConstantInt(value)
-		case float64:
-			constantValue = vm.NewConstantDouble(value)
-		case string:
-			constantValue = vm.NewConstantString(value)
-		default:
-			panic("TODO")
+	for i, v := range c.ConstantList {
+		if value == v {
+			return i
 		}
-
-		constantList = append(constantList, constantValue)
 	}
 
-	return constantList
+	c.ConstantList = append(c.ConstantList, value)
+	return len(c.ConstantList) - 1
 }

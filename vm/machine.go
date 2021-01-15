@@ -141,15 +141,15 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(0, exe.ConstantPool.GetInt(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_DOUBLE_0:
+		case VM_PUSH_FLOAT_0:
 			stack.SetFloatPlus(0, 0.0)
 			vm.stack.stackPointer++
 			pc++
-		case VM_PUSH_DOUBLE_1:
+		case VM_PUSH_FLOAT_1:
 			stack.SetFloatPlus(0, 1.0)
 			vm.stack.stackPointer++
 			pc++
-		case VM_PUSH_DOUBLE:
+		case VM_PUSH_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetFloatPlus(0, exe.ConstantPool.GetFloat(index))
 			vm.stack.stackPointer++
@@ -159,7 +159,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetStringPlus(0, exe.ConstantPool.GetString(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_NULL:
+		case VM_PUSH_NIL:
 			stack.SetPlus(0, NilObject)
 			vm.stack.stackPointer++
 			pc++
@@ -168,7 +168,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(0, stack.GetInt(base+index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_STACK_DOUBLE:
+		case VM_PUSH_STACK_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetFloatPlus(0, stack.GetFloat(base+index))
 			vm.stack.stackPointer++
@@ -183,7 +183,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetInt(base+index, stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_STACK_DOUBLE:
+		case VM_POP_STACK_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetFloat(base+index, stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
@@ -244,7 +244,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)+stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_ADD_DOUBLE:
+		case VM_ADD_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)+stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
@@ -256,7 +256,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)-stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_SUB_DOUBLE:
+		case VM_SUB_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)-stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
@@ -264,7 +264,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)*stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_MUL_DOUBLE:
+		case VM_MUL_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)*stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
@@ -275,20 +275,20 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)/stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_DIV_DOUBLE:
+		case VM_DIV_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)/stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
 		case VM_MINUS_INT:
 			stack.SetIntPlus(-1, -stack.GetIntPlus(-1))
 			pc++
-		case VM_MINUS_DOUBLE:
+		case VM_MINUS_FLOAT:
 			stack.SetFloatPlus(-1, -stack.GetFloatPlus(-1))
 			pc++
-		case VM_CAST_INT_TO_DOUBLE:
+		case VM_CAST_INT_TO_FLOAT:
 			stack.SetFloatPlus(-1, float64(stack.GetIntPlus(-1)))
 			pc++
-		case VM_CAST_DOUBLE_TO_INT:
+		case VM_CAST_FLOAT_TO_INT:
 			stack.SetIntPlus(-1, int(stack.GetFloatPlus(-1)))
 			pc++
 		case VM_CAST_BOOLEAN_TO_STRING:
@@ -302,7 +302,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			buf := fmt.Sprintf("%d", stack.GetIntPlus(-1))
 			stack.SetStringPlus(-1, buf)
 			pc++
-		case VM_CAST_DOUBLE_TO_STRING:
+		case VM_CAST_FLOAT_TO_STRING:
 			buf := fmt.Sprintf("%f", stack.GetFloatPlus(-1))
 			stack.SetStringPlus(-1, buf)
 			pc++
@@ -310,7 +310,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) == stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_EQ_DOUBLE:
+		case VM_EQ_FLOAT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) == stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
@@ -326,7 +326,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) > stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GT_DOUBLE:
+		case VM_GT_FLOAT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) > stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
@@ -338,7 +338,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) >= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GE_DOUBLE:
+		case VM_GE_FLOAT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) >= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
@@ -350,7 +350,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) < stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LT_DOUBLE:
+		case VM_LT_FLOAT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) < stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
@@ -362,7 +362,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) <= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LE_DOUBLE:
+		case VM_LE_FLOAT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) <= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
@@ -374,7 +374,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) != stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_NE_DOUBLE:
+		case VM_NE_FLOAT:
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) != stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
@@ -485,7 +485,7 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 		switch code {
 		// 函数内的本地声明
 		case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
-			VM_PUSH_STACK_DOUBLE, VM_POP_STACK_DOUBLE,
+			VM_PUSH_STACK_FLOAT, VM_POP_STACK_FLOAT,
 			VM_PUSH_STACK_OBJECT, VM_POP_STACK_OBJECT:
 
 			var parameterCount int

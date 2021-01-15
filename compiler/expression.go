@@ -176,15 +176,15 @@ func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
 func (expr *DoubleExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 	if expr.doubleValue == 0.0 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_0)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_0)
 
 	} else if expr.doubleValue == 1.0 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE_1)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_1)
 
 	} else {
 		cpIdx := getCurrentCompiler().AddConstantList(expr.doubleValue)
 
-		ob.generateCode(expr.Position(), vm.VM_PUSH_DOUBLE, cpIdx)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT, cpIdx)
 	}
 }
 
@@ -246,7 +246,7 @@ func (expr *NullExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *NullExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	ob.generateCode(expr.Position(), vm.VM_PUSH_NULL)
+	ob.generateCode(expr.Position(), vm.VM_PUSH_NIL)
 }
 
 func createNullExpression(pos Position) *NullExpression {
@@ -708,15 +708,15 @@ func (expr *CastExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 	switch expr.castType {
 	case CastTypeIntToFloat:
-		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_DOUBLE)
+		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_FLOAT)
 	case CastTypeFloatToInt:
-		ob.generateCode(expr.Position(), vm.VM_CAST_DOUBLE_TO_INT)
+		ob.generateCode(expr.Position(), vm.VM_CAST_FLOAT_TO_INT)
 	case CastTypeBoolToString:
 		ob.generateCode(expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
 	case CastTypeIntToString:
 		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_STRING)
 	case CastTypeFloatToString:
-		ob.generateCode(expr.Position(), vm.VM_CAST_DOUBLE_TO_STRING)
+		ob.generateCode(expr.Position(), vm.VM_CAST_FLOAT_TO_STRING)
 	default:
 		panic("TODO")
 	}

@@ -340,13 +340,13 @@ primary_expression
         : INT_LITERAL
         {
             value, _ := strconv.Atoi($1.Lit)
-            $$ = &IntExpression{intValue: value}
+            $$ = &IntExpression{Value: value}
             $$.SetPosition($1.Position())
         }
         | FLOAT_LITERAL
         {
             value, _ := strconv.ParseFloat($1.Lit, 64)
-            $$ = &DoubleExpression{doubleValue: value}
+            $$ = &DoubleExpression{Value: value}
             $$.SetPosition($1.Position())
         }
         | STRING_LITERAL
@@ -356,18 +356,17 @@ primary_expression
         }
         | TRUE_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: true}
+            $$ = &BooleanExpression{Value: true}
             $$.SetPosition($1.Position())
         }
         | FALSE_LITERAL
         {
-            $$ = &BooleanExpression{booleanValue: false}
+            $$ = &BooleanExpression{Value: false}
             $$.SetPosition($1.Position())
         }
         | NULL_LITERAL
         {
-            $$ = &NullExpression{}
-            $$.SetPosition($1.Position())
+            $$ = createNilExpression($1.Position())
         }
         | composite_type LC expression_list_or_nil RC
         {

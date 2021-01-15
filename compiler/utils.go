@@ -11,7 +11,7 @@ func printWithIndent(a string, indent int) {
 }
 
 func isNull(expr Expression) bool {
-	_, ok := expr.(*NullExpression)
+	_, ok := expr.(*NilExpression)
 	return ok
 }
 

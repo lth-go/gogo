@@ -304,13 +304,14 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	// return value == nil
 	// 衍生类型
 	if fdType.IsComposite() {
-		stmt.returnValue = createNullExpression(stmt.Position())
+		stmt.returnValue = createNilExpression(stmt.Position())
 		return
 	}
 
 	// 基础类型
 	switch {
 	case fdType.IsVoid():
+		// TODO: 修改返回
 		stmt.returnValue = createIntExpression(stmt.Position())
 	case fdType.IsBool():
 		stmt.returnValue = createBooleanExpression(stmt.Position())
@@ -337,9 +338,9 @@ func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
 
-// ==============================
+//
 // BreakStatement
-// ==============================
+//
 
 // BreakStatement break 语句
 type BreakStatement struct {

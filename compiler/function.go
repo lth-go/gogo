@@ -4,7 +4,7 @@ package compiler
 // Parameter 形参
 //
 type Parameter struct {
-	typeSpecifier *TypeSpecifier
+	typeSpecifier *Type
 	name          string
 }
 
@@ -12,7 +12,7 @@ type Parameter struct {
 // FunctionDefinition 函数定义
 //
 type FunctionDefinition struct {
-	typeSpecifier     *TypeSpecifier
+	typeSpecifier     *Type
 	packageName       string
 	name              string
 	receiver          *Parameter
@@ -34,7 +34,7 @@ func (fd *FunctionDefinition) fix() {
 	}
 }
 
-func (fd *FunctionDefinition) typeS() *TypeSpecifier {
+func (fd *FunctionDefinition) typeS() *Type {
 	return fd.typeSpecifier
 }
 
@@ -79,8 +79,8 @@ func (fd *FunctionDefinition) addLocalVariable(decl *Declaration) {
 	fd.localVariableList = append(fd.localVariableList, decl)
 }
 
-func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []Expression, arrayBase *TypeSpecifier) {
-	var tempType *TypeSpecifier
+func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []Expression, arrayBase *Type) {
+	var tempType *Type
 
 	parameterList := fd.parameterList
 
@@ -95,11 +95,7 @@ func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []
 		argumentList[i] = argumentList[i].fix(currentBlock)
 
 		paramType := parameterList[i].typeSpecifier
-		if paramType.IsBase() {
-			tempType = arrayBase
-		} else {
-			tempType = paramType
-		}
+		tempType = paramType
 		argumentList[i] = CreateAssignCast(argumentList[i], tempType)
 	}
 }
@@ -110,4 +106,12 @@ func (fd *FunctionDefinition) GetPackageName() string {
 
 func (fd *FunctionDefinition) GetName() string {
 	return fd.name
+}
+
+// 拷贝函数定义的参数类型
+func (fd *FunctionDefinition) CopyType() *Type {
+	typ := fd.typeSpecifier.CopyType()
+	typ.funcType = NewFuncType(fd.parameterList, nil)
+
+	return typ
 }

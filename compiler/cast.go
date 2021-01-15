@@ -5,7 +5,7 @@ import (
 )
 
 // 声明类型转换
-func CreateAssignCast(src Expression, destTye *TypeSpecifier) Expression {
+func CreateAssignCast(src Expression, destTye *Type) Expression {
 	var castExpr Expression
 
 	srcTye := src.typeS()
@@ -55,18 +55,18 @@ func CastBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
 }
 
 func createCastExpression(castType CastType, expr Expression) Expression {
-	var typ *TypeSpecifier
+	var typ *Type
 
 	castExpr := &CastExpression{castType: castType, operand: expr}
 	castExpr.SetPosition(expr.Position())
 
 	switch castType {
 	case CastTypeIntToFloat:
-		typ = newTypeSpecifier(vm.BasicTypeFloat)
+		typ = NewType(vm.BasicTypeFloat)
 	case CastTypeFloatToInt:
-		typ = newTypeSpecifier(vm.BasicTypeInt)
+		typ = NewType(vm.BasicTypeInt)
 	case CastTypeBoolToString, CastTypeIntToString, CastTypeFloatToString:
-		typ = newTypeSpecifier(vm.BasicTypeString)
+		typ = NewType(vm.BasicTypeString)
 	}
 	castExpr.setType(typ)
 
@@ -89,7 +89,7 @@ func createToStringCast(src Expression) Expression {
 	return cast
 }
 
-func castMismatchError(pos Position, src, dest *TypeSpecifier) {
+func castMismatchError(pos Position, src, dest *Type) {
 	srcName := src.GetTypeName()
 	destName := dest.GetTypeName()
 	compileError(pos, CAST_MISMATCH_ERR, srcName, destName)

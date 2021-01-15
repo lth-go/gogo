@@ -27,7 +27,7 @@ type Compiler struct {
 	path            string                // 源文件路径
 	packageName     string                // 包名
 	importedList    []*Compiler           // 已加载compiler列表
-	importList      []*ImportSpec         // 依赖的包
+	importList      []*Import         // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
 	statementList   []Statement           // 语句列表
@@ -38,7 +38,7 @@ type Compiler struct {
 func NewCompiler(path string) *Compiler {
 	c := &Compiler{
 		path:            path,
-		importList:      []*ImportSpec{},
+		importList:      []*Import{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*Declaration{},
 		statementList:   []Statement{},
@@ -53,7 +53,7 @@ func NewCompiler(path string) *Compiler {
 //
 // 函数定义
 //
-func createFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
+func createFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
 	c := getCurrentCompiler()
 
 	fd := &FunctionDefinition{
@@ -95,7 +95,7 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 		}
 
 		// new compiler
-		importedCompiler = NewCompiler(import_.getFullPath())
+		importedCompiler = NewCompiler(import_.GetPath())
 		importedCompiler.packageName = import_.packageName
 
 		// add global
@@ -266,7 +266,7 @@ func (c *Compiler) searchPackage(name string) *Package {
 		if name == importedC.packageName {
 			return &Package{
 				compiler: importedC,
-				typ:      newTypeSpecifier(vm.BasicTypePackage),
+				typ:      NewType(vm.BasicTypePackage),
 			}
 		}
 
@@ -312,8 +312,8 @@ func searchCompiler(list []*Compiler, packageName string) *Compiler {
 }
 
 func (c *Compiler) AddNativeFunctions() {
-	paramsType := []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}}
-	typ := createFuncTypeSpecifier(paramsType, nil)
+	paramsType := []*Parameter{{typeSpecifier: NewType(vm.BasicTypeString), name: "str"}}
+	typ := CreateFuncType(paramsType, nil)
 
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,

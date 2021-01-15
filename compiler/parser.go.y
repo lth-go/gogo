@@ -19,10 +19,10 @@ import (
     block                *Block
     else_if              []*ElseIf
 
-    type_specifier       *TypeSpecifier
+    type_specifier       *Type
 
-    import_spec          *ImportSpec
-    import_spec_list     []*ImportSpec
+    import_spec          *Import
+    import_spec_list     []*Import
 
     function_definition  *FunctionDefinition
 
@@ -87,7 +87,7 @@ import_declaration_list_or_nil
 import_declaration_list
         : import_declaration
         {
-            $$ = createImportSpecList($1)
+            $$ = CreateImportList($1)
         }
         | import_declaration_list import_declaration
         {
@@ -97,7 +97,7 @@ import_declaration_list
 import_declaration
         : IMPORT STRING_LITERAL SEMICOLON
         {
-            $$ = createImportSpec($2.Lit)
+            $$ = CreateImport($2.Lit)
         }
         ;
 definition_or_statement
@@ -111,15 +111,14 @@ definition_or_statement
 array_type_specifier
         : LB RB type_specifier
         {
-            $$ = createArrayTypeSpecifier($3)
+            $$ = CreateArrayType($3, $1.Position())
             $$.SetPosition($1.Position())
         }
         ;
 map_type_specifier
         : MAP LB type_specifier RB type_specifier
         {
-            $$ = createMapTypeSpecifier($3, $5)
-            $$.SetPosition($1.Position())
+            $$ = CreateMapType($3, $5, $1.Position())
         }
         ;
 func_type_specifier
@@ -132,11 +131,11 @@ func_type_specifier
 type_specifier
         : IDENTIFIER
         {
-            $$ = createTypeSpecifierAsName($1.Lit, $1.Position())
+            $$ = CreateTypeByName($1.Lit, $1.Position())
         }
         | IDENTIFIER DOT IDENTIFIER
         {
-            $$ = createTypeSpecifierAsName($1.Lit + "." + $3.Lit, $1.Position())
+            $$ = CreateTypeByName($1.Lit + "." + $3.Lit, $1.Position())
         }
         | composite_type
         | func_type_specifier
@@ -195,7 +194,7 @@ argument_list
 signature
         : parameters result_or_nil
         {
-            $$ = createFuncTypeSpecifier($1, $2)
+            $$ = CreateFuncType($1, $2)
         }
         ;
 result_or_nil

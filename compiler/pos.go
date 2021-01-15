@@ -12,17 +12,17 @@ type Position struct {
 	Column int
 }
 
-// PosImpl provies commonly implementations for Pos.
-type PosImpl struct {
+// PosBase provies commonly implementations for Pos.
+type PosBase struct {
 	pos Position
 }
 
 // Position return the position of the expression or statement.
-func (x *PosImpl) Position() Position {
+func (x *PosBase) Position() Position {
 	return x.pos
 }
 
 // SetPosition is a function to specify position of the expression or statement.
-func (x *PosImpl) SetPosition(pos Position) {
+func (x *PosBase) SetPosition(pos Position) {
 	x.pos = pos
 }

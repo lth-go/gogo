@@ -10,15 +10,10 @@ func printWithIndent(a string, indent int) {
 	fmt.Println(a)
 }
 
-func isNull(expr Expression) bool {
-	_, ok := expr.(*NilExpression)
-	return ok
-}
-
 //
 // compare
 //
-func compareType(typ1 *TypeSpecifier, typ2 *TypeSpecifier) bool {
+func compareType(typ1 *Type, typ2 *Type) bool {
 	if typ1.GetBasicType() != typ2.GetBasicType() {
 		return false
 	}

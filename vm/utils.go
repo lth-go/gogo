@@ -42,7 +42,7 @@ func initializeValue(typ *TypeSpecifier) interface{} {
 		value = 0.0
 	case BasicTypeString:
 		value = NilObject
-	case BasicTypeNil, BasicTypeBase:
+	case BasicTypeNil:
 		fallthrough
 	default:
 		panic("TODO")
@@ -78,7 +78,7 @@ func GetObjectByType(typ *TypeSpecifier) Object {
 		value = NewObjectFloat(0.0)
 	case BasicTypeString:
 		value = NewObjectString("")
-	case BasicTypeNil, BasicTypeBase:
+	case BasicTypeNil:
 		fallthrough
 	default:
 		panic("TODO")

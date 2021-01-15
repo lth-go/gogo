@@ -10,7 +10,7 @@ import (
 
 // Token token
 type Token struct {
-	PosImpl // StmtImpl provide Pos() function.
+	PosBase // StmtImpl provide Pos() function.
 	Tok     int
 	Lit     string
 }

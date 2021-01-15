@@ -57,8 +57,8 @@ type Expression interface {
 	Pos
 	fix(*Block) Expression       // 用于类型修正,以及简单的类型转换
 	generate(*Block, *OpCodeBuf) // 生成字节码
-	typeS() *TypeSpecifier
-	setType(*TypeSpecifier)
+	typeS() *Type
+	setType(*Type)
 	show(indent int)
 }
 
@@ -66,15 +66,15 @@ type Expression interface {
 // Expression base
 //
 type ExpressionBase struct {
-	PosImpl
-	typeSpecifier *TypeSpecifier
+	PosBase
+	typeSpecifier *Type
 }
 
 func (expr *ExpressionBase) fix(currentBlock *Block) Expression          { return nil }
 func (expr *ExpressionBase) generate(currentBlock *Block, ob *OpCodeBuf) {}
 func (expr *ExpressionBase) show(indent int)                             {}
-func (expr *ExpressionBase) typeS() *TypeSpecifier                       { return expr.typeSpecifier }
-func (expr *ExpressionBase) setType(t *TypeSpecifier)                    { expr.typeSpecifier = t }
+func (expr *ExpressionBase) typeS() *Type                       { return expr.typeSpecifier }
+func (expr *ExpressionBase) setType(t *Type)                    { expr.typeSpecifier = t }
 
 //
 // BooleanExpression
@@ -89,7 +89,7 @@ func (expr *BooleanExpression) show(indent int) {
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.BasicTypeBool))
+	expr.setType(NewType(vm.BasicTypeBool))
 	expr.typeS().fix()
 	return expr
 }
@@ -125,7 +125,7 @@ func (expr *IntExpression) show(indent int) {
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.BasicTypeInt))
+	expr.setType(NewType(vm.BasicTypeInt))
 	expr.typeS().fix()
 	return expr
 }
@@ -161,7 +161,7 @@ func (expr *DoubleExpression) show(indent int) {
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.BasicTypeFloat))
+	expr.setType(NewType(vm.BasicTypeFloat))
 	expr.typeS().fix()
 	return expr
 }
@@ -199,7 +199,7 @@ func (expr *StringExpression) show(indent int) {
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.BasicTypeString))
+	expr.setType(NewType(vm.BasicTypeString))
 	expr.typeS().fix()
 
 	return expr
@@ -229,7 +229,7 @@ func (expr *NilExpression) show(indent int) {
 }
 
 func (expr *NilExpression) fix(currentBlock *Block) Expression {
-	expr.setType(newTypeSpecifier(vm.BasicTypeNil))
+	expr.setType(NewType(vm.BasicTypeNil))
 	expr.typeS().fix()
 	return expr
 }
@@ -242,6 +242,11 @@ func createNilExpression(pos Position) *NilExpression {
 	expr := &NilExpression{}
 	expr.SetPosition(pos)
 	return expr
+}
+
+func isNull(expr Expression) bool {
+	_, ok := expr.(*NilExpression)
+	return ok
 }
 
 //
@@ -281,7 +286,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	if fd != nil {
 		compiler := getCurrentCompiler()
 
-		expr.setType(createFuncType(fd))
+		expr.setType(fd.CopyType())
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
 			Index:              compiler.AddFuncList(fd),
@@ -509,7 +514,7 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	switch operand := expr.operand.(type) {
 	case *BooleanExpression:
 		operand.Value = !operand.Value
-		operand.setType(createTypeSpecifier(vm.BasicTypeBool, expr.Position()))
+		operand.setType(CreateType(vm.BasicTypeBool, expr.Position()))
 		newExpr = operand
 	default:
 		if !expr.operand.typeS().IsBool() {
@@ -555,7 +560,7 @@ func (expr *FunctionCallExpression) show(indent int) {
 
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	var fd *FunctionDefinition
-	var arrayBase *TypeSpecifier
+	var arrayBase *Type
 	var name string
 
 	funcIfs := expr.function.fix(currentBlock)
@@ -574,7 +579,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	fd.checkArgument(currentBlock, expr.argumentList, arrayBase)
 
-	expr.setType(CopyType(fd.typeS()))
+	expr.setType(fd.typeS().CopyType())
 
 	// TODO: 兼容代码, 待移除
 	if len(fd.typeSpecifier.funcType.Results) == 0 {
@@ -653,7 +658,7 @@ func fixPackageMemberExpression(expr *MemberExpression, memberName string) Expre
 		},
 	}
 
-	newExpr.setType(createFuncType(fd))
+	newExpr.setType(fd.CopyType())
 	newExpr.typeS().fix()
 
 	return newExpr
@@ -733,9 +738,9 @@ func (expr *ArrayLiteralExpression) fix(currentBlock *Block) Expression {
 		expr.arrayLiteral[i] = CreateAssignCast(expr.arrayLiteral[i], elemType)
 	}
 
-	expr.setType(newTypeSpecifier(vm.BasicTypeSlice))
+	expr.setType(NewType(vm.BasicTypeSlice))
 
-	expr.typeS().sliceType = NewSliceType(elemType)
+	expr.typeS().sliceType = NewArrayType(elemType)
 
 	expr.typeS().fix()
 
@@ -787,7 +792,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
 	}
 
-	expr.setType(cloneTypeSpecifier(expr.array.typeS().sliceType.ElementType))
+	expr.setType(expr.array.typeS().sliceType.ElementType.CopyType())
 	expr.typeS().sliceType = nil
 
 	if !expr.index.typeS().IsInt() {
@@ -818,6 +823,6 @@ func createIndexExpression(array, index Expression, pos Position) *IndexExpressi
 }
 
 type Package struct {
-	typ      *TypeSpecifier
+	typ      *Type
 	compiler *Compiler
 }

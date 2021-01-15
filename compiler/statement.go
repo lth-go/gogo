@@ -17,7 +17,7 @@ type Statement interface {
 }
 
 type StatementImpl struct {
-	PosImpl
+	PosBase
 }
 
 // ==============================
@@ -279,10 +279,10 @@ func (stmt *ReturnStatement) show(indent int) {
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	// TODO: use first result type
-	var fdType *TypeSpecifier
+	var fdType *Type
 
 	if len(fd.typeS().funcType.Results) == 0 {
-		fdType = newTypeSpecifier(vm.BasicTypeVoid)
+		fdType = NewType(vm.BasicTypeVoid)
 	} else {
 		fdType = fd.typeS().funcType.Results[0].typeSpecifier
 	}
@@ -404,7 +404,7 @@ func (stmt *ContinueStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 // Declaration 声明语句
 type Declaration struct {
 	StatementImpl
-	typeSpecifier *TypeSpecifier
+	typeSpecifier *Type
 	name          string
 	initializer   Expression
 	variableIndex int

@@ -15,7 +15,6 @@ const (
 	BasicTypeString
 	BasicTypeNil
 	BasicTypeVoid
-	BasicTypeBase
 	BasicTypePackage
 	BasicTypeSlice
 	BasicTypeMap

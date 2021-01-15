@@ -3,24 +3,23 @@ package compiler
 import (
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const (
 	importSuffix = ".gogo"
 )
 
-type ImportSpec struct {
-	PosImpl
+type Import struct {
+	PosBase
 	packageName string
 }
 
 // 获取导入文件的相对路径
-func (i *ImportSpec) getRelativePath() string {
+func (i *Import) getRelativePath() string {
 	return i.packageName + importSuffix
 }
 
-func (i *ImportSpec) getFullPath() string {
+func (i *Import) GetPath() string {
 	searchBasePath := os.Getenv("IMPORT_SEARCH_PATH")
 	if searchBasePath == "" {
 		searchBasePath = "."
@@ -37,21 +36,16 @@ func (i *ImportSpec) getFullPath() string {
 	return fullPath
 }
 
-func (i *ImportSpec) getPackageNameList() []string {
-	return strings.Split(i.packageName, "/")
+func CreateImportList(importSpec *Import) []*Import {
+	return []*Import{importSpec}
 }
 
-func createImportSpecList(importSpec *ImportSpec) []*ImportSpec {
-	return []*ImportSpec{importSpec}
-}
-
-func createImportSpec(packageName string) *ImportSpec {
-	return &ImportSpec{
+func CreateImport(packageName string) *Import {
+	return &Import{
 		packageName: packageName,
 	}
 }
 
-func setImportList(importList []*ImportSpec) {
-	compiler := getCurrentCompiler()
-	compiler.importList = importList
+func setImportList(importList []*Import) {
+	getCurrentCompiler().importList = importList
 }

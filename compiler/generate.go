@@ -135,14 +135,14 @@ func generateStatementList(currentBlock *Block, statementList []Statement, ob *O
 //
 // COPY
 //
-func copyTypeSpecifierNoAlloc(src *TypeSpecifier, dest *vm.TypeSpecifier) {
+func copyTypeSpecifierNoAlloc(src *Type, dest *vm.TypeSpecifier) {
 	dest.BasicType = src.GetBasicType()
 	if src.IsArray() {
 		dest.SetSliceType(copyTypeSpecifier(src.sliceType.ElementType), src.sliceType.Len)
 	}
 }
 
-func copyTypeSpecifier(src *TypeSpecifier) *vm.TypeSpecifier {
+func copyTypeSpecifier(src *Type) *vm.TypeSpecifier {
 	dest := &vm.TypeSpecifier{}
 	copyTypeSpecifierNoAlloc(src, dest)
 
@@ -210,7 +210,7 @@ func generatePushArgument(argList []Expression, currentBlock *Block, ob *OpCodeB
 	}
 }
 
-func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
+func getOpcodeTypeOffset(typ *Type) byte {
 	if typ.IsComposite() {
 		return byte(2)
 	}
@@ -224,7 +224,7 @@ func getOpcodeTypeOffset(typ *TypeSpecifier) byte {
 		return byte(1)
 	case typ.IsString():
 		return byte(2)
-	case typ.IsNil(), typ.IsBase():
+	case typ.IsNil():
 		fallthrough
 	default:
 		log.Fatalf("TODO")

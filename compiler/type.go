@@ -8,15 +8,15 @@ import (
 )
 
 //
-// composite type
+// 复合类型
 //
-type SliceType struct {
+type ArrayType struct {
 	Len         int64
-	ElementType *TypeSpecifier
+	ElementType *Type
 }
 
-func NewSliceType(elementType *TypeSpecifier) *SliceType {
-	return &SliceType{
+func NewArrayType(elementType *Type) *ArrayType {
+	return &ArrayType{
 		ElementType: elementType,
 	}
 }
@@ -34,28 +34,27 @@ func NewFuncType(params []*Parameter, results []*Parameter) *FuncType {
 }
 
 type MapType struct {
-	Key   *TypeSpecifier
-	Value *TypeSpecifier
+	Key   *Type
+	Value *Type
 }
 
-func NewMapType(keyType, valueType *TypeSpecifier) *MapType {
+func NewMapType(keyType, valueType *Type) *MapType {
 	return &MapType{
 		Key:   keyType,
 		Value: valueType,
 	}
 }
 
-// TypeSpecifier 表达式类型
-type TypeSpecifier struct {
-	PosImpl
-	name      string
+// Type 表达式类型
+type Type struct {
+	PosBase
 	basicType vm.BasicType
-	sliceType *SliceType
+	sliceType *ArrayType
 	funcType  *FuncType
 	mapType   *MapType
 }
 
-func (t *TypeSpecifier) fix() {
+func (t *Type) fix() {
 	if t.funcType != nil {
 		for _, parameter := range t.funcType.Params {
 			parameter.typeSpecifier.fix()
@@ -63,13 +62,12 @@ func (t *TypeSpecifier) fix() {
 	}
 }
 
-func (t *TypeSpecifier) GetBasicType() vm.BasicType {
+func (t *Type) GetBasicType() vm.BasicType {
 	return t.basicType
 }
 
-// TODO: 临时使用
-func newTypeSpecifier(basicType vm.BasicType) *TypeSpecifier {
-	return &TypeSpecifier{
+func NewType(basicType vm.BasicType) *Type {
+	return &Type{
 		basicType: basicType,
 	}
 }
@@ -77,92 +75,76 @@ func newTypeSpecifier(basicType vm.BasicType) *TypeSpecifier {
 //
 // create
 //
-func createTypeSpecifier(basicType vm.BasicType, pos Position) *TypeSpecifier {
-	typ := newTypeSpecifier(basicType)
+func CreateType(basicType vm.BasicType, pos Position) *Type {
+	typ := NewType(basicType)
 	typ.SetPosition(pos)
 	return typ
 }
 
-func createArrayTypeSpecifier(typ *TypeSpecifier) *TypeSpecifier {
-	// TODO: 基本类型应该是slice
-	newType := newTypeSpecifier(vm.BasicTypeSlice)
-	newType.sliceType = NewSliceType(typ)
+func CreateArrayType(typ *Type, pos Position) *Type {
+	newType := CreateType(vm.BasicTypeSlice, pos)
+	newType.sliceType = NewArrayType(typ)
 	return newType
 }
 
-func createFuncTypeSpecifier(params []*Parameter, results []*Parameter) *TypeSpecifier {
-	newType := newTypeSpecifier(vm.BasicTypeFunc)
+func CreateFuncType(params []*Parameter, results []*Parameter) *Type {
+	newType := NewType(vm.BasicTypeFunc)
 	newType.funcType = NewFuncType(params, results)
 	return newType
 }
 
-func createMapTypeSpecifier(keyType *TypeSpecifier, valueType *TypeSpecifier) *TypeSpecifier {
-	newType := newTypeSpecifier(vm.BasicTypeMap)
+func CreateMapType(keyType *Type, valueType *Type, pos Position) *Type {
+	newType := CreateType(vm.BasicTypeMap, pos)
 	newType.mapType = NewMapType(keyType, valueType)
 	return newType
 }
 
-// TODO: 改名
-func createFuncType(fd *FunctionDefinition) *TypeSpecifier {
-	typ := CopyType(fd.typeSpecifier)
-	typ.funcType = NewFuncType(fd.parameterList, nil)
-
-	return typ
+func (t *Type) IsArray() bool {
+	return t.GetBasicType() == vm.BasicTypeSlice
 }
 
-func (t *TypeSpecifier) IsArray() bool {
-	// TODO: 根据basic判断
-	return t.sliceType != nil
+func (t *Type) IsFunc() bool {
+	return t.GetBasicType() == vm.BasicTypeFunc
 }
 
-func (t *TypeSpecifier) IsFunc() bool {
-	// TODO: 根据basic判断
-	return t.funcType != nil
-}
-
-func (t *TypeSpecifier) IsComposite() bool {
+func (t *Type) IsComposite() bool {
 	return t.IsArray() || t.IsFunc()
 }
 
-func (t *TypeSpecifier) IsVoid() bool {
+func (t *Type) IsVoid() bool {
 	return t.GetBasicType() == vm.BasicTypeVoid
 }
 
-func (t *TypeSpecifier) IsBool() bool {
+func (t *Type) IsBool() bool {
 	return t.GetBasicType() == vm.BasicTypeBool
 }
 
-func (t *TypeSpecifier) IsInt() bool {
+func (t *Type) IsInt() bool {
 	return t.GetBasicType() == vm.BasicTypeInt
 }
 
-func (t *TypeSpecifier) IsFloat() bool {
+func (t *Type) IsFloat() bool {
 	return t.GetBasicType() == vm.BasicTypeFloat
 }
 
-func (t *TypeSpecifier) IsString() bool {
+func (t *Type) IsString() bool {
 	return t.GetBasicType() == vm.BasicTypeString
 }
 
-func (t *TypeSpecifier) IsPackage() bool {
+func (t *Type) IsPackage() bool {
 	return t.GetBasicType() == vm.BasicTypePackage
 }
 
-func (t *TypeSpecifier) IsObject() bool {
+func (t *Type) IsObject() bool {
 	return t.IsString() || t.IsArray()
 }
 
-func (t *TypeSpecifier) IsNil() bool {
+func (t *Type) IsNil() bool {
 	return t.GetBasicType() == vm.BasicTypeNil
 }
 
-// TODO:
-func (t *TypeSpecifier) IsBase() bool {
-	return t.GetBasicType() == vm.BasicTypeBase
-}
-
-func (t *TypeSpecifier) GetTypeName() string {
-	typeName := getBasicTypeName(t.GetBasicType())
+func (t *Type) GetTypeName() string {
+	typeName := GetBasicTypeName(t.GetBasicType())
 
 	switch {
 	case t.IsArray():
@@ -189,7 +171,7 @@ func (t *TypeSpecifier) GetTypeName() string {
 	return typeName
 }
 
-func getBasicTypeName(typ vm.BasicType) string {
+func GetBasicTypeName(typ vm.BasicType) string {
 	switch typ {
 	case vm.BasicTypeBool:
 		return "bool"
@@ -208,15 +190,8 @@ func getBasicTypeName(typ vm.BasicType) string {
 	}
 }
 
-// utils
-func cloneTypeSpecifier(src *TypeSpecifier) *TypeSpecifier {
-	typ := &TypeSpecifier{}
-	*typ = *src
-
-	return typ
-}
-
-func createTypeSpecifierAsName(name string, pos Position) *TypeSpecifier {
+// 根据字面量创建基本类型
+func CreateTypeByName(name string, pos Position) *Type {
 	basicType := vm.BasicTypeNoType
 
 	// TODO:
@@ -233,18 +208,14 @@ func createTypeSpecifierAsName(name string, pos Position) *TypeSpecifier {
 		basicType = basicTypeMap[name]
 	}
 
-	return createTypeSpecifier(basicType, pos)
+	return CreateType(basicType, pos)
 }
 
-func CopyType(srcType *TypeSpecifier) *TypeSpecifier {
-	if srcType == nil {
-		return nil
-	}
-
-	destType := newTypeSpecifier(vm.BasicTypeNoType)
+func (t *Type) CopyType() *Type {
+	destType := NewType(vm.BasicTypeNoType)
 
 	// TODO: 深拷贝
-	*destType = *srcType
+	*destType = *t
 
 	return destType
 }

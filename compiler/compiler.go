@@ -337,3 +337,11 @@ func (c *Compiler) AddConstantList(value interface{}) int {
 	c.ConstantList = append(c.ConstantList, value)
 	return len(c.ConstantList) - 1
 }
+
+// 添加声明
+func (c *Compiler) AddDeclarationList(decl *Declaration) int {
+	c.declarationList = append(c.declarationList, decl)
+	decl.variableIndex = len(c.declarationList) - 1
+
+	return decl.variableIndex
+}

@@ -773,11 +773,8 @@ func (expr *ArrayLiteralExpression) generate(currentBlock *Block, ob *OpCodeBuf)
 		subExpr.generate(currentBlock, ob)
 	}
 
-	itemType := expr.arrayLiteral[0].typeS()
-	offset := getOpcodeTypeOffset(itemType)
-
 	count := len(expr.arrayLiteral)
-	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY_LITERAL_INT+offset, count)
+	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, count)
 }
 
 // ==============================
@@ -823,7 +820,7 @@ func (expr *IndexExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	expr.array.generate(currentBlock, ob)
 	expr.index.generate(currentBlock, ob)
 
-	code := vm.VM_PUSH_ARRAY_INT + getOpcodeTypeOffset(expr.typeS())
+	code := vm.VM_PUSH_ARRAY_OBJECT
 	ob.generateCode(expr.Position(), code)
 }
 

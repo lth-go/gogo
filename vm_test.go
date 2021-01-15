@@ -21,9 +21,6 @@ func TestVmMachine(t *testing.T) {
 	//}
 
 	// 创建虚拟机
-	VM := vm.NewVirtualMachine()
-
-	VM.SetExecutableList(exeList)
-
+	VM := vm.NewVirtualMachine(exeList)
 	VM.Execute()
 }

@@ -21,15 +21,24 @@ type VirtualMachine struct {
 	topLevel          *Executable    // 顶层exe
 }
 
-func NewVirtualMachine() *VirtualMachine {
+func NewVirtualMachine(exeList *ExecutableList) *VirtualMachine {
 	vm := &VirtualMachine{
 		stack:             NewStack(),
 		heap:              NewHeap(),
 		functionList:      []ExecFunction{},
 		currentExecutable: nil,
 	}
+
 	// setVirtualMachine(vm)
+
+	// 添加原生函数
 	vm.AddNativeFunctions()
+
+	for _, exe := range exeList.List {
+		vm.AddExecutable(exe)
+	}
+
+	vm.SetTopExe(exeList.GetTopExe())
 
 	return vm
 }
@@ -48,39 +57,31 @@ func NewVirtualMachine() *VirtualMachine {
 // 虚拟机初始化操作
 //
 
-// 添加executableList
-func (vm *VirtualMachine) SetExecutableList(exeList *ExecutableList) {
-	topExe := exeList.GetTopExe()
-	for _, exe := range exeList.List {
-		vm.addExecutable(exe, exe == topExe)
-	}
-
+func (vm *VirtualMachine) SetTopExe(exe *Executable) {
+	vm.topLevel = exe
 }
 
 // 添加单个exe到vm
-func (vm *VirtualMachine) addExecutable(exe *Executable, isTopLevel bool) {
+func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 	vm.executableList = append(vm.executableList, exe)
-	vm.addFunctions(exe)
+	vm.AddFunctions(exe)
 
 	// 修正字节码
 	// 方法调用修正
 	// 函数下标修正
-	vm.convertCode(exe, exe.CodeList, nil)
+	vm.ConvertOpCode(exe, exe.CodeList, nil)
 	for _, f := range exe.FunctionList {
-		vm.convertCode(exe, f.CodeList, f)
+		vm.ConvertOpCode(exe, f.CodeList, f)
 	}
 
+	// TODO: 直接将变量压入堆中,并修正字节码下标
 	exe.VariableList.Init()
-
-	if isTopLevel {
-		vm.topLevel = exe
-	}
 }
 
-func (vm *VirtualMachine) addFunctions(exe *Executable) {
-	// check func name
+// 添加exe函数到虚拟机
+func (vm *VirtualMachine) AddFunctions(exe *Executable) {
+	// 检查函数是否重复定义
 	for _, exeFunc := range exe.FunctionList {
-		// TODO 实现默认函数后去除
 		if !exeFunc.IsImplemented {
 			continue
 		}
@@ -89,9 +90,11 @@ func (vm *VirtualMachine) addFunctions(exe *Executable) {
 		}
 	}
 
-	// add exe func to vm func
-	// TODO: 忽略未实现函数
 	for srcIdx, exeFunc := range exe.FunctionList {
+		// 跳过原生,其他包函数
+		if !exeFunc.IsImplemented {
+			continue
+		}
 		vmFunc := &GFunction{
 			PackageName: exeFunc.PackageName,
 			Name:        exeFunc.Name,
@@ -109,9 +112,7 @@ func (vm *VirtualMachine) addFunctions(exe *Executable) {
 func (vm *VirtualMachine) Execute() {
 	vm.currentExecutable = vm.topLevel
 	vm.pc = 0
-
 	vm.stack.Expand(vm.topLevel.CodeList)
-
 	vm.execute(nil, vm.topLevel.CodeList)
 }
 
@@ -222,60 +223,20 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			vl.setObject(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_ARRAY_INT:
-			array := stack.GetArrayPlus(-2)
-			index := stack.GetIntPlus(-1)
-
-			vm.restorePc(exe, gFunc, pc)
-			intValue := array.GetInt(index)
-
-			stack.SetIntPlus(-2, intValue)
-			vm.stack.stackPointer--
-			pc++
-		case VM_PUSH_ARRAY_DOUBLE:
-			array := stack.GetArrayPlus(-2)
-			index := stack.GetIntPlus(-1)
-
-			vm.restorePc(exe, gFunc, pc)
-			doubleValue := array.GetFloat(index)
-
-			stack.SetFloatPlus(-2, doubleValue)
-			vm.stack.stackPointer--
-			pc++
 		case VM_PUSH_ARRAY_OBJECT:
 			array := stack.GetArrayPlus(-2)
 			index := stack.GetIntPlus(-1)
 
-			vm.restorePc(exe, gFunc, pc)
 			object := array.Get(index)
 
 			stack.SetPlus(-2, object)
 			vm.stack.stackPointer--
-			pc++
-		case VM_POP_ARRAY_INT:
-			value := stack.GetIntPlus(-3)
-			array := stack.GetArrayPlus(-2)
-			index := stack.GetIntPlus(-1)
-
-			vm.restorePc(exe, gFunc, pc)
-			array.SetInt(index, value)
-			vm.stack.stackPointer -= 3
-			pc++
-		case VM_POP_ARRAY_DOUBLE:
-			value := stack.GetFloatPlus(-3)
-			array := stack.GetArrayPlus(-2)
-			index := stack.GetIntPlus(-1)
-
-			vm.restorePc(exe, gFunc, pc)
-			array.SetFloat(index, value)
-			vm.stack.stackPointer -= 3
 			pc++
 		case VM_POP_ARRAY_OBJECT:
 			value := stack.GetPlus(-3)
 			array := stack.GetArrayPlus(-2)
 			index := stack.GetIntPlus(-1)
 
-			vm.restorePc(exe, gFunc, pc)
 			array.Set(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
@@ -338,14 +299,10 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			}
 			pc++
 		case VM_CAST_INT_TO_STRING:
-			// TODO 啥意思
-			vm.restorePc(exe, gFunc, pc)
 			buf := fmt.Sprintf("%d", stack.GetIntPlus(-1))
 			stack.SetStringPlus(-1, buf)
 			pc++
 		case VM_CAST_DOUBLE_TO_STRING:
-			// TODO 啥意思
-			vm.restorePc(exe, gFunc, pc)
 			buf := fmt.Sprintf("%f", stack.GetFloatPlus(-1))
 			stack.SetStringPlus(-1, buf)
 			pc++
@@ -494,29 +451,10 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 				// TODO goto
 				return ret
 			}
-		case VM_NEW_ARRAY_LITERAL_INT:
+		case VM_NEW_ARRAY:
 			size := get2ByteInt(codeList[pc+1:])
-
-			vm.restorePc(exe, gFunc, pc)
 			array := vm.NewObjectArray(size)
-			vm.stack.stackPointer -= size
-			stack.SetPlus(0, array)
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_NEW_ARRAY_LITERAL_DOUBLE:
-			size := get2ByteInt(codeList[pc+1:])
 
-			vm.restorePc(exe, gFunc, pc)
-			array := vm.NewObjectArray(size)
-			vm.stack.stackPointer -= size
-			stack.SetPlus(0, array)
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_NEW_ARRAY_LITERAL_OBJECT:
-			size := get2ByteInt(codeList[pc+1:])
-
-			vm.restorePc(exe, gFunc, pc)
-			array := vm.NewObjectArray(size)
 			vm.stack.stackPointer -= size
 			stack.SetPlus(0, array)
 			vm.stack.stackPointer++
@@ -528,7 +466,7 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 	return ret
 }
 
-func (vm *VirtualMachine) initializeLocalVariables(f *Function, fromSp int) {
+func (vm *VirtualMachine) initLocalVariables(f *Function, fromSp int) {
 	var i, spIdx int
 
 	spIdx = fromSp
@@ -539,7 +477,7 @@ func (vm *VirtualMachine) initializeLocalVariables(f *Function, fromSp int) {
 }
 
 // 修正转换code
-func (vm *VirtualMachine) convertCode(exe *Executable, codeList []byte, f *Function) {
+func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Function) {
 	var destIdx int
 
 	for i := 0; i < len(codeList); i++ {
@@ -648,7 +586,7 @@ func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, 
 	*caller = callee
 
 	// 初始化参数
-	vm.initializeLocalVariables(calleeP, *spP)
+	vm.initLocalVariables(calleeP, *spP)
 
 	// 设置栈位置
 	*spP += len(calleeP.LocalVariableList)
@@ -676,10 +614,12 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
 
 	argCount := len(calleeP.ParameterList)
+
 	// method
 	if calleeP.IsMethod {
 		argCount++
 	}
+
 	callInfo := vm.stack.Get(*baseP + argCount).(*ObjectCallInfo)
 
 	if callInfo.caller != nil {
@@ -690,8 +630,8 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 		*exeP = vm.topLevel
 		*codeP = vm.topLevel.CodeList
 	}
-	*funcP = callInfo.caller
 
+	*funcP = callInfo.caller
 	vm.stack.stackPointer = *baseP
 	*pcP = callInfo.callerAddress + 1
 	*baseP = callInfo.base

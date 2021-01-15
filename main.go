@@ -20,10 +20,6 @@ func main() {
 
 	exeList := compiler.CompileFile(filename)
 
-	// 创建虚拟机
-	VM := vm.NewVirtualMachine()
-
-	VM.SetExecutableList(exeList)
-
+	VM := vm.NewVirtualMachine(exeList)
 	VM.Execute()
 }

@@ -5,14 +5,15 @@ import (
 )
 
 func (vm *VirtualMachine) AddNativeFunctions() {
-	vm.addNativeFunction("print", printProc, 1)
+	vm.addNativeFunction("_sys", "print", printProc, 1)
 }
 
-func (vm *VirtualMachine) addNativeFunction(funcName string, proc NativeFunctionProc, argCount int) {
+func (vm *VirtualMachine) addNativeFunction(packageName string, funcName string, proc NativeFunctionProc, argCount int) {
 	function := &NativeFunction{
-		Name:     funcName,
-		proc:     proc,
-		argCount: argCount,
+		PackageName: packageName,
+		Name:        funcName,
+		proc:        proc,
+		argCount:    argCount,
 	}
 
 	vm.functionList = append(vm.functionList, function)

@@ -186,7 +186,7 @@ func generatePopToLvalue(block *Block, expr Expression, ob *OpCodeBuf) {
 	case *IndexExpression:
 		e.array.generate(block, ob)
 		e.index.generate(block, ob)
-		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_INT+getOpcodeTypeOffset(expr.typeS()))
+		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_OBJECT)
 	default:
 		panic("TODO")
 	}

@@ -148,8 +148,7 @@ composite_type
 function_definition
         : FUNC receiver_or_nil IDENTIFIER signature block_or_nil SEMICOLON
         {
-            l := yylex.(*Lexer)
-            l.compiler.functionDefine($1.Position(), $2, $3.Lit, $4, $5)
+            createFunctionDefine($1.Position(), $2, $3.Lit, $4, $5)
         }
         ;
 receiver_or_nil

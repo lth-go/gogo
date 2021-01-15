@@ -8,8 +8,10 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-var stCompilerList []*Compiler  // 全局compiler列表
-var stCurrentCompiler *Compiler // 全局compiler
+var (
+	stCompilerList    []*Compiler // 全局compiler列表
+	stCurrentCompiler *Compiler   // 全局compiler
+)
 
 func getCurrentCompiler() *Compiler {
 	return stCurrentCompiler
@@ -44,25 +46,15 @@ func NewCompiler(path string) *Compiler {
 		ConstantList:    []interface{}{},
 	}
 
-	c.SetLexer(path)
-	return c
-}
-
-func (c *Compiler) SetLexer(path string) {
 	c.lexer = NewLexer(path, c)
+	return c
 }
 
 //
 // 函数定义
 //
-func (c *Compiler) functionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
-	var dummyBlock *Block
-
-	// TODO: check in fix
-	// 定义重复
-	if c.searchFunction(identifier) != nil || dummyBlock.searchDeclaration(identifier) != nil {
-		compileError(pos, FUNCTION_MULTIPLE_DEFINE_ERR, identifier)
-	}
+func createFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *TypeSpecifier, block *Block) {
+	c := getCurrentCompiler()
 
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
@@ -102,12 +94,15 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 			continue
 		}
 
+		// new compiler
 		importedCompiler = NewCompiler(import_.getFullPath())
 		importedCompiler.packageName = import_.packageName
 
+		// add global
 		c.importedList = append(c.importedList, importedCompiler)
 		stCompilerList = append(stCompilerList, importedCompiler)
 
+		// parse
 		tmpExeList := importedCompiler.compile(true)
 		exeList = append(exeList, tmpExeList...)
 	}
@@ -136,13 +131,16 @@ func (c *Compiler) Show() {
 	fmt.Println("==========")
 }
 
-//////////////////////////////
+//
 // 修正树
-//////////////////////////////
+//
 func (c *Compiler) FixTree() {
-	// TODO: add system package to use native function
+	// TODO: check func list, if is redifined
 
-	// TODO: 添加原生函数
+	// 原先函数在func fix之前添加,类型c头文件
+	// 表达式fix中会添加其他包函数到本包
+
+	// 添加原生函数
 	c.AddNativeFunctions()
 
 	// 修正函数
@@ -279,21 +277,15 @@ func (c *Compiler) searchPackage(name string) *Package {
 //
 // 编译文件
 //
-
 func CompileFile(path string) *vm.ExecutableList {
 	// 输出yacc错误信息
 	if true {
 		yyErrorVerbose = true
 	}
 
-	compiler := createCompiler(path)
+	compiler := NewCompiler(path)
 
 	return compiler.Compile()
-}
-
-func createCompiler(path string) *Compiler {
-	compiler := NewCompiler(path)
-	return compiler
 }
 
 func (c *Compiler) Compile() *vm.ExecutableList {
@@ -320,13 +312,14 @@ func searchCompiler(list []*Compiler, packageName string) *Compiler {
 }
 
 func (c *Compiler) AddNativeFunctions() {
-	typ := createFuncTypeSpecifier([]*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString)}}, nil)
+	paramsType := []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}}
+	typ := createFuncTypeSpecifier(paramsType, nil)
 
 	fd := &FunctionDefinition{
 		typeSpecifier:     typ,
 		name:              "print",
-		packageName:       c.packageName,
-		parameterList:     []*Parameter{{typeSpecifier: newTypeSpecifier(vm.BasicTypeString), name: "str"}},
+		packageName:       "_sys",
+		parameterList:     paramsType,
 		block:             nil,
 		localVariableList: nil,
 	}

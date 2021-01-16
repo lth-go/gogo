@@ -2,27 +2,27 @@ package vm
 
 type SliceType struct {
 	Len         int64
-	ElementType *TypeSpecifier
+	ElementType *Type
 }
 
-type TypeSpecifier struct {
+type Type struct {
 	BasicType  BasicType
 	SliceType  *SliceType
 }
 
-func (t *TypeSpecifier) SetSliceType(typ *TypeSpecifier, length int64) {
+func (t *Type) SetSliceType(typ *Type, length int64) {
 	t.SliceType = &SliceType{
 		Len:         length,
 		ElementType: typ,
 	}
 }
 
-func (t *TypeSpecifier) IsSliceType() bool {
+func (t *Type) IsSliceType() bool {
 	// TODO: 根据basicType判断
 	return t.SliceType != nil
 }
 
-func (t *TypeSpecifier) IsReferenceType() bool {
+func (t *Type) IsReferenceType() bool {
 	if t.BasicType == BasicTypeString || t.IsSliceType() {
 		return true
 	}

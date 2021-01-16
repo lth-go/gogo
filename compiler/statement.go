@@ -4,10 +4,6 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-// ==============================
-// Statement 接口
-// ==============================
-
 // Statement 语句接口
 type Statement interface {
 	Pos
@@ -16,17 +12,15 @@ type Statement interface {
 	show(indent int)
 }
 
-type StatementImpl struct {
+type StatementBase struct {
 	PosBase
 }
 
-// ==============================
-// ExpressionStatement
-// ==============================
-
+//
 // ExpressionStatement 表达式语句
+//
 type ExpressionStatement struct {
-	StatementImpl
+	StatementBase
 	expression Expression
 }
 
@@ -48,12 +42,8 @@ func (stmt *ExpressionStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_POP)
 }
 
-// ==============================
-// IfStatement
-// ==============================
-
 //
-// ElseIf
+// IfStatement
 //
 type ElseIf struct {
 	condition Expression
@@ -62,7 +52,7 @@ type ElseIf struct {
 
 // IfStatement if表达式
 type IfStatement struct {
-	StatementImpl
+	StatementBase
 	condition Expression
 	thenBlock *Block
 	elifList  []*ElseIf
@@ -91,24 +81,24 @@ func (stmt *IfStatement) show(indent int) {
 func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	stmt.condition = stmt.condition.fix(currentBlock)
 
-	if !stmt.condition.typeS().IsBool() {
+	if !stmt.condition.GetType().IsBool() {
 		compileError(stmt.condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
 	}
 
 	if stmt.thenBlock != nil {
-		fixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
+		FixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
 	}
 
 	for _, elif := range stmt.elifList {
 		elif.condition = elif.condition.fix(currentBlock)
 
 		if elif.block != nil {
-			fixStatementList(elif.block, elif.block.statementList, fd)
+			FixStatementList(elif.block, elif.block.statementList, fd)
 		}
 	}
 
 	if stmt.elseBlock != nil {
-		fixStatementList(stmt.elseBlock, stmt.elseBlock.statementList, fd)
+		FixStatementList(stmt.elseBlock, stmt.elseBlock.statementList, fd)
 	}
 }
 
@@ -157,13 +147,11 @@ func (stmt *IfStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.setLabel(endLabel)
 }
 
-// ==============================
+//
 // ForStatement
-// ==============================
-
-// ForStatement for语句
+//
 type ForStatement struct {
-	StatementImpl
+	StatementBase
 
 	init      Statement
 	condition Expression
@@ -198,7 +186,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.condition != nil {
 		stmt.condition = stmt.condition.fix(currentBlock)
 
-		if !stmt.condition.typeS().IsBool() {
+		if !stmt.condition.GetType().IsBool() {
 			compileError(stmt.condition.Position(), FOR_CONDITION_NOT_BOOLEAN_ERR)
 		}
 	}
@@ -208,7 +196,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	if stmt.block != nil {
-		fixStatementList(stmt.block, stmt.block.statementList, fd)
+		FixStatementList(stmt.block, stmt.block.statementList, fd)
 	}
 }
 
@@ -257,23 +245,19 @@ func (stmt *ForStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.setLabel(label)
 }
 
-// ==============================
+//
 // ReturnStatement
-// ==============================
-
-// ReturnStatement return 语句
+//
 type ReturnStatement struct {
-	StatementImpl
-
-	// 返回值
-	returnValue Expression
+	StatementBase
+	Value Expression
 }
 
 func (stmt *ReturnStatement) show(indent int) {
 	printWithIndent("ReturnStmt", indent)
 	subIndent := indent + 2
 
-	stmt.returnValue.show(subIndent)
+	stmt.Value.show(subIndent)
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
@@ -281,22 +265,22 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	// TODO: use first result type
 	var fdType *Type
 
-	if len(fd.typeS().funcType.Results) == 0 {
+	if len(fd.GetType().funcType.Results) == 0 {
 		fdType = NewType(vm.BasicTypeVoid)
 	} else {
-		fdType = fd.typeS().funcType.Results[0].typeSpecifier
+		fdType = fd.GetType().funcType.Results[0].Type
 	}
 
 	// 如果没有返回值,添加之
-	if stmt.returnValue != nil {
+	if stmt.Value != nil {
 		if !fdType.IsComposite() && fdType.IsVoid() {
 			compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
 		}
 
-		stmt.returnValue = stmt.returnValue.fix(currentBlock)
+		stmt.Value = stmt.Value.fix(currentBlock)
 
 		// 类型转换
-		stmt.returnValue = CreateAssignCast(stmt.returnValue, fdType)
+		stmt.Value = CreateAssignCast(stmt.Value, fdType)
 
 		return
 	}
@@ -304,7 +288,7 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	// return value == nil
 	// 衍生类型
 	if fdType.IsComposite() {
-		stmt.returnValue = createNilExpression(stmt.Position())
+		stmt.Value = createNilExpression(stmt.Position())
 		return
 	}
 
@@ -312,15 +296,15 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	switch {
 	case fdType.IsVoid():
 		// TODO: 修改返回
-		stmt.returnValue = createIntExpression(stmt.Position())
+		stmt.Value = createIntExpression(stmt.Position())
 	case fdType.IsBool():
-		stmt.returnValue = createBooleanExpression(stmt.Position())
+		stmt.Value = createBooleanExpression(stmt.Position())
 	case fdType.IsInt():
-		stmt.returnValue = createIntExpression(stmt.Position())
+		stmt.Value = createIntExpression(stmt.Position())
 	case fdType.IsFloat():
-		stmt.returnValue = createDoubleExpression(stmt.Position())
+		stmt.Value = createDoubleExpression(stmt.Position())
 	case fdType.IsString():
-		stmt.returnValue = createStringExpression(stmt.Position())
+		stmt.Value = createStringExpression(stmt.Position())
 	case fdType.IsNil():
 		fallthrough
 	default:
@@ -329,22 +313,29 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 }
 
 func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
-	if stmt.returnValue == nil {
+	if stmt.Value == nil {
 		panic("Return value is nil.")
 	}
 
-	stmt.returnValue.generate(currentBlock, ob)
+	stmt.Value.generate(currentBlock, ob)
 
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
+}
+
+func NewReturnStatement(pos Position, value Expression) *ReturnStatement {
+	stmt := &ReturnStatement{
+		Value: value,
+	}
+	stmt.SetPosition(pos)
+
+	return stmt
 }
 
 //
 // BreakStatement
 //
-
-// BreakStatement break 语句
 type BreakStatement struct {
-	StatementImpl
+	StatementBase
 }
 
 func (stmt *BreakStatement) show(indent int) {
@@ -367,13 +358,11 @@ func (stmt *BreakStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
 }
 
-// ==============================
+//
 // ContinueStatement
-// ==============================
-
-// ContinueStatement continue 语句
+//
 type ContinueStatement struct {
-	StatementImpl
+	StatementBase
 }
 
 func (stmt *ContinueStatement) show(indent int) {
@@ -397,55 +386,65 @@ func (stmt *ContinueStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 }
 
-// ==============================
-// Declaration
-// ==============================
-
+//
 // Declaration 声明语句
+//
 type Declaration struct {
-	StatementImpl
-	typeSpecifier *Type
-	name          string
-	initializer   Expression
-	variableIndex int
-	isLocal       bool
+	StatementBase
+	Type      *Type
+	Name      string
+	InitValue Expression
+	Index     int
+	IsLocal   bool
 }
 
 func (stmt *Declaration) show(indent int) {
 	printWithIndent("DeclStmt", indent)
 
 	subIndent := indent + 2
-	if stmt.initializer != nil {
-		stmt.initializer.show(subIndent)
+	if stmt.InitValue != nil {
+		stmt.InitValue.show(subIndent)
 	}
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	currentBlock.addDeclaration(stmt, fd, stmt.Position())
 
-	stmt.typeSpecifier.fix()
+	stmt.Type.fix()
 
 	// 类型转换
-	if stmt.initializer != nil {
-		stmt.initializer = stmt.initializer.fix(currentBlock)
-		stmt.initializer = CreateAssignCast(stmt.initializer, stmt.typeSpecifier)
+	if stmt.InitValue != nil {
+		stmt.InitValue = stmt.InitValue.fix(currentBlock)
+		stmt.InitValue = CreateAssignCast(stmt.InitValue, stmt.Type)
 	}
 }
 
 func (stmt *Declaration) generate(currentBlock *Block, ob *OpCodeBuf) {
-	if stmt.initializer == nil {
+	if stmt.InitValue == nil {
 		return
 	}
 
-	stmt.initializer.generate(currentBlock, ob)
+	stmt.InitValue.generate(currentBlock, ob)
 	generatePopToIdentifier(stmt, stmt.Position(), ob)
 }
 
-// ==============================
+func NewDeclaration(pos Position, typ *Type, name string, value Expression) *Declaration {
+	decl := &Declaration{
+		Type:      typ,
+		Name:      name,
+		InitValue: value,
+		Index:     -1,
+	}
+	decl.SetPosition(pos)
+
+	return decl
+}
+
+//
 // AssignStatement
-// ==============================
+//
 type AssignStatement struct {
-	StatementImpl
+	StatementBase
 	left  []Expression
 	right []Expression
 }
@@ -485,7 +484,7 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		leftExpr.fix(currentBlock)
 		rightExpr.fix(currentBlock)
 
-		stmt.right[i] = CreateAssignCast(stmt.right[i], leftExpr.typeS())
+		stmt.right[i] = CreateAssignCast(stmt.right[i], leftExpr.GetType())
 	}
 }
 
@@ -499,5 +498,11 @@ func (stmt *AssignStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 		rightExpr.generate(currentBlock, ob)
 		ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
 		generatePopToLvalue(currentBlock, leftExpr, ob)
+	}
+}
+
+func FixStatementList(currentBlock *Block, statementList []Statement, fd *FunctionDefinition) {
+	for _, statement := range statementList {
+		statement.fix(currentBlock, fd)
 	}
 }

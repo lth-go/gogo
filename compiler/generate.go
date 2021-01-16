@@ -17,7 +17,7 @@ type LabelTable struct {
 	labelAddress int
 }
 
-func newCodeBuf() *OpCodeBuf {
+func NewOpCodeBuf() *OpCodeBuf {
 	ob := &OpCodeBuf{
 		codeList:       []byte{},
 		labelTableList: []*LabelTable{},
@@ -99,7 +99,6 @@ func (ob *OpCodeBuf) fixOpcodeBuf() []byte {
 
 // 修正label, 将正确的跳转地址填入
 func (ob *OpCodeBuf) fixLabels() {
-
 	for i := 0; i < len(ob.codeList); i++ {
 		if ob.codeList[i] == vm.VM_JUMP ||
 			ob.codeList[i] == vm.VM_JUMP_IF_TRUE ||
@@ -135,34 +134,30 @@ func generateStatementList(currentBlock *Block, statementList []Statement, ob *O
 //
 // COPY
 //
-func copyTypeSpecifierNoAlloc(src *Type, dest *vm.TypeSpecifier) {
-	dest.BasicType = src.GetBasicType()
-	if src.IsArray() {
-		dest.SetSliceType(copyTypeSpecifier(src.sliceType.ElementType), src.sliceType.Len)
+func CopyToVmType(src *Type) *vm.Type {
+	dest := &vm.Type{
+		BasicType: src.GetBasicType(),
 	}
-}
-
-func copyTypeSpecifier(src *Type) *vm.TypeSpecifier {
-	dest := &vm.TypeSpecifier{}
-	copyTypeSpecifierNoAlloc(src, dest)
+	if src.IsArray() {
+		dest.SetSliceType(CopyToVmType(src.sliceType.ElementType), src.sliceType.Len)
+	}
 
 	return dest
 }
 
-func copyParameterList(src []*Parameter) []*vm.Variable {
+func copyVmParameterList(src []*Parameter) []*vm.Variable {
 	dest := []*vm.Variable{}
 
 	for _, param := range src {
-		v := &vm.Variable{
-			Name:          param.name,
-			TypeSpecifier: copyTypeSpecifier(param.typeSpecifier),
-		}
-		dest = append(dest, v)
+		dest = append(dest, &vm.Variable{
+			Name: param.Name,
+			Type: CopyToVmType(param.Type),
+		})
 	}
 	return dest
 }
 
-func copyLocalVariables(fd *FunctionDefinition) []*vm.Variable {
+func copyVmVariableList(fd *FunctionDefinition) []*vm.Variable {
 	// TODO 形参占用位置
 	var dest = []*vm.Variable{}
 
@@ -170,8 +165,8 @@ func copyLocalVariables(fd *FunctionDefinition) []*vm.Variable {
 
 	for _, v := range fd.localVariableList[0:localVariableCount] {
 		vmV := &vm.Variable{
-			Name:          v.name,
-			TypeSpecifier: copyTypeSpecifier(v.typeSpecifier),
+			Name: v.Name,
+			Type: CopyToVmType(v.Type),
 		}
 		dest = append(dest, vmV)
 	}
@@ -195,13 +190,13 @@ func generatePopToLvalue(block *Block, expr Expression, ob *OpCodeBuf) {
 func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	var code byte
 
-	offset := getOpcodeTypeOffset(decl.typeSpecifier)
-	if decl.isLocal {
+	offset := getOpcodeTypeOffset(decl.Type)
+	if decl.IsLocal {
 		code = vm.VM_POP_STACK_INT
 	} else {
 		code = vm.VM_POP_HEAP_INT
 	}
-	ob.generateCode(pos, code+offset, decl.variableIndex)
+	ob.generateCode(pos, code+offset, decl.Index)
 }
 
 func generatePushArgument(argList []Expression, currentBlock *Block, ob *OpCodeBuf) {

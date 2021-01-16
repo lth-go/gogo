@@ -8,13 +8,13 @@ import (
 func CreateAssignCast(src Expression, destTye *Type) Expression {
 	var castExpr Expression
 
-	srcTye := src.typeS()
+	srcTye := src.GetType()
 
 	if compareType(srcTye, destTye) {
 		return src
 	}
 
-	if destTye.IsObject() && srcTye.IsNil() {
+	if destTye.IsComposite() && srcTye.IsNil() {
 		return src
 	}
 
@@ -36,8 +36,8 @@ func CreateAssignCast(src Expression, destTye *Type) Expression {
 }
 
 func CastBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
-	leftType := binaryExpr.left.typeS()
-	rightType := binaryExpr.right.typeS()
+	leftType := binaryExpr.left.GetType()
+	rightType := binaryExpr.right.GetType()
 
 	if leftType.IsInt() && rightType.IsFloat() {
 		binaryExpr.left = createCastExpression(CastTypeIntToFloat, binaryExpr.left)
@@ -68,7 +68,7 @@ func createCastExpression(castType CastType, expr Expression) Expression {
 	case CastTypeBoolToString, CastTypeIntToString, CastTypeFloatToString:
 		typ = NewType(vm.BasicTypeString)
 	}
-	castExpr.setType(typ)
+	castExpr.SetType(typ)
 
 	return castExpr
 }
@@ -76,11 +76,11 @@ func createCastExpression(castType CastType, expr Expression) Expression {
 func createToStringCast(src Expression) Expression {
 	var cast Expression
 
-	if src.typeS().IsBool() {
+	if src.GetType().IsBool() {
 		cast = createCastExpression(CastTypeBoolToString, src)
-	} else if src.typeS().IsInt() {
+	} else if src.GetType().IsInt() {
 		cast = createCastExpression(CastTypeIntToString, src)
-	} else if src.typeS().IsFloat() {
+	} else if src.GetType().IsFloat() {
 		cast = createCastExpression(CastTypeFloatToString, src)
 	} else {
 		panic("TODO")

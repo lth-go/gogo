@@ -471,7 +471,7 @@ func (vm *VirtualMachine) initLocalVariables(f *Function, fromSp int) {
 
 	spIdx = fromSp
 	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.Set(spIdx, GetObjectByType(f.LocalVariableList[i].TypeSpecifier))
+		vm.stack.Set(spIdx, GetObjectByType(f.LocalVariableList[i].Type))
 		spIdx++
 	}
 }

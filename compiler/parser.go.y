@@ -7,14 +7,14 @@ import (
 %}
 
 %union{
-    parameter            *Parameter
-    parameter_list       []*Parameter
-
     statement            Statement
     statement_list       []Statement
 
     expression           Expression
     expression_list      []Expression
+
+    parameter            *Parameter
+    parameter_list       []*Parameter
 
     block                *Block
     else_if              []*ElseIf
@@ -157,18 +157,17 @@ receiver_or_nil
         }
         | LP IDENTIFIER type_specifier RP
         {
-            $$ = &Parameter{typeSpecifier: $3, name: $2.Lit}
+            $$ = NewParameter($3, $2.Lit)
         }
         ;
 parameter_list
         : IDENTIFIER type_specifier
         {
-            parameter := &Parameter{typeSpecifier: $2, name: $1.Lit}
-            $$ = []*Parameter{parameter}
+            $$ = []*Parameter{NewParameter($2, $1.Lit)}
         }
         | parameter_list COMMA IDENTIFIER type_specifier
         {
-            $$ = append($1, &Parameter{typeSpecifier: $4, name: $3.Lit})
+            $$ = append($1, NewParameter($4, $3.Lit))
         }
         ;
 parameters
@@ -207,7 +206,7 @@ result_or_nil
 result
         : type_specifier
         {
-            $$ = []*Parameter{&Parameter{typeSpecifier: $1}}
+            $$ = []*Parameter{NewParameter($1, "")}
         }
         | LP type_list_or_nil RP
         {
@@ -224,11 +223,11 @@ type_list_or_nil
 type_list
         : type_specifier
         {
-            $$ = []*Parameter{&Parameter{typeSpecifier: $1}}
+            $$ = []*Parameter{NewParameter($1, "")}
         }
         | type_list COMMA type_specifier
         {
-            $$ = append($1, &Parameter{typeSpecifier: $3})
+            $$ = append($1, NewParameter($3, ""))
         }
         ;
 statement_list
@@ -350,8 +349,7 @@ primary_expression
         }
         | STRING_LITERAL
         {
-            $$ = &StringExpression{stringValue: $1.Lit}
-            $$.SetPosition($1.Position())
+            $$ = NewStringExpression($1.Position(), $1.Lit)
         }
         | TRUE_LITERAL
         {
@@ -369,13 +367,11 @@ primary_expression
         }
         | composite_type LC expression_list_or_nil RC
         {
-            $$ = &ArrayLiteralExpression{arrayLiteral: $3}
-            $$.SetPosition($1.Position())
+            $$ = NewArrayExpression($1.Position(), $3)
         }
         | composite_type LC expression_list_or_nil COMMA RC
         {
-            $$ = &ArrayLiteralExpression{arrayLiteral: $3}
-            $$.SetPosition($1.Position())
+            $$ = NewArrayExpression($1.Position(), $3)
         }
         | IDENTIFIER
         {
@@ -495,8 +491,7 @@ expression_or_nil
 return_statement
         : RETURN expression_or_nil
         {
-            $$ = &ReturnStatement{returnValue: $2};
-            $$.SetPosition($1.Position())
+            $$ = NewReturnStatement($1.Position(), $2)
         }
         ;
 break_statement
@@ -516,13 +511,11 @@ continue_statement
 declaration_statement
         : VAR IDENTIFIER type_specifier
         {
-            $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, variableIndex: -1}
-            $$.SetPosition($1.Position())
+            $$ = NewDeclaration($1.Position(), $3, $2.Lit, nil)
         }
         | VAR IDENTIFIER type_specifier ASSIGN expression
         {
-            $$ = &Declaration{typeSpecifier: $3, name: $2.Lit, initializer: $5, variableIndex: -1}
-            $$.SetPosition($1.Position())
+            $$ = NewDeclaration($1.Position(), $3, $2.Lit, $5)
         }
         ;
 assign_statement

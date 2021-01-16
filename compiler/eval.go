@@ -6,7 +6,7 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-func evalMathExpression(currentBlock *Block, binaryExpr *BinaryExpression) Expression {
+func EvalMathExpression(binaryExpr *BinaryExpression) Expression {
 	switch leftExpr := binaryExpr.left.(type) {
 	case *IntExpression:
 		switch rightExpr := binaryExpr.right.(type) {
@@ -57,7 +57,7 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 	}
 
 	newExpr := &IntExpression{Value: value}
-	newExpr.setType(NewType(vm.BasicTypeInt))
+	newExpr.SetType(NewType(vm.BasicTypeInt))
 
 	return newExpr
 }
@@ -81,7 +81,7 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
 	newExpr := &DoubleExpression{Value: value}
-	newExpr.setType(NewType(vm.BasicTypeFloat))
+	newExpr.SetType(NewType(vm.BasicTypeFloat))
 
 	return newExpr
 }
@@ -94,14 +94,15 @@ func chainBinaryExpressionString(binaryExpr *BinaryExpression) Expression {
 
 	leftStringExpr := binaryExpr.left.(*StringExpression)
 
-	newStr := leftStringExpr.stringValue + rightStr
+	newStr := leftStringExpr.Value + rightStr
 
-	newExpr := &StringExpression{stringValue: newStr}
-	newExpr.setType(NewType(vm.BasicTypeString))
+	newExpr := &StringExpression{Value: newStr}
+	newExpr.SetType(NewType(vm.BasicTypeString))
 
 	return newExpr
 }
 
+// TODO: 只能字符串相加
 func expressionToString(expr Expression) string {
 	var newStr string
 
@@ -117,7 +118,7 @@ func expressionToString(expr Expression) string {
 	case *DoubleExpression:
 		newStr = strconv.FormatFloat(e.Value, 'f', -1, 64)
 	case *StringExpression:
-		newStr = e.stringValue
+		newStr = e.Value
 	default:
 		newStr = ""
 	}
@@ -159,14 +160,14 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 	case *StringExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *StringExpression:
-			newExpr := evalCompareExpressionString(binaryExpr, leftExpr.stringValue, rightExpr.stringValue)
+			newExpr := evalCompareExpressionString(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 		}
 	case *NilExpression:
 		switch binaryExpr.right.(type) {
 		case *NilExpression:
 			newExpr := &BooleanExpression{Value: true}
-			newExpr.setType(NewType(vm.BasicTypeBool))
+			newExpr.SetType(NewType(vm.BasicTypeBool))
 			return newExpr
 		}
 	}
@@ -187,7 +188,7 @@ func evalCompareExpressionBoolean(binaryExpr *BinaryExpression, left, right bool
 	}
 
 	newExpr := &BooleanExpression{Value: value}
-	newExpr.setType(NewType(vm.BasicTypeBool))
+	newExpr.SetType(NewType(vm.BasicTypeBool))
 
 	return newExpr
 }
@@ -213,7 +214,7 @@ func evalCompareExpressionInt(binaryExpr *BinaryExpression, left, right int) Exp
 	}
 
 	newExpr := &BooleanExpression{Value: value}
-	newExpr.setType(NewType(vm.BasicTypeBool))
+	newExpr.SetType(NewType(vm.BasicTypeBool))
 	return newExpr
 }
 
@@ -238,7 +239,7 @@ func evalCompareExpressionDouble(binaryExpr *BinaryExpression, left, right float
 	}
 
 	newExpr := &BooleanExpression{Value: value}
-	newExpr.setType(NewType(vm.BasicTypeBool))
+	newExpr.SetType(NewType(vm.BasicTypeBool))
 	return newExpr
 }
 
@@ -263,7 +264,7 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 	}
 
 	newExpr := &BooleanExpression{Value: value}
-	newExpr.setType(NewType(vm.BasicTypeBool))
+	newExpr.SetType(NewType(vm.BasicTypeBool))
 
 	return newExpr
 }
@@ -273,7 +274,7 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	expr.right = expr.right.fix(currentBlock)
 
 	// 能否合并计算
-	newExpr := evalMathExpression(currentBlock, expr)
+	newExpr := EvalMathExpression(expr)
 	switch newExpr.(type) {
 	case *IntExpression, *DoubleExpression, *StringExpression:
 		return newExpr
@@ -282,19 +283,19 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	// 类型转换
 	newBinaryExpr := CastBinaryExpression(expr)
 
-	newBinaryExprLeftType := newBinaryExpr.left.typeS()
-	newBinaryExprRightType := newBinaryExpr.right.typeS()
+	newBinaryExprLeftType := newBinaryExpr.left.GetType()
+	newBinaryExprRightType := newBinaryExpr.right.GetType()
 
 	if newBinaryExprLeftType.IsInt() && newBinaryExprRightType.IsInt() {
-		newBinaryExpr.setType(NewType(vm.BasicTypeInt))
+		newBinaryExpr.SetType(NewType(vm.BasicTypeInt))
 
 	} else if newBinaryExprLeftType.IsFloat() && newBinaryExprRightType.IsFloat() {
-		newBinaryExpr.setType(NewType(vm.BasicTypeFloat))
+		newBinaryExpr.SetType(NewType(vm.BasicTypeFloat))
 
 	} else if expr.operator == AddOperator {
 		if (newBinaryExprLeftType.IsString() && newBinaryExprRightType.IsString()) ||
 			(newBinaryExprLeftType.IsString() && isNull(newBinaryExpr.left)) {
-			newBinaryExpr.setType(NewType(vm.BasicTypeString))
+			newBinaryExpr.SetType(NewType(vm.BasicTypeString))
 		}
 	} else {
 		compileError(
@@ -319,18 +320,18 @@ func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 
 	newBinaryExpr := CastBinaryExpression(expr)
 
-	newBinaryExprLeftType := newBinaryExpr.left.typeS()
-	newBinaryExprRightType := newBinaryExpr.right.typeS()
+	newBinaryExprLeftType := newBinaryExpr.left.GetType()
+	newBinaryExprRightType := newBinaryExpr.right.GetType()
 
-	// TODO 字符串是否能跟null比较
-	if !(compareType(newBinaryExprLeftType, newBinaryExprRightType) ||
-		(newBinaryExprLeftType.IsObject() &&
-			isNull(newBinaryExpr.right) ||
-			(isNull(newBinaryExpr.left) && newBinaryExprRightType.IsObject()))) {
-		compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, newBinaryExprLeftType.GetTypeName(), newBinaryExprRightType.GetTypeName())
+	if !compareType(newBinaryExprLeftType, newBinaryExprRightType) {
+		if !(newBinaryExprLeftType.IsComposite() && isNull(newBinaryExpr.right) ||
+			(isNull(newBinaryExpr.left) && newBinaryExprRightType.IsComposite())) {
+
+			compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, newBinaryExprLeftType.GetTypeName(), newBinaryExprRightType.GetTypeName())
+		}
 	}
 
-	newBinaryExpr.setType(NewType(vm.BasicTypeBool))
+	newBinaryExpr.SetType(NewType(vm.BasicTypeBool))
 
 	return newBinaryExpr
 }
@@ -339,16 +340,16 @@ func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	expr.left = expr.left.fix(currentBlock)
 	expr.right = expr.right.fix(currentBlock)
 
-	if expr.left.typeS().IsBool() && expr.right.typeS().IsBool() {
-		expr.typeSpecifier = NewType(vm.BasicTypeBool)
-		expr.typeS().fix()
+	if expr.left.GetType().IsBool() && expr.right.GetType().IsBool() {
+		expr.Type = NewType(vm.BasicTypeBool)
+		expr.GetType().fix()
 		return expr
 	}
 
 	compileError(
 		expr.Position(),
 		LOGICAL_TYPE_MISMATCH_ERR,
-		"Left: %d, Right: %d\n", expr.left.typeS().GetBasicType(), expr.right.typeS().GetBasicType(),
+		"Left: %d, Right: %d\n", expr.left.GetType().GetBasicType(), expr.right.GetType().GetBasicType(),
 	)
 	return nil
 }

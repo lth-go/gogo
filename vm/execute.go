@@ -125,22 +125,22 @@ func NewVmVariableList() *VariableList {
 
 type Variable struct {
 	Name          string
-	TypeSpecifier *TypeSpecifier
+	Type *Type
 	Value         interface{}
 }
 
 func (v *Variable) Init() {
-	v.Value = initializeValue(v.TypeSpecifier)
+	v.Value = initializeValue(v.Type)
 }
 
 func (v *Variable) IsReferenceType() bool {
-	return v.TypeSpecifier.IsReferenceType()
+	return v.Type.IsReferenceType()
 }
 
-func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {
+func NewVmVariable(name string, typ *Type) *Variable {
 	return &Variable{
 		Name:          name,
-		TypeSpecifier: typeSpecifier,
+		Type: typ,
 	}
 }
 
@@ -148,7 +148,7 @@ func NewVmVariable(name string, typeSpecifier *TypeSpecifier) *Variable {
 // 函数
 // ==============================
 type Function struct {
-	TypeSpecifier     *TypeSpecifier // 类型
+	Type     *Type // 类型
 	PackageName       string         // 包名
 	Name              string         // 函数名
 	IsImplemented     bool           // 是否在当前包实现

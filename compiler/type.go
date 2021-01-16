@@ -21,6 +21,14 @@ func NewArrayType(elementType *Type) *ArrayType {
 	}
 }
 
+func (t *ArrayType) Copy() *ArrayType {
+	if t == nil {
+		return nil
+	}
+
+	return NewArrayType(t.ElementType.Copy())
+}
+
 type FuncType struct {
 	Params  []*Parameter
 	Results []*Parameter
@@ -31,6 +39,26 @@ func NewFuncType(params []*Parameter, results []*Parameter) *FuncType {
 		Params:  params,
 		Results: results,
 	}
+}
+
+func (t *FuncType) Copy() *FuncType {
+	if t == nil {
+		return nil
+	}
+
+	copyParams := func(params []*Parameter) []*Parameter {
+		newParams := []*Parameter{}
+
+		for _, p := range params {
+			newParams = append(newParams, &Parameter{
+				Type: p.Type.Copy(),
+				Name:          p.Name,
+			})
+		}
+		return newParams
+	}
+
+	return NewFuncType(copyParams(t.Params), copyParams(t.Results))
 }
 
 type MapType struct {
@@ -57,7 +85,7 @@ type Type struct {
 func (t *Type) fix() {
 	if t.funcType != nil {
 		for _, parameter := range t.funcType.Params {
-			parameter.typeSpecifier.fix()
+			parameter.Type.fix()
 		}
 	}
 }
@@ -154,11 +182,11 @@ func (t *Type) GetTypeName() string {
 		resultTypeNameList := []string{}
 
 		for _, p := range t.funcType.Params {
-			paramTypeNameList = append(paramTypeNameList, p.typeSpecifier.GetTypeName())
+			paramTypeNameList = append(paramTypeNameList, p.Type.GetTypeName())
 		}
 
 		for _, p := range t.funcType.Results {
-			resultTypeNameList = append(resultTypeNameList, p.typeSpecifier.GetTypeName())
+			resultTypeNameList = append(resultTypeNameList, p.Type.GetTypeName())
 		}
 
 		typeName = fmt.Sprintf(
@@ -211,11 +239,11 @@ func CreateTypeByName(name string, pos Position) *Type {
 	return CreateType(basicType, pos)
 }
 
-func (t *Type) CopyType() *Type {
-	destType := NewType(vm.BasicTypeNoType)
+func (t *Type) Copy() *Type {
+	newType := NewType(t.GetBasicType())
 
-	// TODO: 深拷贝
-	*destType = *t
+	newType.sliceType = t.sliceType.Copy()
+	newType.funcType = t.funcType.Copy()
 
-	return destType
+	return newType
 }

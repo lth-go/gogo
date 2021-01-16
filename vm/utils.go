@@ -27,7 +27,7 @@ func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
 
-func initializeValue(typ *TypeSpecifier) interface{} {
+func initializeValue(typ *Type) interface{} {
 	var value interface{}
 
 	if typ.IsSliceType() {
@@ -63,7 +63,7 @@ func checkNullPointer(obj Object) {
 	}
 }
 
-func GetObjectByType(typ *TypeSpecifier) Object {
+func GetObjectByType(typ *Type) Object {
 	var value Object
 
 	if typ.IsSliceType() {

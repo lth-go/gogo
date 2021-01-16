@@ -27,7 +27,7 @@ type Compiler struct {
 	path            string                // 源文件路径
 	packageName     string                // 包名
 	importedList    []*Compiler           // 已加载compiler列表
-	importList      []*Import         // 依赖的包
+	importList      []*Import             // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
 	statementList   []Statement           // 语句列表
@@ -57,7 +57,7 @@ func createFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 	c := getCurrentCompiler()
 
 	fd := &FunctionDefinition{
-		typeSpecifier:     typ,
+		Type:              typ,
 		name:              identifier,
 		packageName:       c.packageName,
 		parameterList:     typ.funcType.Params,
@@ -149,7 +149,7 @@ func (c *Compiler) FixTree() {
 	}
 
 	// 修正表达式列表
-	fixStatementList(nil, c.statementList, nil)
+	FixStatementList(nil, c.statementList, nil)
 }
 
 func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
@@ -177,7 +177,7 @@ func (c *Compiler) Generate() *vm.Executable {
 	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
 
 	// 添加字节码
-	opCodeBuf := newCodeBuf()
+	opCodeBuf := NewOpCodeBuf()
 	generateStatementList(nil, c.statementList, opCodeBuf)
 
 	exe.CodeList = opCodeBuf.fixOpcodeBuf()
@@ -193,7 +193,7 @@ func (c *Compiler) GetVmVariableList() []*vm.Variable {
 	variableList := make([]*vm.Variable, 0)
 
 	for _, dl := range c.declarationList {
-		newValue := vm.NewVmVariable(dl.name, copyTypeSpecifier(dl.typeSpecifier))
+		newValue := vm.NewVmVariable(dl.Name, CopyToVmType(dl.Type))
 		variableList = append(variableList, newValue)
 	}
 
@@ -212,13 +212,13 @@ func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {
 }
 
 func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, inThisExe bool) *vm.Function {
-	ob := newCodeBuf()
+	ob := NewOpCodeBuf()
 
 	dest := &vm.Function{
 		PackageName:   src.GetPackageName(),
 		Name:          src.name,
-		TypeSpecifier: copyTypeSpecifier(src.typeS()),
-		ParameterList: copyParameterList(src.parameterList),
+		Type:          CopyToVmType(src.GetType()),
+		ParameterList: copyVmParameterList(src.parameterList),
 		IsMethod:      false,
 	}
 
@@ -228,7 +228,7 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 		dest.IsImplemented = true
 		dest.CodeList = ob.fixOpcodeBuf()
 		dest.LineNumberList = ob.lineNumberList
-		dest.LocalVariableList = copyLocalVariables(src)
+		dest.LocalVariableList = copyVmVariableList(src)
 	} else {
 		dest.IsImplemented = false
 		dest.LocalVariableList = nil
@@ -312,11 +312,11 @@ func searchCompiler(list []*Compiler, packageName string) *Compiler {
 }
 
 func (c *Compiler) AddNativeFunctions() {
-	paramsType := []*Parameter{{typeSpecifier: NewType(vm.BasicTypeString), name: "str"}}
+	paramsType := []*Parameter{{Type: NewType(vm.BasicTypeString), Name: "str"}}
 	typ := CreateFuncType(paramsType, nil)
 
 	fd := &FunctionDefinition{
-		typeSpecifier:     typ,
+		Type:              typ,
 		name:              "print",
 		packageName:       "_sys",
 		parameterList:     paramsType,
@@ -341,7 +341,7 @@ func (c *Compiler) AddConstantList(value interface{}) int {
 // 添加声明
 func (c *Compiler) AddDeclarationList(decl *Declaration) int {
 	c.declarationList = append(c.declarationList, decl)
-	decl.variableIndex = len(c.declarationList) - 1
+	decl.Index = len(c.declarationList) - 1
 
-	return decl.variableIndex
+	return decl.Index
 }

@@ -328,7 +328,7 @@ func (expr *IdentifierExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 		if inner.IsLocal {
 			code = vm.VM_PUSH_STACK_INT
 		} else {
-			code = vm.VM_PUSH_HEAP_INT
+			code = vm.VM_PUSH_STATIC_INT
 		}
 		ob.generateCode(expr.Position(), code+offset, inner.Index)
 	}

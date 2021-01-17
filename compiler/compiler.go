@@ -345,3 +345,12 @@ func (c *Compiler) AddDeclarationList(decl *Declaration) int {
 
 	return decl.Index
 }
+
+func (c *Compiler) SearchDeclaration(name string) *Declaration {
+	for _, declaration := range c.declarationList {
+		if declaration.Name == name {
+			return declaration
+		}
+	}
+	return nil
+}

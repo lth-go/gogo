@@ -54,7 +54,7 @@ func (exe *Executable) ShowCode() {
 // ExecutableList
 //
 type ExecutableList struct {
-	List     []*Executable
+	List []*Executable
 }
 
 func NewExecutableList() *ExecutableList {
@@ -124,9 +124,9 @@ func NewVmVariableList() *VariableList {
 }
 
 type Variable struct {
-	Name          string
-	Type *Type
-	Value         interface{}
+	Name  string
+	Type  *Type
+	Value interface{}
 }
 
 func (v *Variable) Init() {
@@ -139,7 +139,7 @@ func (v *Variable) IsReferenceType() bool {
 
 func NewVmVariable(name string, typ *Type) *Variable {
 	return &Variable{
-		Name:          name,
+		Name: name,
 		Type: typ,
 	}
 }
@@ -148,15 +148,15 @@ func NewVmVariable(name string, typ *Type) *Variable {
 // 函数
 // ==============================
 type Function struct {
-	Type     *Type // 类型
-	PackageName       string         // 包名
-	Name              string         // 函数名
-	IsImplemented     bool           // 是否在当前包实现
-	IsMethod          bool           // 是否是方法
-	ParameterList     []*Variable    // 形参列表
-	LocalVariableList []*Variable    // 局部变量列表
-	CodeList          []byte         // 字节码类表
-	LineNumberList    []*LineNumber  // 行号对应表
+	Type              *Type         // 类型
+	PackageName       string        // 包名
+	Name              string        // 函数名
+	IsImplemented     bool          // 是否在当前包实现
+	IsMethod          bool          // 是否是方法
+	ParameterList     []*Variable   // 形参列表
+	LocalVariableList []*Variable   // 局部变量列表
+	CodeList          []byte        // 字节码类表
+	LineNumberList    []*LineNumber // 行号对应表
 	// Executable *Executable
 }
 

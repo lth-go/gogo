@@ -193,32 +193,32 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			stack.Set(base+index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_HEAP_INT:
+		case VM_PUSH_STATIC_INT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, vl.getInt(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_HEAP_FLOAT:
+		case VM_PUSH_STATIC_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetFloatPlus(0, vl.getDouble(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_HEAP_OBJECT:
+		case VM_PUSH_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, vl.getObject(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_POP_HEAP_INT:
+		case VM_POP_STATIC_INT:
 			index := get2ByteInt(codeList[pc+1:])
 			vl.setInt(index, stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_HEAP_FLOAT:
+		case VM_POP_STATIC_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
 			vl.setDouble(index, stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_POP_HEAP_OBJECT:
+		case VM_POP_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
 			vl.setObject(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--

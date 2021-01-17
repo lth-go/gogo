@@ -83,12 +83,5 @@ func (b *Block) searchDeclaration(name string) *Declaration {
 	}
 
 	// 从全局作用域查找
-	compiler := getCurrentCompiler()
-	for _, declaration := range compiler.declarationList {
-		if declaration.Name == name {
-			return declaration
-		}
-	}
-
-	return nil
+	return getCurrentCompiler().SearchDeclaration(name)
 }

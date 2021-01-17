@@ -49,7 +49,7 @@ func vmError(errorNumber int, a ...interface{}) {
 	//fmt.Printf(errMessageMap[errorNumber], a...)
 }
 
-func getLineNumberByPc(exe *Executable, function *GFunction, pc int) int {
+func getLineNumberByPc(exe *Executable, function *GoGoFunction, pc int) int {
 	var lineNumber []*LineNumber
 	var ret int
 

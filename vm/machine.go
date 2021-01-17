@@ -12,20 +12,20 @@ var NilObject = &ObjectNil{}
 // 虚拟机
 //
 type VirtualMachine struct {
-	stack             *Stack         // 栈
-	heap              *Heap          // 堆
-	pc                int            // 程序计数器
-	functionList      []ExecFunction // 全局函数列表
-	currentExecutable *Executable    // 当前exe
-	executableList    []*Executable  // exe列表
-	topLevel          *Executable    // 顶层exe
+	stack             *Stack        // 栈
+	heap              *Heap         // 堆
+	static            *Static       // 静态区
+	pc                int           // 程序计数器
+	currentExecutable *Executable   // 当前exe
+	executableList    []*Executable // exe列表
+	topLevel          *Executable   // 顶层exe
 }
 
 func NewVirtualMachine(exeList *ExecutableList) *VirtualMachine {
 	vm := &VirtualMachine{
 		stack:             NewStack(),
 		heap:              NewHeap(),
-		functionList:      []ExecFunction{},
+		static:            NewStatic(),
 		currentExecutable: nil,
 	}
 
@@ -65,6 +65,7 @@ func (vm *VirtualMachine) SetTopExe(exe *Executable) {
 func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 	vm.executableList = append(vm.executableList, exe)
 	vm.AddFunctions(exe)
+	vm.AddStatic(exe)
 
 	// 修正字节码
 	// 方法调用修正
@@ -78,6 +79,13 @@ func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 	exe.VariableList.Init()
 }
 
+// 添加静态区
+func (vm *VirtualMachine) AddStatic(exe *Executable) {
+	for _, value := range exe.VariableList.VariableList {
+		vm.static.Append(NewStaticVariable(exe.PackageName, value.Name, value.Value))
+	}
+}
+
 // 添加exe函数到虚拟机
 func (vm *VirtualMachine) AddFunctions(exe *Executable) {
 	// 检查函数是否重复定义
@@ -85,7 +93,7 @@ func (vm *VirtualMachine) AddFunctions(exe *Executable) {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-		if vm.searchFunction(exeFunc.PackageName, exeFunc.Name) != functionNotFound {
+		if vm.SearchStatic(exeFunc.PackageName, exeFunc.Name) != functionNotFound {
 			vmError(FUNCTION_MULTIPLE_DEFINE_ERR, exeFunc.PackageName, exeFunc.Name)
 		}
 	}
@@ -95,14 +103,16 @@ func (vm *VirtualMachine) AddFunctions(exe *Executable) {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-		vmFunc := &GFunction{
-			PackageName: exeFunc.PackageName,
-			Name:        exeFunc.Name,
-			Executable:  exe,
-			Index:       srcIdx,
+		vmFunc := &GoGoFunction{
+			StaticBase: StaticBase{
+				PackageName: exeFunc.PackageName,
+				Name:        exeFunc.Name,
+			},
+			Executable: exe,
+			Index:      srcIdx,
 		}
 
-		vm.functionList = append(vm.functionList, vmFunc)
+		vm.static.Append(vmFunc)
 	}
 }
 
@@ -116,13 +126,13 @@ func (vm *VirtualMachine) Execute() {
 	vm.execute(nil, vm.topLevel.CodeList)
 }
 
-func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
+func (vm *VirtualMachine) execute(gFunc *GoGoFunction, codeList []byte) Object {
 	var ret Object
 	var base int
 
 	stack := vm.stack
 	exe := vm.currentExecutable
-	vl := exe.VariableList
+	static := vm.static
 
 	for pc := vm.pc; pc < len(codeList); {
 
@@ -195,32 +205,32 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			pc += 3
 		case VM_PUSH_STATIC_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetIntPlus(0, vl.getInt(index))
+			stack.SetIntPlus(0, static.GetVariableInt(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetFloatPlus(0, vl.getDouble(index))
+			stack.SetFloatPlus(0, static.GetVariableFloat(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			stack.SetPlus(0, vl.getObject(index))
+			stack.SetPlus(0, static.GetVariableObject(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STATIC_INT:
 			index := get2ByteInt(codeList[pc+1:])
-			vl.setInt(index, stack.GetIntPlus(-1))
+			static.SetVariable(index, stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STATIC_FLOAT:
 			index := get2ByteInt(codeList[pc+1:])
-			vl.setDouble(index, stack.GetFloatPlus(-1))
+			static.SetVariable(index, stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_POP_STATIC_OBJECT:
 			index := get2ByteInt(codeList[pc+1:])
-			vl.setObject(index, stack.GetPlus(-1))
+			static.SetVariable(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_PUSH_ARRAY_OBJECT:
@@ -435,12 +445,12 @@ func (vm *VirtualMachine) execute(gFunc *GFunction, codeList []byte) Object {
 			pc += 3
 		case VM_INVOKE:
 			funcIdx := stack.GetIntPlus(-1)
-			switch f := vm.functionList[funcIdx].(type) {
-			case *NativeFunction:
+			switch f := vm.static.Get(funcIdx).(type) {
+			case *GoGoNativeFunction:
 				vm.restorePc(exe, gFunc, pc)
 				vm.InvokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
-			case *GFunction:
+			case *GoGoFunction:
 				vm.InvokeFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &exe)
 			default:
 				panic("TODO")
@@ -508,10 +518,16 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 				destIdx = srcIdx
 			}
 			set2ByteInt(codeList[i+1:], destIdx)
+		case VM_PUSH_STATIC_INT, VM_PUSH_STATIC_FLOAT, VM_PUSH_STATIC_OBJECT,
+			VM_POP_STATIC_INT, VM_POP_STATIC_FLOAT, VM_POP_STATIC_OBJECT:
+
+			idxInExe := get2ByteInt(codeList[i+1:])
+			funcIdx := vm.SearchStatic(exe.PackageName, exe.VariableList.VariableList[idxInExe].Name)
+			set2ByteInt(codeList[i+1:], funcIdx)
 
 		case VM_PUSH_FUNCTION:
 			idxInExe := get2ByteInt(codeList[i+1:])
-			funcIdx := vm.searchFunction(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
+			funcIdx := vm.SearchStatic(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
 			set2ByteInt(codeList[i+1:], funcIdx)
 		}
 
@@ -530,20 +546,15 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 }
 
 // 查找函数
-func (vm *VirtualMachine) searchFunction(packageName, name string) int {
-	for i, f := range vm.functionList {
-		if f.getPackageName() == packageName && f.getName() == name {
-			return i
-		}
-	}
-	return functionNotFound
+func (vm *VirtualMachine) SearchStatic(packageName, name string) int {
+	return vm.static.Index(packageName, name)
 }
 
 //
 // 函数相关
 //
 // 执行原生函数
-func (vm *VirtualMachine) InvokeNativeFunction(f *NativeFunction, spP *int) {
+func (vm *VirtualMachine) InvokeNativeFunction(f *GoGoNativeFunction, spP *int) {
 	sp := *spP
 
 	ret := f.proc(vm, f.argCount, vm.stack.objectList[sp-f.argCount-1:])
@@ -554,7 +565,7 @@ func (vm *VirtualMachine) InvokeNativeFunction(f *NativeFunction, spP *int) {
 }
 
 // 函数执行
-func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
+func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
 	// caller 调用者, 当前所属的函数调用域
 	// callee 要调用的函数的基本信息
 
@@ -596,7 +607,7 @@ func (vm *VirtualMachine) InvokeFunction(caller **GFunction, callee *GFunction, 
 	*codeP = calleeP.CodeList
 }
 
-func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, exe **Executable) bool {
+func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exe **Executable) bool {
 
 	returnValue := vm.stack.Get(vm.stack.stackPointer - 1)
 	vm.stack.stackPointer--
@@ -609,7 +620,7 @@ func (vm *VirtualMachine) returnFunction(funcP **GFunction, codeP *[]byte, pcP *
 	return ret
 }
 
-func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
+func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
 
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
 
@@ -639,7 +650,7 @@ func doReturn(vm *VirtualMachine, funcP **GFunction, codeP *[]byte, pcP *int, ba
 	return callInfo.callerAddress == callFromNative
 }
 
-func (vm *VirtualMachine) restorePc(ee *Executable, function *GFunction, pc int) {
+func (vm *VirtualMachine) restorePc(ee *Executable, function *GoGoFunction, pc int) {
 	vm.currentExecutable = ee
 	vm.pc = pc
 }

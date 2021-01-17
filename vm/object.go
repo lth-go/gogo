@@ -175,7 +175,7 @@ func NewObjectString(value string) *ObjectString {
 //
 type ObjectCallInfo struct {
 	ObjectBase               // TODO: 兼容
-	caller        *GFunction // 调用的函数
+	caller        *GoGoFunction // 调用的函数
 	callerAddress int        // 保存执行函数前的pc
 	base          int
 }

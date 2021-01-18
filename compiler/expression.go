@@ -84,7 +84,7 @@ type BooleanExpression struct {
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeBool))
-	expr.GetType().fix()
+	expr.GetType().Fix()
 	return expr
 }
 
@@ -116,7 +116,7 @@ type IntExpression struct {
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeInt))
-	expr.GetType().fix()
+	expr.GetType().Fix()
 	return expr
 }
 
@@ -148,7 +148,7 @@ type DoubleExpression struct {
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeFloat))
-	expr.GetType().fix()
+	expr.GetType().Fix()
 	return expr
 }
 
@@ -190,7 +190,7 @@ func NewStringExpression(pos Position, value string) *StringExpression {
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeString))
-	expr.GetType().fix()
+	expr.GetType().Fix()
 
 	return expr
 }
@@ -216,7 +216,7 @@ type NilExpression struct {
 
 func (expr *NilExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeNil))
-	expr.GetType().fix()
+	expr.GetType().Fix()
 	return expr
 }
 
@@ -256,7 +256,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	if declaration != nil {
 		expr.SetType(declaration.Type)
 		expr.inner = declaration
-		expr.GetType().fix()
+		expr.GetType().Fix()
 		return expr
 	}
 
@@ -270,7 +270,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 			functionDefinition: fd,
 			Index:              compiler.AddFuncList(fd),
 		}
-		expr.GetType().fix()
+		expr.GetType().Fix()
 
 		return expr
 	}
@@ -280,7 +280,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	if pkg != nil {
 		expr.SetType(pkg.typ)
 		expr.inner = pkg
-		expr.GetType().fix()
+		expr.GetType().Fix()
 		return expr
 	}
 
@@ -342,7 +342,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 		panic("TODO")
 	}
 
-	newExpr.GetType().fix()
+	newExpr.GetType().Fix()
 
 	return newExpr
 }
@@ -438,7 +438,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 		newExpr = expr
 	}
 
-	newExpr.GetType().fix()
+	newExpr.GetType().Fix()
 
 	return newExpr
 }
@@ -476,7 +476,7 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 		newExpr = expr
 	}
 
-	newExpr.GetType().fix()
+	newExpr.GetType().Fix()
 
 	return newExpr
 }
@@ -526,7 +526,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 		expr.GetType().basicType = fd.Type.funcType.Results[0].Type.basicType
 	}
 
-	expr.GetType().fix()
+	expr.GetType().Fix()
 	return expr
 }
 
@@ -558,7 +558,7 @@ func (expr *MemberExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
 	}
 
-	newExpr.GetType().fix()
+	newExpr.GetType().Fix()
 
 	return newExpr
 }
@@ -569,7 +569,7 @@ func (expr *MemberExpression) generate(currentBlock *Block, ob *OpCodeBuf) {}
 func fixPackageMemberExpression(expr *MemberExpression, memberName string) Expression {
 	innerExpr := expr.expression
 
-	innerExpr.GetType().fix()
+	innerExpr.GetType().Fix()
 
 	p := innerExpr.(*IdentifierExpression).inner.(*Package)
 
@@ -590,7 +590,7 @@ func fixPackageMemberExpression(expr *MemberExpression, memberName string) Expre
 	}
 
 	newExpr.SetType(fd.CopyType())
-	newExpr.GetType().fix()
+	newExpr.GetType().Fix()
 
 	return newExpr
 }
@@ -672,7 +672,7 @@ func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
 
 	expr.GetType().sliceType = NewArrayType(elemType)
 
-	expr.GetType().fix()
+	expr.GetType().Fix()
 
 	return expr
 }
@@ -720,7 +720,7 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), INDEX_NOT_INT_ERR)
 	}
 
-	expr.GetType().fix()
+	expr.GetType().Fix()
 
 	return expr
 }

@@ -52,7 +52,7 @@ func (t *FuncType) Copy() *FuncType {
 		for _, p := range params {
 			newParams = append(newParams, &Parameter{
 				Type: p.Type.Copy(),
-				Name:          p.Name,
+				Name: p.Name,
 			})
 		}
 		return newParams
@@ -82,10 +82,11 @@ type Type struct {
 	mapType   *MapType
 }
 
-func (t *Type) fix() {
+func (t *Type) Fix() {
+	// TODO: 修正啥, 当前修正没必要
 	if t.funcType != nil {
-		for _, parameter := range t.funcType.Params {
-			parameter.Type.fix()
+		for _, param := range t.funcType.Params {
+			param.Type.Fix()
 		}
 	}
 }

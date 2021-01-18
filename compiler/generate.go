@@ -161,9 +161,9 @@ func copyVmVariableList(fd *FunctionDefinition) []*vm.Variable {
 	// TODO 形参占用位置
 	var dest = []*vm.Variable{}
 
-	localVariableCount := len(fd.localVariableList) - len(fd.parameterList)
+	localVariableCount := len(fd.DeclarationList) - len(fd.ParameterList)
 
-	for _, v := range fd.localVariableList[0:localVariableCount] {
+	for _, v := range fd.DeclarationList[0:localVariableCount] {
 		vmV := &vm.Variable{
 			Name: v.Name,
 			Type: CopyToVmType(v.Type),

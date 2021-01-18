@@ -342,7 +342,7 @@ func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 
 	if expr.left.GetType().IsBool() && expr.right.GetType().IsBool() {
 		expr.Type = NewType(vm.BasicTypeBool)
-		expr.GetType().fix()
+		expr.GetType().Fix()
 		return expr
 	}
 

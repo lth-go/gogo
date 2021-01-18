@@ -58,19 +58,19 @@ func (stmt *IfStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	if stmt.thenBlock != nil {
-		FixStatementList(stmt.thenBlock, stmt.thenBlock.statementList, fd)
+		stmt.thenBlock.FixStatementList(fd)
 	}
 
 	for _, elif := range stmt.elifList {
 		elif.condition = elif.condition.fix(currentBlock)
 
 		if elif.block != nil {
-			FixStatementList(elif.block, elif.block.statementList, fd)
+			elif.block.FixStatementList(fd)
 		}
 	}
 
 	if stmt.elseBlock != nil {
-		FixStatementList(stmt.elseBlock, stmt.elseBlock.statementList, fd)
+		stmt.elseBlock.FixStatementList(fd)
 	}
 }
 
@@ -149,7 +149,7 @@ func (stmt *ForStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	}
 
 	if stmt.block != nil {
-		FixStatementList(stmt.block, stmt.block.statementList, fd)
+		stmt.block.FixStatementList(fd)
 	}
 }
 
@@ -207,7 +207,6 @@ type ReturnStatement struct {
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-
 	// TODO: use first result type
 	var fdType *Type
 
@@ -337,9 +336,9 @@ type Declaration struct {
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
-	currentBlock.addDeclaration(stmt, fd, stmt.Position())
+	currentBlock.AddDeclaration(stmt, fd)
 
-	stmt.Type.fix()
+	stmt.Type.Fix()
 
 	// 类型转换
 	if stmt.InitValue != nil {
@@ -412,11 +411,5 @@ func (stmt *AssignStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 		rightExpr.generate(currentBlock, ob)
 		ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
 		generatePopToLvalue(currentBlock, leftExpr, ob)
-	}
-}
-
-func FixStatementList(currentBlock *Block, statementList []Statement, fd *FunctionDefinition) {
-	for _, statement := range statementList {
-		statement.fix(currentBlock, fd)
 	}
 }

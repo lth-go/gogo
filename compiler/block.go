@@ -29,23 +29,14 @@ type Block struct {
 	parent BlockInfo
 }
 
-func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition, pos Position) {
-	if b.searchDeclaration(declaration.Name) != nil {
-		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, declaration.Name)
-	}
-
+func (b *Block) AddDeclaration(declaration *Declaration, fd *FunctionDefinition) {
+	// TODO: 啥时候为空
 	if b != nil {
 		b.declarationList = append(b.declarationList, declaration)
 	}
 
-	if fd != nil {
-		declaration.IsLocal = true
-		fd.addLocalVariable(declaration)
-	} else {
-		compiler := getCurrentCompiler()
-		declaration.IsLocal = false
-		compiler.AddDeclarationList(declaration)
-	}
+	declaration.IsLocal = true
+	fd.AddDeclarationList(declaration)
 }
 
 func (b *Block) getCurrentFunction() *FunctionDefinition {
@@ -71,4 +62,10 @@ func (b *Block) searchDeclaration(name string) *Declaration {
 
 	// 从全局作用域查找
 	return getCurrentCompiler().SearchDeclaration(name)
+}
+
+func (b *Block) FixStatementList(fd *FunctionDefinition) {
+	for _, statement := range b.statementList {
+		statement.fix(b, fd)
+	}
 }

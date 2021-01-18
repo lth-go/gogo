@@ -29,7 +29,7 @@ type Compiler struct {
 	importList      []*Import             // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
-	ConstantList    []interface{}         // constant
+	ConstantList    []interface{}         // 常量定义
 	currentBlock    *Block                // 当前块
 }
 
@@ -55,11 +55,11 @@ func createFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 
 	fd := &FunctionDefinition{
 		Type:              typ,
-		name:              identifier,
-		packageName:       c.packageName,
-		parameterList:     typ.funcType.Params,
-		block:             block,
-		localVariableList: nil,
+		Name:              identifier,
+		PackageName:       c.packageName,
+		ParameterList:     typ.funcType.Params,
+		Block:             block,
+		DeclarationList: nil,
 	}
 
 	if block != nil {
@@ -196,14 +196,14 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 
 	dest := &vm.Function{
 		PackageName:   src.GetPackageName(),
-		Name:          src.name,
+		Name:          src.Name,
 		Type:          CopyToVmType(src.GetType()),
-		ParameterList: copyVmParameterList(src.parameterList),
+		ParameterList: copyVmParameterList(src.ParameterList),
 		IsMethod:      false,
 	}
 
-	if src.block != nil && inThisExe {
-		generateStatementList(src.block, src.block.statementList, ob)
+	if src.Block != nil && inThisExe {
+		generateStatementList(src.Block, src.Block.statementList, ob)
 
 		dest.IsImplemented = true
 		dest.CodeList = ob.fixOpcodeBuf()
@@ -221,7 +221,7 @@ func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable)
 	var funcName string
 
 	srcPackageName := src.GetPackageName()
-	funcName = src.name
+	funcName = src.Name
 
 	for i, vmFunc := range exe.FunctionList {
 		if srcPackageName == vmFunc.PackageName && funcName == vmFunc.Name {
@@ -234,7 +234,7 @@ func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable)
 
 func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 	for _, func_ := range c.funcList {
-		if func_.name == name {
+		if func_.Name == name {
 			return func_
 		}
 	}
@@ -297,11 +297,11 @@ func (c *Compiler) AddNativeFunctions() {
 
 	fd := &FunctionDefinition{
 		Type:              typ,
-		name:              "print",
-		packageName:       "_sys",
-		parameterList:     paramsType,
-		block:             nil,
-		localVariableList: nil,
+		Name:              "print",
+		PackageName:       "_sys",
+		ParameterList:     paramsType,
+		Block:             nil,
+		DeclarationList: nil,
 	}
 
 	c.funcList = append(c.funcList, fd)
@@ -336,5 +336,6 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 }
 
 func AddDeclList(decl *Declaration) {
+	// TODO: need fix?
 	getCurrentCompiler().AddDeclarationList(decl)
 }

@@ -59,7 +59,6 @@ type Expression interface {
 	generate(*Block, *OpCodeBuf) // 生成字节码
 	GetType() *Type
 	SetType(*Type)
-	show(indent int)
 }
 
 //
@@ -72,7 +71,6 @@ type ExpressionBase struct {
 
 func (expr *ExpressionBase) fix(currentBlock *Block) Expression          { return nil }
 func (expr *ExpressionBase) generate(currentBlock *Block, ob *OpCodeBuf) {}
-func (expr *ExpressionBase) show(indent int)                             {}
 func (expr *ExpressionBase) GetType() *Type                              { return expr.Type }
 func (expr *ExpressionBase) SetType(t *Type)                             { expr.Type = t }
 
@@ -82,10 +80,6 @@ func (expr *ExpressionBase) SetType(t *Type)                             { expr.
 type BooleanExpression struct {
 	ExpressionBase
 	Value bool
-}
-
-func (expr *BooleanExpression) show(indent int) {
-	printWithIndent("BoolExpr", indent)
 }
 
 func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
@@ -120,10 +114,6 @@ type IntExpression struct {
 	Value int
 }
 
-func (expr *IntExpression) show(indent int) {
-	printWithIndent("IntExpr", indent)
-}
-
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeInt))
 	expr.GetType().fix()
@@ -154,10 +144,6 @@ func createIntExpression(pos Position) *IntExpression {
 type DoubleExpression struct {
 	ExpressionBase
 	Value float64
-}
-
-func (expr *DoubleExpression) show(indent int) {
-	printWithIndent("DoubleExpr", indent)
 }
 
 func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
@@ -202,10 +188,6 @@ func NewStringExpression(pos Position, value string) *StringExpression {
 	return expr
 }
 
-func (expr *StringExpression) show(indent int) {
-	printWithIndent("StringExpr", indent)
-}
-
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeString))
 	expr.GetType().fix()
@@ -230,10 +212,6 @@ func createStringExpression(pos Position) *StringExpression {
 //
 type NilExpression struct {
 	ExpressionBase
-}
-
-func (expr *NilExpression) show(indent int) {
-	printWithIndent("NilExpr", indent)
 }
 
 func (expr *NilExpression) fix(currentBlock *Block) Expression {
@@ -270,10 +248,6 @@ type IdentifierExpression struct {
 	ExpressionBase
 	name  string
 	inner interface{} // 声明要么是变量，要么是函数, 要么是包(FunctionIdentifier Declaration Package)
-}
-
-func (expr *IdentifierExpression) show(indent int) {
-	printWithIndent("IdentifierExpr", indent)
 }
 
 func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
@@ -349,14 +323,6 @@ type BinaryExpression struct {
 	operator BinaryOperatorKind // 操作符
 	left     Expression
 	right    Expression
-}
-
-func (expr *BinaryExpression) show(indent int) {
-	printWithIndent("BinaryExpr", indent)
-
-	subIndent := indent + 2
-	expr.left.show(subIndent)
-	expr.right.show(subIndent)
 }
 
 func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
@@ -450,13 +416,6 @@ type MinusExpression struct {
 	operand Expression
 }
 
-func (expr *MinusExpression) show(indent int) {
-	printWithIndent("MinusExpr", indent)
-
-	subIndent := indent + 2
-	expr.operand.show(subIndent)
-}
-
 func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 
@@ -499,14 +458,6 @@ type LogicalNotExpression struct {
 	operand Expression
 }
 
-func (expr *LogicalNotExpression) show(indent int) {
-	printWithIndent("LogicalNotExpr", indent)
-
-	subIndent := indent + 2
-
-	expr.operand.show(subIndent)
-}
-
 func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	var newExpr Expression
 
@@ -542,18 +493,6 @@ type FunctionCallExpression struct {
 	ExpressionBase
 	function     Expression   // 函数名
 	argumentList []Expression // 实参列表
-}
-
-func (expr *FunctionCallExpression) show(indent int) {
-	printWithIndent("FuncCallExpr", indent)
-
-	subIndent := indent + 2
-
-	expr.function.show(subIndent)
-	for _, arg := range expr.argumentList {
-		printWithIndent("ArgList", subIndent)
-		arg.show(subIndent + 2)
-	}
 }
 
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
@@ -604,13 +543,6 @@ type MemberExpression struct {
 	ExpressionBase
 	expression Expression // 实例
 	memberName string     // 成员名称
-}
-
-func (expr *MemberExpression) show(indent int) {
-	printWithIndent("MemberExpr", indent)
-
-	subIndent := indent + 2
-	expr.expression.show(subIndent)
 }
 
 func (expr *MemberExpression) fix(currentBlock *Block) Expression {
@@ -682,10 +614,6 @@ type CastExpression struct {
 	operand  Expression
 }
 
-func (expr *CastExpression) show(indent int) {
-	printWithIndent("CastExpr", indent)
-}
-
 func (expr *CastExpression) fix(currentBlock *Block) Expression { return expr }
 
 func (expr *CastExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
@@ -723,10 +651,6 @@ func NewArrayExpression(pos Position, exprList []Expression) *ArrayExpression {
 	expr.SetPosition(pos)
 
 	return expr
-}
-
-func (expr *ArrayExpression) show(indent int) {
-	printWithIndent("ArrayLiteralExpr", indent)
 }
 
 func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
@@ -778,14 +702,6 @@ type IndexExpression struct {
 	ExpressionBase
 	array Expression
 	index Expression
-}
-
-func (expr *IndexExpression) show(indent int) {
-	printWithIndent("IndexExpr", indent)
-
-	subIndent := indent + 2
-	expr.array.show(subIndent)
-	expr.index.show(subIndent)
 }
 
 func (expr *IndexExpression) fix(currentBlock *Block) Expression {

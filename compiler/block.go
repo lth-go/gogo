@@ -29,19 +29,6 @@ type Block struct {
 	parent BlockInfo
 }
 
-func (b *Block) show(indent int) {
-	printWithIndent("Block", indent)
-	subIndent := indent + 2
-
-	for _, declaration := range b.declarationList {
-		declaration.show(subIndent)
-	}
-
-	for _, stmt := range b.statementList {
-		stmt.show(subIndent)
-	}
-}
-
 func (b *Block) addDeclaration(declaration *Declaration, fd *FunctionDefinition, pos Position) {
 	if b.searchDeclaration(declaration.Name) != nil {
 		compileError(pos, VARIABLE_MULTIPLE_DEFINE_ERR, declaration.Name)

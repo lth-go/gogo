@@ -115,12 +115,6 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 	return exeList
 }
 
-//////////////////////////////
-// 打印语法树
-//////////////////////////////
-func (c *Compiler) Show() {
-}
-
 //
 // 修正树
 //

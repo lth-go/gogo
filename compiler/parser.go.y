@@ -71,8 +71,7 @@ import (
 %%
 
 translation_unit
-        : import_declaration_list_or_nil definition_or_statement
-        | translation_unit definition_or_statement
+        : import_declaration_list_or_nil top_level_decl_list
         ;
 import_declaration_list_or_nil
         : /* empty */
@@ -100,12 +99,25 @@ import_declaration
             $$ = CreateImport($2.Lit)
         }
         ;
-definition_or_statement
-        : function_definition
-        | statement SEMICOLON
+top_level_decl_list
+        :
+        | top_level_decl_list top_level_decl SEMICOLON
+        ;
+top_level_decl
+        : declaration
+        | function_definition
+        ;
+declaration
+        : var_decl
+        ;
+var_decl
+        : VAR IDENTIFIER type_specifier
         {
-            l := yylex.(*Lexer)
-            l.compiler.statementList = append(l.compiler.statementList, $1)
+            AddDeclList(NewDeclaration($1.Position(), $3, $2.Lit, nil))
+        }
+        | VAR IDENTIFIER type_specifier ASSIGN expression
+        {
+            AddDeclList(NewDeclaration($1.Position(), $3, $2.Lit, $5))
         }
         ;
 array_type_specifier
@@ -145,7 +157,7 @@ composite_type
         | map_type_specifier
         ;
 function_definition
-        : FUNC receiver_or_nil IDENTIFIER signature block_or_nil SEMICOLON
+        : FUNC receiver_or_nil IDENTIFIER signature block_or_nil
         {
             createFunctionDefine($1.Position(), $2, $3.Lit, $4, $5)
         }

@@ -30,7 +30,7 @@ type Compiler struct {
 	importList      []*Import             // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
-	statementList   []Statement           // 语句列表
+	statementList   []Statement           // TODO: 废弃, 语句列表
 	ConstantList    []interface{}         // constant
 	currentBlock    *Block                // 当前块
 }
@@ -353,4 +353,8 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 		}
 	}
 	return nil
+}
+
+func AddDeclList(decl *Declaration) {
+	getCurrentCompiler().AddDeclarationList(decl)
 }

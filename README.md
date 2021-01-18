@@ -10,7 +10,7 @@ go get -u golang.org/x/tools/cmd/goyacc
 
 ## TODO
 
-+ 虚拟机入口为main函数
++ lex修正
 + 静态区垃圾回收
 + 函数支持多返回值
 + 操作符左右类型修正

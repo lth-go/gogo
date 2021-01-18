@@ -39,6 +39,7 @@ func NewVirtualMachine(exeList *ExecutableList) *VirtualMachine {
 	}
 
 	vm.SetTopExe(exeList.GetTopExe())
+	vm.SetMainEntrypoint()
 
 	return vm
 }
@@ -59,6 +60,19 @@ func NewVirtualMachine(exeList *ExecutableList) *VirtualMachine {
 
 func (vm *VirtualMachine) SetTopExe(exe *Executable) {
 	vm.topLevel = exe
+}
+
+func (vm *VirtualMachine) SetMainEntrypoint() {
+	// TODO: 设置入口为main函数
+	// TODO: packageName 是main
+	idx := vm.SearchStatic("", "main")
+	if idx == -1 {
+		panic("TODO")
+	}
+	b := make([]byte, 2)
+	set2ByteInt(b, idx)
+	vm.topLevel.CodeList = append(vm.topLevel.CodeList, b...)
+	vm.topLevel.CodeList = append(vm.topLevel.CodeList, VM_INVOKE)
 }
 
 // 添加单个exe到vm

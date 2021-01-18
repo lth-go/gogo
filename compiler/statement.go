@@ -207,63 +207,30 @@ type ReturnStatement struct {
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	// TODO: use first result type
-	var fdType *Type
-
-	if len(fd.GetType().funcType.Results) == 0 {
-		fdType = NewType(vm.BasicTypeVoid)
-	} else {
-		fdType = fd.GetType().funcType.Results[0].Type
-	}
-
-	// 如果没有返回值,添加之
-	if stmt.Value != nil {
-		if !fdType.IsComposite() && fdType.IsVoid() {
-			compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
-		}
-
-		stmt.Value = stmt.Value.fix(currentBlock)
-
-		// 类型转换
-		stmt.Value = CreateAssignCast(stmt.Value, fdType)
-
-		return
-	}
-
-	// return value == nil
-	// 衍生类型
-	if fdType.IsComposite() {
+	// TODO: 目前仅返回一个值
+	if len(fd.GetType().funcType.Results) == 0 && stmt.Value == nil {
+		// TODO: 空返回用nil替代
 		stmt.Value = createNilExpression(stmt.Position())
 		return
-	}
-
-	// 基础类型
-	switch {
-	case fdType.IsVoid():
-		// TODO: 修改返回
-		stmt.Value = createIntExpression(stmt.Position())
-	case fdType.IsBool():
-		stmt.Value = createBooleanExpression(stmt.Position())
-	case fdType.IsInt():
-		stmt.Value = createIntExpression(stmt.Position())
-	case fdType.IsFloat():
-		stmt.Value = createDoubleExpression(stmt.Position())
-	case fdType.IsString():
-		stmt.Value = createStringExpression(stmt.Position())
-	case fdType.IsNil():
-		fallthrough
-	default:
-		panic("TODO")
+	} else if len(fd.GetType().funcType.Results) == 0 && stmt.Value != nil {
+		// 函数没有定义返回值,却返回了
+		compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
+	} else if len(fd.GetType().funcType.Results) != 0 && stmt.Value == nil {
+		// 函数定义了返回值,却没返回
+		compileError(stmt.Position(), BAD_RETURN_TYPE_ERR)
+	} else {
+		stmt.Value = stmt.Value.fix(currentBlock)
+		stmt.Value = CreateAssignCast(stmt.Value, fd.GetType().funcType.Results[0].Type)
 	}
 }
 
 func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
+	// TODO: 允许没有返回值
 	if stmt.Value == nil {
 		panic("Return value is nil.")
 	}
 
 	stmt.Value.generate(currentBlock, ob)
-
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
 

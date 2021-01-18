@@ -37,7 +37,7 @@ func (fd *FunctionDefinition) fix() {
 		// 修正表达式列表
 		fd.Block.FixStatementList(fd)
 		// 修正返回值
-		fd.addReturnFunction()
+		fd.FixReturnStatement()
 	}
 }
 
@@ -52,29 +52,29 @@ func (fd *FunctionDefinition) addParameterAsDeclaration() {
 	}
 }
 
-func (fd *FunctionDefinition) addReturnFunction() {
+// 确保函数语句里最后一定是return语句
+// TODO: 校验参数类型
+func (fd *FunctionDefinition) FixReturnStatement() {
+	isNeedAddReturn := func() bool {
+		if len(fd.Block.statementList) == 0 {
+			return true
+		}
+
+		last := fd.Block.statementList[len(fd.Block.statementList)-1]
+		_, ok := last.(*ReturnStatement)
+		return !ok
+	}()
+	if !isNeedAddReturn {
+		return
+	}
+
+	returnStmt := &ReturnStatement{Value: nil}
+	returnStmt.fix(fd.Block, fd)
+
 	if fd.Block.statementList == nil {
-		ret := &ReturnStatement{Value: nil}
-		ret.fix(fd.Block, fd)
-		fd.Block.statementList = []Statement{ret}
-		return
+		fd.Block.statementList = []Statement{}
 	}
-
-	// TODO return 是否有必要一定最后
-	last := fd.Block.statementList[len(fd.Block.statementList)-1]
-	_, ok := last.(*ReturnStatement)
-	if ok {
-		return
-	}
-
-	ret := &ReturnStatement{Value: nil}
-	ret.SetPosition(fd.Type.Position())
-
-	if ret.Value != nil {
-		ret.Value.SetPosition(fd.Type.Position())
-	}
-	ret.fix(fd.Block, fd)
-	fd.Block.statementList = append(fd.Block.statementList, ret)
+	fd.Block.statementList = append(fd.Block.statementList, returnStmt)
 }
 
 func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {

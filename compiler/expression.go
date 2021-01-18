@@ -230,7 +230,7 @@ func createNilExpression(pos Position) *NilExpression {
 	return expr
 }
 
-func isNull(expr Expression) bool {
+func isNilExpression(expr Expression) bool {
 	_, ok := expr.(*NilExpression)
 	return ok
 }
@@ -369,8 +369,8 @@ func (expr *BinaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 		}
 
 		// TODO 啥意思
-		if (isNull(leftExpr) && !isNull(rightExpr)) ||
-			(!isNull(leftExpr) && isNull(rightExpr)) {
+		if (isNilExpression(leftExpr) && !isNilExpression(rightExpr)) ||
+			(!isNilExpression(leftExpr) && isNilExpression(rightExpr)) {
 			offset = byte(2)
 		} else if (operator == EqOperator || operator == NeOperator) && leftExpr.GetType().IsString() {
 			offset = byte(3)

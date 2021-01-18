@@ -294,7 +294,7 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 
 	} else if expr.operator == AddOperator {
 		if (newBinaryExprLeftType.IsString() && newBinaryExprRightType.IsString()) ||
-			(newBinaryExprLeftType.IsString() && isNull(newBinaryExpr.left)) {
+			(newBinaryExprLeftType.IsString() && isNilExpression(newBinaryExpr.left)) {
 			newBinaryExpr.SetType(NewType(vm.BasicTypeString))
 		}
 	} else {
@@ -324,8 +324,8 @@ func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	newBinaryExprRightType := newBinaryExpr.right.GetType()
 
 	if !compareType(newBinaryExprLeftType, newBinaryExprRightType) {
-		if !(newBinaryExprLeftType.IsComposite() && isNull(newBinaryExpr.right) ||
-			(isNull(newBinaryExpr.left) && newBinaryExprRightType.IsComposite())) {
+		if !(newBinaryExprLeftType.IsComposite() && isNilExpression(newBinaryExpr.right) ||
+			(isNilExpression(newBinaryExpr.left) && newBinaryExprRightType.IsComposite())) {
 
 			compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, newBinaryExprLeftType.GetTypeName(), newBinaryExprRightType.GetTypeName())
 		}

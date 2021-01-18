@@ -472,7 +472,6 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 		case VM_RETURN:
 			if vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe) {
 				ret = stack.Get(stack.stackPointer - 1)
-				// TODO goto
 				return ret
 			}
 		case VM_NEW_ARRAY:
@@ -621,11 +620,14 @@ func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunc
 	*codeP = calleeP.CodeList
 }
 
+// 保存返回值,并恢复栈
 func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exe **Executable) bool {
 
+	// 获取返回值,用于恢复
 	returnValue := vm.stack.Get(vm.stack.stackPointer - 1)
 	vm.stack.stackPointer--
 
+	// 恢复调用栈
 	ret := doReturn(vm, funcP, codeP, pcP, baseP, exe)
 
 	vm.stack.Set(vm.stack.stackPointer, returnValue)
@@ -634,13 +636,12 @@ func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pc
 	return ret
 }
 
+// 恢复到父调用栈
 func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
 
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
-
 	argCount := len(calleeP.ParameterList)
 
-	// method
 	if calleeP.IsMethod {
 		argCount++
 	}

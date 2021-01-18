@@ -25,13 +25,7 @@ func (vm *VirtualMachine) Mark() {
 		obj.ResetMark()
 	}
 
-	for _, exe := range vm.executableList {
-		for _, variable := range exe.VariableList.VariableList {
-			if variable.IsReferenceType() {
-				mark(variable.Value.(Object))
-			}
-		}
-	}
+	// TODO: 静态区
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
 		mark(vm.stack.Get(i))

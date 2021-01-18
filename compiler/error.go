@@ -119,7 +119,7 @@ var errMessageMap map[int]string = map[int]string{
 	UNEXPECTED_WIDE_STRING_IN_COMPILE_ERR:    "预期外的宽字符串。",
 	PARAMETER_MULTIPLE_DEFINE_ERR:            "函数的参数名重复(%s)。",
 	VARIABLE_MULTIPLE_DEFINE_ERR:             "变量名$(name)重复。",
-	IDENTIFIER_NOT_FOUND_ERR:                 "找不到变量或函数$(name)。",
+	IDENTIFIER_NOT_FOUND_ERR:                 "找不到变量或函数(%s)。",
 	FUNCTION_IDENTIFIER_ERR:                  "$(name)是函数名，但没有函数调用的()。",
 	DERIVE_TYPE_CAST_ERR:                     "不能强制转型为派生类型。",
 	CAST_MISMATCH_ERR:                        "不能将%+v转型为%v。",

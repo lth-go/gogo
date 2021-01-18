@@ -64,6 +64,7 @@ func (vm *VirtualMachine) SetTopExe(exe *Executable) {
 // 添加单个exe到vm
 func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 	vm.executableList = append(vm.executableList, exe)
+
 	vm.AddFunctions(exe)
 	vm.AddStatic(exe)
 
@@ -74,13 +75,13 @@ func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 	for _, f := range exe.FunctionList {
 		vm.ConvertOpCode(exe, f.CodeList, f)
 	}
-
-	// TODO: 直接将变量压入堆中,并修正字节码下标
-	exe.VariableList.Init()
 }
 
 // 添加静态区
 func (vm *VirtualMachine) AddStatic(exe *Executable) {
+	// 变量初始化
+	exe.VariableList.Init()
+
 	for _, value := range exe.VariableList.VariableList {
 		vm.static.Append(NewStaticVariable(exe.PackageName, value.Name, value.Value))
 	}
@@ -126,7 +127,7 @@ func (vm *VirtualMachine) Execute() {
 	vm.execute(nil, vm.topLevel.CodeList)
 }
 
-func (vm *VirtualMachine) execute(gFunc *GoGoFunction, codeList []byte) Object {
+func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Object {
 	var ret Object
 	var base int
 
@@ -135,7 +136,6 @@ func (vm *VirtualMachine) execute(gFunc *GoGoFunction, codeList []byte) Object {
 	static := vm.static
 
 	for pc := vm.pc; pc < len(codeList); {
-
 		switch codeList[pc] {
 		case VM_PUSH_INT_1BYTE:
 			stack.SetIntPlus(0, int(codeList[pc+1]))
@@ -447,16 +447,16 @@ func (vm *VirtualMachine) execute(gFunc *GoGoFunction, codeList []byte) Object {
 			funcIdx := stack.GetIntPlus(-1)
 			switch f := vm.static.Get(funcIdx).(type) {
 			case *GoGoNativeFunction:
-				vm.restorePc(exe, gFunc, pc)
+				vm.restorePc(exe, gogoFunc, pc)
 				vm.InvokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GoGoFunction:
-				vm.InvokeFunction(&gFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &exe)
+				vm.InvokeFunction(&gogoFunc, f, &codeList, &pc, &vm.stack.stackPointer, &base, &exe)
 			default:
 				panic("TODO")
 			}
 		case VM_RETURN:
-			if vm.returnFunction(&gFunc, &codeList, &pc, &base, &exe) {
+			if vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe) {
 				ret = stack.Get(stack.stackPointer - 1)
 				// TODO goto
 				return ret

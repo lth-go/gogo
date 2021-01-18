@@ -36,8 +36,8 @@ import (
     LOGICAL_AND LOGICAL_OR
     EQ NE GT GE LT LE
     ADD SUB MUL DIV
-    INT_LITERAL FLOAT_LITERAL STRING_LITERAL TRUE_LITERAL FALSE_LITERAL
-    NULL_LITERAL
+    INT_LITERAL FLOAT_LITERAL STRING_LITERAL
+    TRUE FALSE NIL
     IDENTIFIER
     EXCLAMATION DOT
     IMPORT VAR FUNC
@@ -351,17 +351,17 @@ primary_expression
         {
             $$ = NewStringExpression($1.Position(), $1.Lit)
         }
-        | TRUE_LITERAL
+        | TRUE
         {
             $$ = &BooleanExpression{Value: true}
             $$.SetPosition($1.Position())
         }
-        | FALSE_LITERAL
+        | FALSE
         {
             $$ = &BooleanExpression{Value: false}
             $$.SetPosition($1.Position())
         }
-        | NULL_LITERAL
+        | NIL
         {
             $$ = createNilExpression($1.Position())
         }

@@ -1,4 +1,3 @@
-# func print(str string) void;
-func printTest(str string) void {
+func printTest(str string) {
     print(str + " ========" + "\n");
 };

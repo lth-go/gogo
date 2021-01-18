@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -30,7 +29,6 @@ type Compiler struct {
 	importList      []*Import             // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
-	statementList   []Statement           // TODO: 废弃, 语句列表
 	ConstantList    []interface{}         // constant
 	currentBlock    *Block                // 当前块
 }
@@ -41,7 +39,6 @@ func NewCompiler(path string) *Compiler {
 		importList:      []*Import{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*Declaration{},
-		statementList:   []Statement{},
 		importedList:    []*Compiler{},
 		ConstantList:    []interface{}{},
 	}
@@ -122,13 +119,6 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 // 打印语法树
 //////////////////////////////
 func (c *Compiler) Show() {
-	fmt.Println("==========")
-	fmt.Println("stmt list start")
-	for _, stmt := range c.statementList {
-		stmt.show(0)
-	}
-	fmt.Println("\nstmt list end")
-	fmt.Println("==========")
 }
 
 //
@@ -147,9 +137,6 @@ func (c *Compiler) FixTree() {
 	for _, fd := range c.funcList {
 		fd.fix()
 	}
-
-	// 修正表达式列表
-	FixStatementList(nil, c.statementList, nil)
 }
 
 func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
@@ -178,7 +165,6 @@ func (c *Compiler) Generate() *vm.Executable {
 
 	// 添加字节码
 	opCodeBuf := NewOpCodeBuf()
-	generateStatementList(nil, c.statementList, opCodeBuf)
 
 	exe.CodeList = opCodeBuf.fixOpcodeBuf()
 	exe.LineNumberList = opCodeBuf.lineNumberList

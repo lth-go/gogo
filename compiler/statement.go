@@ -203,40 +203,45 @@ func (stmt *ForStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 //
 type ReturnStatement struct {
 	StatementBase
-	Value Expression
+	ValueList []Expression
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 	// TODO: 目前仅返回一个值
-	if len(fd.GetType().funcType.Results) == 0 && stmt.Value == nil {
+	if len(fd.GetType().funcType.Results) == 0 && len(stmt.ValueList) == 0 {
 		// TODO: 空返回用nil替代
-		stmt.Value = createNilExpression(stmt.Position())
+		stmt.ValueList = []Expression{createNilExpression(stmt.Position())}
 		return
-	} else if len(fd.GetType().funcType.Results) == 0 && stmt.Value != nil {
+	} else if len(fd.GetType().funcType.Results) == 0 && len(stmt.ValueList) > 0 {
 		// 函数没有定义返回值,却返回了
 		compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
-	} else if len(fd.GetType().funcType.Results) != 0 && stmt.Value == nil {
+	} else if len(fd.GetType().funcType.Results) != 0 && len(stmt.ValueList) == 0 {
 		// 函数定义了返回值,却没返回
 		compileError(stmt.Position(), BAD_RETURN_TYPE_ERR)
 	} else {
-		stmt.Value = stmt.Value.fix(currentBlock)
-		stmt.Value = CreateAssignCast(stmt.Value, fd.GetType().funcType.Results[0].Type)
+		stmt.ValueList = []Expression{
+			CreateAssignCast(stmt.ValueList[0].fix(currentBlock), fd.GetType().funcType.Results[0].Type),
+		}
 	}
 }
 
 func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	// TODO: 允许没有返回值
-	if stmt.Value == nil {
+	if len(stmt.ValueList) == 0 {
 		panic("Return value is nil.")
 	}
 
-	stmt.Value.generate(currentBlock, ob)
+	stmt.ValueList[0].generate(currentBlock, ob)
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
 
 func NewReturnStatement(pos Position, value Expression) *ReturnStatement {
+	valueList := []Expression{}
+	if value != nil {
+		valueList = append(valueList, value)
+	}
 	stmt := &ReturnStatement{
-		Value: value,
+		ValueList: valueList,
 	}
 	stmt.SetPosition(pos)
 

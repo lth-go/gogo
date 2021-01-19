@@ -174,8 +174,8 @@ func NewObjectString(value string) *ObjectString {
 // TODO: 临时定义为对象
 //
 type ObjectCallInfo struct {
-	ObjectBase               // TODO: 兼容
+	ObjectBase                  // TODO: 兼容
 	caller        *GoGoFunction // 调用的函数
-	callerAddress int        // 保存执行函数前的pc
+	callerAddress int           // 保存执行函数前的pc
 	base          int
 }

@@ -68,7 +68,7 @@ func (fd *FunctionDefinition) FixReturnStatement() {
 		return
 	}
 
-	returnStmt := &ReturnStatement{Value: nil}
+	returnStmt := NewReturnStatement(fd.Type.Position(), nil)
 	returnStmt.fix(fd.Block, fd)
 
 	if fd.Block.statementList == nil {

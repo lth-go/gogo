@@ -471,6 +471,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			}
 		case VM_RETURN:
 			if vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe) {
+				// TODO: 目前执行不进去
 				ret = stack.Get(stack.stackPointer - 1)
 				return ret
 			}
@@ -662,6 +663,7 @@ func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int,
 	*pcP = callInfo.callerAddress + 1
 	*baseP = callInfo.base
 
+	// TODO: 目前无效
 	return callInfo.callerAddress == callFromNative
 }
 

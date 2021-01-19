@@ -14,16 +14,16 @@ func EvalMathExpression(binaryExpr *BinaryExpression) Expression {
 			newExpr := evalMathExpressionInt(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 
-		case *DoubleExpression:
+		case *FloatExpression:
 			newExpr := evalMathExpressionDouble(binaryExpr, float64(leftExpr.Value), rightExpr.Value)
 			return newExpr
 		}
-	case *DoubleExpression:
+	case *FloatExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *IntExpression:
 			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.Value, float64(rightExpr.Value))
 			return newExpr
-		case *DoubleExpression:
+		case *FloatExpression:
 			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 		}
@@ -80,7 +80,7 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 	default:
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
-	newExpr := &DoubleExpression{Value: value}
+	newExpr := &FloatExpression{Value: value}
 	newExpr.SetType(NewType(vm.BasicTypeFloat))
 
 	return newExpr
@@ -115,7 +115,7 @@ func expressionToString(expr Expression) string {
 		}
 	case *IntExpression:
 		newStr = strconv.Itoa(e.Value)
-	case *DoubleExpression:
+	case *FloatExpression:
 		newStr = strconv.FormatFloat(e.Value, 'f', -1, 64)
 	case *StringExpression:
 		newStr = e.Value
@@ -142,17 +142,17 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 		case *IntExpression:
 			newExpr := evalCompareExpressionInt(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
-		case *DoubleExpression:
+		case *FloatExpression:
 			newExpr := evalCompareExpressionDouble(binaryExpr, float64(leftExpr.Value), rightExpr.Value)
 			return newExpr
 		}
 
-	case *DoubleExpression:
+	case *FloatExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *IntExpression:
 			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.Value, float64(rightExpr.Value))
 			return newExpr
-		case *DoubleExpression:
+		case *FloatExpression:
 			newExpr := evalCompareExpressionDouble(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 		}
@@ -269,14 +269,14 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 	return newExpr
 }
 
-func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
+func FixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
 	expr.left = expr.left.fix(currentBlock)
 	expr.right = expr.right.fix(currentBlock)
 
 	// 能否合并计算
 	newExpr := EvalMathExpression(expr)
 	switch newExpr.(type) {
-	case *IntExpression, *DoubleExpression, *StringExpression:
+	case *IntExpression, *FloatExpression, *StringExpression:
 		return newExpr
 	}
 
@@ -308,7 +308,7 @@ func fixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	return newBinaryExpr
 }
 
-func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
+func FixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
 	expr.left = expr.left.fix(currentBlock)
 	expr.right = expr.right.fix(currentBlock)
 
@@ -336,7 +336,7 @@ func fixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	return newBinaryExpr
 }
 
-func fixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
+func FixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
 	expr.left = expr.left.fix(currentBlock)
 	expr.right = expr.right.fix(currentBlock)
 

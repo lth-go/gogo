@@ -83,12 +83,12 @@ type Type struct {
 }
 
 func (t *Type) Fix() {
-	// TODO: 修正啥, 当前修正没必要
-	if t.funcType != nil {
-		for _, param := range t.funcType.Params {
-			param.Type.Fix()
-		}
-	}
+	// TODO: 修正引用类型别名
+	// if t.funcType != nil {
+	//     for _, param := range t.funcType.Params {
+	//         param.Type.Fix()
+	//     }
+	// }
 }
 
 func (t *Type) GetBasicType() vm.BasicType {

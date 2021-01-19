@@ -356,8 +356,7 @@ primary_expression
         | FLOAT_LITERAL
         {
             value, _ := strconv.ParseFloat($1.Lit, 64)
-            $$ = &DoubleExpression{Value: value}
-            $$.SetPosition($1.Position())
+            $$ = CreateFloatExpression($1.Position(), value)
         }
         | STRING_LITERAL
         {

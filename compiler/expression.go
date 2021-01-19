@@ -139,20 +139,20 @@ func createIntExpression(pos Position) *IntExpression {
 }
 
 //
-// DoubleExpression
+// FloatExpression
 //
-type DoubleExpression struct {
+type FloatExpression struct {
 	ExpressionBase
 	Value float64
 }
 
-func (expr *DoubleExpression) fix(currentBlock *Block) Expression {
+func (expr *FloatExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeFloat))
 	expr.GetType().Fix()
 	return expr
 }
 
-func (expr *DoubleExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *FloatExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	if expr.Value == 0.0 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_0)
 	} else if expr.Value == 1.0 {
@@ -163,8 +163,10 @@ func (expr *DoubleExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	}
 }
 
-func createDoubleExpression(pos Position) *DoubleExpression {
-	expr := &DoubleExpression{}
+func CreateFloatExpression(pos Position, value float64) *FloatExpression {
+	expr := &FloatExpression{
+		Value: value,
+	}
 	expr.SetPosition(pos)
 
 	return expr
@@ -315,9 +317,8 @@ func createIdentifierExpression(name string, pos Position) *IdentifierExpression
 }
 
 //
-// BinaryExpression
-//
 // BinaryExpression 二元表达式
+//
 type BinaryExpression struct {
 	ExpressionBase
 	operator BinaryOperatorKind // 操作符
@@ -331,13 +332,13 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	switch expr.operator {
 	// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
-		newExpr = fixMathBinaryExpression(expr, currentBlock)
+		newExpr = FixMathBinaryExpression(expr, currentBlock)
 		// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
-		newExpr = fixCompareBinaryExpression(expr, currentBlock)
+		newExpr = FixCompareBinaryExpression(expr, currentBlock)
 		// && ||
 	case LogicalAndOperator, LogicalOrOperator:
-		newExpr = fixLogicalBinaryExpression(expr, currentBlock)
+		newExpr = FixLogicalBinaryExpression(expr, currentBlock)
 	default:
 		panic("TODO")
 	}
@@ -431,7 +432,7 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	case *IntExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
-	case *DoubleExpression:
+	case *FloatExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
 	default:

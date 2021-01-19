@@ -133,10 +133,6 @@ func (v *Variable) Init() {
 	v.Value = initializeValue(v.Type)
 }
 
-func (v *Variable) IsReferenceType() bool {
-	return v.Type.IsReferenceType()
-}
-
 func NewVmVariable(name string, typ *Type) *Variable {
 	return &Variable{
 		Name: name,
@@ -153,11 +149,9 @@ type Function struct {
 	Name              string        // 函数名
 	IsImplemented     bool          // 是否在当前包实现
 	IsMethod          bool          // 是否是方法
-	ParameterList     []*Variable   // 形参列表
 	LocalVariableList []*Variable   // 局部变量列表
 	CodeList          []byte        // 字节码类表
 	LineNumberList    []*LineNumber // 行号对应表
-	// Executable *Executable
 }
 
 func (f *Function) ShowCode() {
@@ -179,6 +173,14 @@ func (f *Function) ShowCode() {
 		}
 		i += 1
 	}
+}
+
+func (f *Function) GetParamCount() int {
+	return len(f.Type.FuncType.ParamTypeList)
+}
+
+func (f *Function) GetResultCount() int {
+	return len(f.Type.FuncType.ResultTypeList)
 }
 
 //

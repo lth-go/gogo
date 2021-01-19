@@ -198,7 +198,6 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 		PackageName:   src.GetPackageName(),
 		Name:          src.Name,
 		Type:          CopyToVmType(src.GetType()),
-		ParameterList: copyVmParameterList(src.ParameterList),
 		IsMethod:      false,
 	}
 

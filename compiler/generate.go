@@ -142,18 +142,20 @@ func CopyToVmType(src *Type) *vm.Type {
 		dest.SetSliceType(CopyToVmType(src.sliceType.ElementType), src.sliceType.Len)
 	}
 
-	return dest
-}
+	if src.IsFunc() {
+		paramTypeList := []*vm.Type{}
+		resultTypeList := []*vm.Type{}
+		for _, t := range src.funcType.Params {
+			paramTypeList = append(paramTypeList, CopyToVmType(t.Type))
+		}
 
-func copyVmParameterList(src []*Parameter) []*vm.Variable {
-	dest := []*vm.Variable{}
+		for _, t := range src.funcType.Results {
+			resultTypeList = append(resultTypeList, CopyToVmType(t.Type))
+		}
 
-	for _, param := range src {
-		dest = append(dest, &vm.Variable{
-			Name: param.Name,
-			Type: CopyToVmType(param.Type),
-		})
+		dest.SetFuncType(paramTypeList, resultTypeList)
 	}
+
 	return dest
 }
 

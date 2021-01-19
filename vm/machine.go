@@ -518,10 +518,9 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 				panic("can't find line, need debug!!!")
 			}
 
+			parameterCount = f.GetParamCount()
 			if f.IsMethod {
-				parameterCount = len(f.ParameterList) + 1 /* for this */
-			} else {
-				parameterCount = len(f.ParameterList)
+				parameterCount += 1 /* for this */
 			}
 
 			// 增加返回值的位置
@@ -602,7 +601,7 @@ func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunc
 	vm.stack.Set(*spP-1, callInfo)
 
 	// 设置base
-	*baseP = *spP - len(calleeP.ParameterList) - 1
+	*baseP = *spP - calleeP.GetParamCount() - 1
 	if calleeP.IsMethod {
 		*baseP--
 	}
@@ -622,14 +621,16 @@ func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunc
 }
 
 // 保存返回值,并恢复栈
-func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exe **Executable) bool {
+func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
+	// calleeP := (*exeP).FunctionList[(*funcP).Index]
+	// argCount := len(calleeP.ParameterList)
 
 	// 获取返回值,用于恢复
 	returnValue := vm.stack.Get(vm.stack.stackPointer - 1)
 	vm.stack.stackPointer--
 
 	// 恢复调用栈
-	ret := doReturn(vm, funcP, codeP, pcP, baseP, exe)
+	ret := doReturn(vm, funcP, codeP, pcP, baseP, exeP)
 
 	vm.stack.Set(vm.stack.stackPointer, returnValue)
 	vm.stack.stackPointer++
@@ -641,7 +642,7 @@ func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pc
 func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
 
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
-	argCount := len(calleeP.ParameterList)
+	argCount := calleeP.GetParamCount()
 
 	if calleeP.IsMethod {
 		argCount++

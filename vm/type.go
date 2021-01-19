@@ -5,9 +5,15 @@ type SliceType struct {
 	ElementType *Type
 }
 
+type FuncType struct {
+	ParamTypeList  []*Type
+	ResultTypeList []*Type
+}
+
 type Type struct {
-	BasicType  BasicType
-	SliceType  *SliceType
+	BasicType BasicType
+	SliceType *SliceType
+	FuncType  *FuncType
 }
 
 func (t *Type) SetSliceType(typ *Type, length int64) {
@@ -17,14 +23,13 @@ func (t *Type) SetSliceType(typ *Type, length int64) {
 	}
 }
 
-func (t *Type) IsSliceType() bool {
-	// TODO: 根据basicType判断
-	return t.SliceType != nil
+func (t *Type) SetFuncType(paramsTypeList []*Type, resultTypeList []*Type) {
+	t.FuncType = &FuncType{
+		ParamTypeList:  paramsTypeList,
+		ResultTypeList: resultTypeList,
+	}
 }
 
-func (t *Type) IsReferenceType() bool {
-	if t.BasicType == BasicTypeString || t.IsSliceType() {
-		return true
-	}
-	return false
+func (t *Type) IsSliceType() bool {
+	return t.BasicType == BasicTypeSlice
 }

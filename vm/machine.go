@@ -470,11 +470,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 				panic("TODO")
 			}
 		case VM_RETURN:
-			if vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe) {
-				// TODO: 目前执行不进去
-				ret = stack.Get(stack.stackPointer - 1)
-				return ret
-			}
+			vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe)
 		case VM_NEW_ARRAY:
 			size := get2ByteInt(codeList[pc+1:])
 			array := vm.NewObjectArray(size)
@@ -570,9 +566,10 @@ func (vm *VirtualMachine) SearchStatic(packageName, name string) int {
 func (vm *VirtualMachine) InvokeNativeFunction(f *GoGoNativeFunction, spP *int) {
 	sp := *spP
 
-	ret := f.proc(vm, f.argCount, vm.stack.objectList[sp-f.argCount-1:])
+	// TODO: return value
+	f.proc(vm, f.argCount, vm.stack.objectList[sp-f.argCount-1:])
 
-	vm.stack.Set(sp-f.argCount-1, ret)
+	// vm.stack.Set(sp-f.argCount-1, ret)
 
 	*spP = sp - f.argCount
 }
@@ -621,7 +618,25 @@ func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunc
 }
 
 // 保存返回值,并恢复栈
-func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
+func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) {
+	// calleeP := (*exeP).FunctionList[(*funcP).Index]
+	// resultCount := calleeP.GetResultCount()
+
+	// bakObjList := make([]Object, resultCount)
+
+	// for i := 0; i < resultCount; i++ {
+	//     bakObjList[i] = vm.stack.Get(vm.stack.stackPointer - resultCount + i)
+	// }
+	// vm.stack.stackPointer -= resultCount
+
+	// // 恢复调用栈
+	// doReturn(vm, funcP, codeP, pcP, baseP, exeP)
+
+	// for i := 0; i < resultCount; i++ {
+	//     vm.stack.Set(vm.stack.stackPointer, bakObjList[i])
+	//     vm.stack.stackPointer++
+	// }
+
 	// calleeP := (*exeP).FunctionList[(*funcP).Index]
 	// argCount := len(calleeP.ParameterList)
 
@@ -630,16 +645,14 @@ func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pc
 	vm.stack.stackPointer--
 
 	// 恢复调用栈
-	ret := doReturn(vm, funcP, codeP, pcP, baseP, exeP)
+	doReturn(vm, funcP, codeP, pcP, baseP, exeP)
 
 	vm.stack.Set(vm.stack.stackPointer, returnValue)
 	vm.stack.stackPointer++
-
-	return ret
 }
 
 // 恢复到父调用栈
-func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) bool {
+func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) {
 
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
 	argCount := calleeP.GetParamCount()
@@ -663,9 +676,6 @@ func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int,
 	vm.stack.stackPointer = *baseP
 	*pcP = callInfo.callerAddress + 1
 	*baseP = callInfo.base
-
-	// TODO: 目前无效
-	return callInfo.callerAddress == callFromNative
 }
 
 func (vm *VirtualMachine) restorePc(ee *Executable, function *GoGoFunction, pc int) {

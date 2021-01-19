@@ -11,7 +11,7 @@ type GoGoNativeFunction struct {
 	argCount int
 }
 
-type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Object) Object
+type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Object) []Object
 
 // 保存调用函数的索引
 type GoGoFunction struct {
@@ -37,10 +37,10 @@ func (vm *VirtualMachine) addNativeFunction(packageName string, funcName string,
 	vm.static.Append(function)
 }
 
-func printProc(vm *VirtualMachine, argCount int, args []Object) Object {
+func printProc(vm *VirtualMachine, argCount int, args []Object) []Object {
 	str := args[0].(*ObjectString).Value
 
 	fmt.Println(str)
 
-	return NilObject
+	return nil
 }

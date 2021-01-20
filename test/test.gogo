@@ -531,6 +531,16 @@ func testNil() {
     };
 };
 
+func testMultiAssign() {
+    var a int;
+    var b int;
+    var c int;
+    a, b, c = 1, 2, 3;
+    print("a is " + a + "\n");
+    print("b is " + b + "\n");
+    print("c is " + c + "\n");
+};
+
 func testPackageCall() {
     utils.printTest("TODO");
 };
@@ -554,4 +564,5 @@ func main() {
     testArray();
     testNil();
     testPackageCall();
+    testMultiAssign();
 };

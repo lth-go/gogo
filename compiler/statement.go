@@ -353,7 +353,24 @@ type AssignStatement struct {
 }
 
 func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	if len(stmt.left) != len(stmt.right) {
+	leftLen := len(stmt.left)
+	rightLen := len(stmt.right)
+
+	// 校验右边是否有函数调用,如果有取函数返回值为长度
+	isCall := false
+	for _, expr := range stmt.right {
+		callExpr, ok := expr.(*FunctionCallExpression)
+		if ok {
+			if rightLen > 1 {
+				panic("TODO")
+			}
+			rightLen = len(callExpr.Type.funcType.Results)
+			isCall = true
+			break
+		}
+	}
+
+	if leftLen != rightLen {
 		panic("TODO")
 	}
 
@@ -365,26 +382,60 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		}
 	}
 
-	for i := 0; i < len(stmt.left); i++ {
-		leftExpr := stmt.left[i]
-		rightExpr := stmt.right[i]
+	if isCall {
+		for i := 0; i < len(stmt.left); i++ {
+			leftExpr := stmt.left[i]
+			leftExpr.fix(currentBlock)
 
-		leftExpr.fix(currentBlock)
-		rightExpr.fix(currentBlock)
+		}
 
-		stmt.right[i] = CreateAssignCast(stmt.right[i], leftExpr.GetType())
+		if rightLen > 0 {
+			rightExpr := stmt.right[0]
+			rightExpr.fix(currentBlock)
+		}
+	} else {
+		for i := 0; i < len(stmt.left); i++ {
+			leftExpr := stmt.left[i]
+			leftExpr.fix(currentBlock)
+
+			rightExpr := stmt.right[i]
+			rightExpr.fix(currentBlock)
+			stmt.right[i] = CreateAssignCast(stmt.right[i], leftExpr.GetType())
+		}
 	}
+
 }
 
 func (stmt *AssignStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
-	count := len(stmt.left)
+	isCall := false
+	for _, expr := range stmt.right {
+		_, ok := expr.(*FunctionCallExpression)
+		if ok {
+			isCall = true
+			break
+		}
+	}
 
-	for i := 0; i < count; i++ {
-		leftExpr := stmt.left[i]
-		rightExpr := stmt.right[i]
+	if isCall {
+		for _, expr := range stmt.right {
+			expr.generate(currentBlock, ob)
+		}
 
-		rightExpr.generate(currentBlock, ob)
-		ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
-		generatePopToLvalue(currentBlock, leftExpr, ob)
+		count := len(stmt.left)
+		for i := 0; i < count; i++ {
+			leftExpr := stmt.left[count-i-1]
+			ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
+			generatePopToLvalue(currentBlock, leftExpr, ob)
+		}
+	} else {
+		count := len(stmt.left)
+		for i := 0; i < count; i++ {
+			leftExpr := stmt.left[i]
+			rightExpr := stmt.right[i]
+
+			rightExpr.generate(currentBlock, ob)
+			ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
+			generatePopToLvalue(currentBlock, leftExpr, ob)
+		}
 	}
 }

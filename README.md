@@ -6,6 +6,15 @@ Simple language writen by go.
 
 ```sh
 go get -u golang.org/x/tools/cmd/goyacc
+
+# generate parser.go
+make parser
+```
+
+## Test
+
+```sh
+make test
 ```
 
 ## TODO
@@ -13,8 +22,6 @@ go get -u golang.org/x/tools/cmd/goyacc
 + 块重复声明修正,引用全局声明
 + 增加package声明
 + 静态区垃圾回收
-+ 函数支持多返回值, returnStmt返回列表
 + 操作符左右类型修正
-+ 函数返回值校验修正, 定义返回值时必须返回
 + 导入包时,将变量放入静态区
 + 引入包概念, 能使用其他包的函数,变量

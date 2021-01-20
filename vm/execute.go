@@ -140,9 +140,9 @@ func NewVmVariable(name string, typ *Type) *Variable {
 	}
 }
 
-// ==============================
+//
 // 函数
-// ==============================
+//
 type Function struct {
 	Type              *Type         // 类型
 	PackageName       string        // 包名

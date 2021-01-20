@@ -209,10 +209,6 @@ retry:
 	return
 }
 
-// ==============================
-// isXxx
-// ==============================
-
 // isLetter returns true if the rune is a letter for identity.
 func isLetter(ch rune) bool {
 	return unicode.IsLetter(ch) || ch == '_'
@@ -232,10 +228,6 @@ func isEOL(ch rune) bool {
 func isBlank(ch rune) bool {
 	return ch == ' ' || ch == '\t' || ch == '\r'
 }
-
-// ==============================
-// move
-// ==============================
 
 // peek returns current rune in the code.
 func (s *Scanner) peek() rune {
@@ -279,10 +271,6 @@ func (s *Scanner) reachEOF() bool {
 func (s *Scanner) pos() Position {
 	return Position{Line: s.line + 1, Column: s.offset - s.lineHead + 1}
 }
-
-// ==============================
-// scanXXX
-// ==============================
 
 // scanIdentifier returns identifier begining at current position.
 func (s *Scanner) scanIdentifier() (string, error) {

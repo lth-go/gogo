@@ -105,10 +105,8 @@ func createBooleanExpression(pos Position) *BooleanExpression {
 }
 
 //
-// IntExpression
-//
-
 // IntExpression 数字表达式
+//
 type IntExpression struct {
 	ExpressionBase
 	Value int
@@ -173,9 +171,8 @@ func CreateFloatExpression(pos Position, value float64) *FloatExpression {
 }
 
 //
-// StringExpression
-//
 // StringExpression 字符串表达式
+//
 type StringExpression struct {
 	ExpressionBase
 	Value string
@@ -496,6 +493,7 @@ type FunctionCallExpression struct {
 	argumentList []Expression // 实参列表
 }
 
+// TODO: 函数调用有多返回值,如何处理
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	var fd *FunctionDefinition
 	var arrayBase *Type
@@ -535,6 +533,17 @@ func (expr *FunctionCallExpression) generate(currentBlock *Block, ob *OpCodeBuf)
 	generatePushArgument(expr.argumentList, currentBlock, ob)
 	expr.function.generate(currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_INVOKE)
+}
+
+func NewFunctionCallExpression(pos Position, function Expression, argumentList []Expression) *FunctionCallExpression {
+	expr := &FunctionCallExpression{
+		function:     function,
+		argumentList: argumentList,
+	}
+
+	expr.SetPosition(pos)
+
+	return expr
 }
 
 //
@@ -637,9 +646,8 @@ func (expr *CastExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 }
 
 //
-// ArrayExpression
+// ArrayExpression 创建列表时的值, eg:{1,2,3,4}
 //
-// 创建列表时的值, eg:{1,2,3,4}
 type ArrayExpression struct {
 	ExpressionBase
 	List []Expression
@@ -696,9 +704,9 @@ func (expr *ArrayExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, count)
 }
 
-// ==============================
+//
 // IndexExpression
-// ==============================
+//
 type IndexExpression struct {
 	ExpressionBase
 	array Expression

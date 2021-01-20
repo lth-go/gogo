@@ -398,13 +398,11 @@ primary_expression
         }
         | primary_expression LP argument_list RP
         {
-            $$ = &FunctionCallExpression{function: $1, argumentList: $3}
-            $$.SetPosition($1.Position())
+            $$ = NewFunctionCallExpression($1.Position(), $1, $3)
         }
         | primary_expression LP RP
         {
-            $$ = &FunctionCallExpression{function: $1, argumentList: []Expression{}}
-            $$.SetPosition($1.Position())
+            $$ = NewFunctionCallExpression($1.Position(), $1, []Expression{})
         }
         | LP expression RP
         {

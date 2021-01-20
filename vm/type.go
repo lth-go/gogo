@@ -1,5 +1,25 @@
 package vm
 
+//
+// 基本类型
+//
+type BasicType int
+
+const (
+	BasicTypeNoType BasicType = iota - 1
+	BasicTypeBool
+	BasicTypeInt
+	BasicTypeFloat
+	BasicTypeString
+	BasicTypeNil
+	BasicTypeVoid
+	BasicTypePackage
+	BasicTypeSlice
+	BasicTypeMap
+	BasicTypeStruct
+	BasicTypeFunc
+)
+
 type SliceType struct {
 	Len         int64
 	ElementType *Type

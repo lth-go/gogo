@@ -54,11 +54,11 @@ func createFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 	c := getCurrentCompiler()
 
 	fd := &FunctionDefinition{
-		Type:              typ,
-		Name:              identifier,
-		PackageName:       c.packageName,
-		ParameterList:     typ.funcType.Params,
-		Block:             block,
+		Type:            typ,
+		Name:            identifier,
+		PackageName:     c.packageName,
+		ParameterList:   typ.funcType.Params,
+		Block:           block,
 		DeclarationList: nil,
 	}
 
@@ -195,10 +195,10 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 	ob := NewOpCodeBuf()
 
 	dest := &vm.Function{
-		PackageName:   src.GetPackageName(),
-		Name:          src.Name,
-		Type:          CopyToVmType(src.GetType()),
-		IsMethod:      false,
+		PackageName: src.GetPackageName(),
+		Name:        src.Name,
+		Type:        CopyToVmType(src.GetType()),
+		IsMethod:    false,
 	}
 
 	if src.Block != nil && inThisExe {
@@ -295,11 +295,11 @@ func (c *Compiler) AddNativeFunctions() {
 	typ := CreateFuncType(paramsType, nil)
 
 	fd := &FunctionDefinition{
-		Type:              typ,
-		Name:              "print",
-		PackageName:       "_sys",
-		ParameterList:     paramsType,
-		Block:             nil,
+		Type:            typ,
+		Name:            "print",
+		PackageName:     "_sys",
+		ParameterList:   paramsType,
+		Block:           nil,
 		DeclarationList: nil,
 	}
 

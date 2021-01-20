@@ -1,9 +1,8 @@
 package vm
 
-// ==============================
+//
 // 字节码
-// ==============================
-
+//
 const (
 	VM_PUSH_INT_1BYTE byte = iota
 	VM_PUSH_INT_2BYTE

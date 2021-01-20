@@ -4,20 +4,11 @@ import (
 	"fmt"
 )
 
-// ==============================
-// Token
-// ==============================
-
-// Token token
 type Token struct {
 	PosBase // StmtImpl provide Pos() function.
 	Tok     int
 	Lit     string
 }
-
-// ==============================
-// Error
-// ==============================
 
 // Error provides a convenient interface for handling runtime error.
 // It can be Error inteface with type cast which can call Pos().
@@ -33,10 +24,6 @@ func (e *Error) Error() string {
 	msg := fmt.Sprintf("\nLine: %d\nMessage:%s\n", e.Pos.Line, e.Message)
 	return msg
 }
-
-// ==============================
-// Lexer
-// ==============================
 
 // Lexer provides inteface to parse codes.
 type Lexer struct {
@@ -82,7 +69,6 @@ func (l *Lexer) show() {
 }
 
 // Error sets parse error.
-// parse的错误
 func (l *Lexer) Error(msg string) {
 	l.e = &Error{Message: msg, Pos: l.pos, Fatal: false}
 }

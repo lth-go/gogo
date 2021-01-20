@@ -30,7 +30,16 @@ func (stmt *ExpressionStatement) fix(currentBlock *Block, fd *FunctionDefinition
 func (stmt *ExpressionStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	expr := stmt.expression
 	expr.generate(currentBlock, ob)
-	ob.generateCode(expr.Position(), vm.VM_POP)
+
+	// 处理函数多返回值
+	funcExpr, ok := expr.(*FunctionCallExpression)
+	if ok {
+		for i := 0; i < len(funcExpr.Type.funcType.Results); i++ {
+			ob.generateCode(expr.Position(), vm.VM_POP)
+		}
+	} else {
+		ob.generateCode(expr.Position(), vm.VM_POP)
+	}
 }
 
 //
@@ -207,10 +216,7 @@ type ReturnStatement struct {
 }
 
 func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	// TODO: 目前仅返回一个值
 	if len(fd.GetType().funcType.Results) == 0 && len(stmt.ValueList) == 0 {
-		// TODO: 空返回用nil替代
-		stmt.ValueList = []Expression{createNilExpression(stmt.Position())}
 		return
 	} else if len(fd.GetType().funcType.Results) == 0 && len(stmt.ValueList) > 0 {
 		// 函数没有定义返回值,却返回了
@@ -226,12 +232,9 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 }
 
 func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
-	// TODO: 允许没有返回值
-	if len(stmt.ValueList) == 0 {
-		panic("Return value is nil.")
+	for _, value := range stmt.ValueList {
+		value.generate(currentBlock, ob)
 	}
-
-	stmt.ValueList[0].generate(currentBlock, ob)
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
 

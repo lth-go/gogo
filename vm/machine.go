@@ -619,36 +619,23 @@ func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunc
 
 // 保存返回值,并恢复栈
 func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) {
-	// calleeP := (*exeP).FunctionList[(*funcP).Index]
-	// resultCount := calleeP.GetResultCount()
+	calleeP := (*exeP).FunctionList[(*funcP).Index]
+	resultCount := calleeP.GetResultCount()
 
-	// bakObjList := make([]Object, resultCount)
+	bakObjList := make([]Object, resultCount)
 
-	// for i := 0; i < resultCount; i++ {
-	//     bakObjList[i] = vm.stack.Get(vm.stack.stackPointer - resultCount + i)
-	// }
-	// vm.stack.stackPointer -= resultCount
-
-	// // 恢复调用栈
-	// doReturn(vm, funcP, codeP, pcP, baseP, exeP)
-
-	// for i := 0; i < resultCount; i++ {
-	//     vm.stack.Set(vm.stack.stackPointer, bakObjList[i])
-	//     vm.stack.stackPointer++
-	// }
-
-	// calleeP := (*exeP).FunctionList[(*funcP).Index]
-	// argCount := len(calleeP.ParameterList)
-
-	// 获取返回值,用于恢复
-	returnValue := vm.stack.Get(vm.stack.stackPointer - 1)
-	vm.stack.stackPointer--
+	for i := 0; i < resultCount; i++ {
+		bakObjList[i] = vm.stack.Get(vm.stack.stackPointer - resultCount + i)
+	}
+	vm.stack.stackPointer -= resultCount
 
 	// 恢复调用栈
 	doReturn(vm, funcP, codeP, pcP, baseP, exeP)
 
-	vm.stack.Set(vm.stack.stackPointer, returnValue)
-	vm.stack.stackPointer++
+	for i := 0; i < resultCount; i++ {
+		vm.stack.Set(vm.stack.stackPointer, bakObjList[i])
+		vm.stack.stackPointer++
+	}
 }
 
 // 恢复到父调用栈

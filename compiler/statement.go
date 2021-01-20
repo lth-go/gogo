@@ -238,11 +238,7 @@ func (stmt *ReturnStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
 
-func NewReturnStatement(pos Position, value Expression) *ReturnStatement {
-	valueList := []Expression{}
-	if value != nil {
-		valueList = append(valueList, value)
-	}
+func NewReturnStatement(pos Position, valueList []Expression) *ReturnStatement {
 	stmt := &ReturnStatement{
 		ValueList: valueList,
 	}
@@ -364,6 +360,8 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 			if rightLen > 1 {
 				panic("TODO")
 			}
+			// 先fix,否则type不对
+			callExpr.fix(currentBlock)
 			rightLen = len(callExpr.Type.funcType.Results)
 			isCall = true
 			break
@@ -388,11 +386,10 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 			leftExpr.fix(currentBlock)
 
 		}
-
-		if rightLen > 0 {
-			rightExpr := stmt.right[0]
-			rightExpr.fix(currentBlock)
-		}
+		// if rightLen > 0 {
+		//     rightExpr := stmt.right[0]
+		//     rightExpr.fix(currentBlock)
+		// }
 	} else {
 		for i := 0; i < len(stmt.left); i++ {
 			leftExpr := stmt.left[i]

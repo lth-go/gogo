@@ -541,6 +541,18 @@ func testMultiAssign() {
     print("c is " + c + "\n");
 };
 
+func testFuncMultiResult() {
+    var a int;
+    var b int;
+    a, b = getMulti();
+    print("a is " + a + "\n");
+    print("b is " + b + "\n");
+};
+
+func getMulti() (int, int) {
+    return 250, 250;
+};
+
 func testPackageCall() {
     utils.printTest("TODO");
 };
@@ -565,4 +577,5 @@ func main() {
     testNil();
     testPackageCall();
     testMultiAssign();
+    testFuncMultiResult();
 };

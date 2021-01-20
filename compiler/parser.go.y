@@ -500,7 +500,7 @@ expression_or_nil
         | expression
         ;
 return_statement
-        : RETURN expression_or_nil
+        : RETURN expression_list_or_nil
         {
             $$ = NewReturnStatement($1.Position(), $2)
         }

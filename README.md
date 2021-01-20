@@ -1,4 +1,4 @@
-# Gogogogo
+# GoGo
 
 Simple language writen by go.
 

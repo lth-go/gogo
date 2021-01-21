@@ -4,19 +4,19 @@ func println(str string) {
     print(str + "\n");
 };
 
-#
-# Check lexical analyzer
-#
+//
+// Check lexical analyzer
+//
 func testLex() {
     print("Hello, World!\n\\n");
-    print("gogo\n"); # comment
-    # chain string
+    print("gogo\n"); // comment
+    // chain string
     print("gogo" + " can run ok\n");
 };
 
-#
-# Check operators
-#
+//
+// Check operators
+//
 func testOperators() {
     print("3 + 5.." + (3 + 5) + "\n");
     print("3 - 5.." + (3 - 5) + "\n");
@@ -135,9 +135,9 @@ func testOperators() {
     print("1.0 > 3.." + (1.0 > intVal) + "\n");
 };
 
-#
-# Check string comparing
-#
+//
+// Check string comparing
+//
 func testStringComparing() {
     if ("abc" == "abc") {
         print("== good.\n");
@@ -240,9 +240,9 @@ func testStringComparing() {
     };
 };
 
-#
-# Check cast
-#
+//
+// Check cast
+//
 func testCast() {
     var intVal int = 3.0;
     print("intVal.." + intVal + "\n");
@@ -252,9 +252,9 @@ func testCast() {
 
 };
 
-#
-# Check function
-#
+//
+// Check function
+//
 func testFuncNoArg() {
     print("no_arg\n");
 
@@ -306,9 +306,9 @@ func recursive(count int) {
 };
 
 
-#
-# Check booln operations
-#
+//
+// Check booln operations
+//
 func testBoolOperations() {
     var boolVal bool;
 
@@ -380,9 +380,9 @@ func testBoolOperations() {
     };
 };
 
-#
-# Check flow control
-#
+//
+// Check flow control
+//
 func testFlowControl() {
     if (true) {
         print("true\n");
@@ -475,9 +475,9 @@ func testFlowControl() {
     };
 };
 
-#
-# Check array
-#
+//
+// Check array
+//
 func testArray() {
     var i int;
     var array []int;
@@ -490,9 +490,9 @@ func testArray() {
     };
 };
 
-#
-# Check nil
-#
+//
+// Check nil
+//
 func testNil() {
     var emptyStr string = "";
     var strVal string = "abc";

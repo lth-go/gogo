@@ -5,33 +5,32 @@ import (
 )
 
 // 声明类型转换
-func CreateAssignCast(src Expression, destTye *Type) Expression {
-	var castExpr Expression
-
+func CreateAssignCast(src Expression, destType *Type) Expression {
 	srcTye := src.GetType()
 
-	if srcTye.Equal(destTye) {
+	if srcTye.Equal(destType) {
 		return src
 	}
 
-	if destTye.IsComposite() && srcTye.IsNil() {
+	if destType.IsComposite() && srcTye.IsNil() {
 		return src
 	}
 
-	if srcTye.IsInt() && destTye.IsFloat() {
-		castExpr = createCastExpression(CastTypeIntToFloat, src)
-		return castExpr
-	} else if srcTye.IsFloat() && destTye.IsInt() {
-		castExpr = createCastExpression(CastTypeFloatToInt, src)
-		return castExpr
-	} else if destTye.IsString() {
-		castExpr = createToStringCast(src)
-		if castExpr != nil {
-			return castExpr
+	if destType.IsFloat() {
+		expr, ok := src.(*IntExpression)
+		if ok {
+			return CreateFloatExpression(expr.Position(), float64(expr.Value))
 		}
 	}
 
-	castMismatchError(src.Position(), srcTye, destTye)
+	if destType.IsInt() {
+		expr, ok := src.(*FloatExpression)
+		if ok {
+			return CreateIntExpression(expr.Position(), int(expr.Value))
+		}
+	}
+
+	castMismatchError(src.Position(), srcTye, destType)
 	return nil
 }
 
@@ -71,22 +70,6 @@ func createCastExpression(castType CastType, expr Expression) Expression {
 	castExpr.SetType(typ)
 
 	return castExpr
-}
-
-func createToStringCast(src Expression) Expression {
-	var cast Expression
-
-	if src.GetType().IsBool() {
-		cast = createCastExpression(CastTypeBoolToString, src)
-	} else if src.GetType().IsInt() {
-		cast = createCastExpression(CastTypeIntToString, src)
-	} else if src.GetType().IsFloat() {
-		cast = createCastExpression(CastTypeFloatToString, src)
-	} else {
-		panic("TODO")
-	}
-
-	return cast
 }
 
 func castMismatchError(pos Position, src, dest *Type) {

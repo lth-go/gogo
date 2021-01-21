@@ -31,13 +31,8 @@ func (stmt *ExpressionStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	expr := stmt.expression
 	expr.generate(currentBlock, ob)
 
-	// 处理函数多返回值
-	funcExpr, ok := expr.(*FunctionCallExpression)
-	if ok {
-		for i := 0; i < len(funcExpr.Type.funcType.Results); i++ {
-			ob.generateCode(expr.Position(), vm.VM_POP)
-		}
-	} else {
+	// TODO: 没有返回值也会pop
+	for i := 0; i < expr.GetType().GetResultCount(); i++ {
 		ob.generateCode(expr.Position(), vm.VM_POP)
 	}
 }
@@ -361,29 +356,6 @@ type AssignStatement struct {
 }
 
 func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
-	leftLen := len(stmt.left)
-	rightLen := len(stmt.right)
-
-	// 校验右边是否有函数调用,如果有取函数返回值为长度
-	isCall := false
-	for _, expr := range stmt.right {
-		callExpr, ok := expr.(*FunctionCallExpression)
-		if ok {
-			if rightLen > 1 {
-				panic("TODO")
-			}
-			// 先fix,否则type不对
-			callExpr.fix(currentBlock)
-			rightLen = len(callExpr.Type.funcType.Results)
-			isCall = true
-			break
-		}
-	}
-
-	if leftLen != rightLen {
-		panic("TODO")
-	}
-
 	for _, expr := range stmt.left {
 		switch expr.(type) {
 		case *IdentifierExpression, *IndexExpression, *SelectorExpression:
@@ -392,11 +364,28 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		}
 	}
 
+	leftLen := len(stmt.left)
+	rightLen := len(stmt.right)
+
+	// 校验右边是否有函数调用,如果有取函数返回值为长度
+	isCall := stmt.isFuncCall()
+	if isCall {
+		if rightLen > 1 {
+			panic("TODO")
+		}
+
+		stmt.right[0] = stmt.right[0].fix(currentBlock)
+		rightLen = stmt.right[0].GetType().GetResultCount()
+	}
+
+	if leftLen != rightLen {
+		panic("TODO")
+	}
+
 	if isCall {
 		for i := 0; i < len(stmt.left); i++ {
 			leftExpr := stmt.left[i]
 			leftExpr.fix(currentBlock)
-
 		}
 	} else {
 		for i := 0; i < len(stmt.left); i++ {
@@ -412,14 +401,7 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 }
 
 func (stmt *AssignStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
-	isCall := false
-	for _, expr := range stmt.right {
-		_, ok := expr.(*FunctionCallExpression)
-		if ok {
-			isCall = true
-			break
-		}
-	}
+	isCall := stmt.isFuncCall()
 
 	if isCall {
 		for _, expr := range stmt.right {
@@ -443,4 +425,14 @@ func (stmt *AssignStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 			generatePopToLvalue(currentBlock, leftExpr, ob)
 		}
 	}
+}
+
+func (stmt *AssignStatement) isFuncCall() bool {
+	for _, expr := range stmt.right {
+		_, ok := expr.(*FunctionCallExpression)
+		if ok {
+			return true
+		}
+	}
+	return false
 }

@@ -552,10 +552,11 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 			typeList[i] = resultType.Type.Copy()
 		}
 		expr.GetType().SetBasicType(vm.BasicTypeMultipleValues)
-		expr.GetType().multipleValuesType = NewMultipleValuesType(typeList)
+		expr.GetType().multipleValueType = NewMultipleValueType(typeList)
 	}
 
 	expr.GetType().Fix()
+
 	return expr
 }
 

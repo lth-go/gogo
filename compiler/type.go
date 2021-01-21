@@ -128,17 +128,17 @@ func NewMapType(keyType, valueType *Type) *MapType {
 	}
 }
 
-type MultipleValuesType struct {
+type MultipleValueType struct {
 	List []*Type
 }
 
-func NewMultipleValuesType(list []*Type) *MultipleValuesType {
-	return &MultipleValuesType{
+func NewMultipleValueType(list []*Type) *MultipleValueType {
+	return &MultipleValueType{
 		List: list,
 	}
 }
 
-func (t *MultipleValuesType) Copy() *MultipleValuesType {
+func (t *MultipleValueType) Copy() *MultipleValueType {
 	if t == nil {
 		return nil
 	}
@@ -149,12 +149,12 @@ func (t *MultipleValuesType) Copy() *MultipleValuesType {
 		list[i] = subType.Copy()
 	}
 
-	return &MultipleValuesType{
+	return &MultipleValueType{
 		List: list,
 	}
 }
 
-func (t *MultipleValuesType) Equal(t2 *MultipleValuesType) bool {
+func (t *MultipleValueType) Equal(t2 *MultipleValueType) bool {
 	if t == nil && t2 == nil {
 		return true
 	}
@@ -188,7 +188,7 @@ type Type struct {
 	sliceType          *ArrayType
 	funcType           *FuncType
 	mapType            *MapType
-	multipleValuesType *MultipleValuesType // TODO: 用于处理函数多返回值
+	multipleValueType *MultipleValueType // TODO: 用于处理函数多返回值
 }
 
 func (t *Type) Fix() {
@@ -221,11 +221,23 @@ func (t *Type) Equal(t2 *Type) bool {
 		return false
 	}
 
-	if !t.multipleValuesType.Equal(t2.multipleValuesType) {
+	if !t.multipleValueType.Equal(t2.multipleValueType) {
 		return false
 	}
 
 	return true
+}
+
+func (t *Type) GetResultCount() int {
+	// TODO: 无返回值需要返回1
+	if t.IsMultipleValues() {
+		return len(t.multipleValueType.List)
+	} else if t.funcType != nil {
+		// TODO: remove
+		return len(t.funcType.Results)
+	} else {
+		return 1
+	}
 }
 
 func NewType(basicType vm.BasicType) *Type {
@@ -305,6 +317,10 @@ func (t *Type) IsNil() bool {
 	return t.GetBasicType() == vm.BasicTypeNil
 }
 
+func (t *Type) IsMultipleValues() bool {
+	return t.GetBasicType() == vm.BasicTypeMultipleValues
+}
+
 func (t *Type) GetTypeName() string {
 	typeName := GetBasicTypeName(t.GetBasicType())
 
@@ -378,7 +394,7 @@ func (t *Type) Copy() *Type {
 
 	newType.sliceType = t.sliceType.Copy()
 	newType.funcType = t.funcType.Copy()
-	newType.multipleValuesType = t.multipleValuesType.Copy()
+	newType.multipleValueType = t.multipleValueType.Copy()
 
 	return newType
 }

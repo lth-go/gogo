@@ -6,8 +6,8 @@ const (
 
 // 虚拟机栈
 type Stack struct {
-	stackPointer int
-	objectList   []Object
+	stackPointer int      // 栈偏移量
+	objectList   []Object // 对象栈
 }
 
 func NewStack() *Stack {

@@ -19,6 +19,9 @@ make test
 
 ## TODO
 
++ 修正栈指针移动
++ int 改int64
++ 增加原生函数int, float, string
 + 移除CastExpression
 + 块重复声明修正,引用全局声明
 + 增加package声明

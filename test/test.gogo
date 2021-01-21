@@ -553,6 +553,15 @@ func testPackageCall() {
     utils.printTest("TODO");
 };
 
+func testNativeFuncItoa() {
+    var a int = 250;
+    var b string;
+
+    b = itoa(a);
+
+    print(b);
+};
+
 func main() {
     testLex();
     testOperators();
@@ -573,4 +582,5 @@ func main() {
     testPackageCall();
     testMultiAssign();
     testFuncMultiResult();
+    testNativeFuncItoa();
 };

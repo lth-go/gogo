@@ -245,7 +245,7 @@ func (c *Compiler) searchPackage(name string) *Package {
 		if name == importedC.packageName {
 			return &Package{
 				compiler: importedC,
-				Type:      NewType(vm.BasicTypePackage),
+				Type:     NewType(vm.BasicTypePackage),
 			}
 		}
 
@@ -291,12 +291,30 @@ func searchCompiler(list []*Compiler, packageName string) *Compiler {
 }
 
 func (c *Compiler) AddNativeFunctions() {
-	paramsType := []*Parameter{{Type: NewType(vm.BasicTypeString), Name: "str"}}
-	typ := CreateFuncType(paramsType, nil)
+	c.AddNativeFunctionPrint()
+	c.AddNativeFunctionItoa()
+}
 
+func (c *Compiler) AddNativeFunctionPrint() {
+	paramsType := []*Parameter{{Type: NewType(vm.BasicTypeString), Name: "str"}}
 	fd := &FunctionDefinition{
-		Type:            typ,
+		Type:            CreateFuncType(paramsType, nil),
 		Name:            "print",
+		PackageName:     "_sys",
+		ParameterList:   paramsType,
+		Block:           nil,
+		DeclarationList: nil,
+	}
+
+	c.funcList = append(c.funcList, fd)
+}
+
+func (c *Compiler) AddNativeFunctionItoa() {
+	paramsType := []*Parameter{{Type: NewType(vm.BasicTypeInt), Name: "int"}}
+	resultsType := []*Parameter{{Type: NewType(vm.BasicTypeString)}}
+	fd := &FunctionDefinition{
+		Type:            CreateFuncType(paramsType, resultsType),
+		Name:            "itoa",
 		PackageName:     "_sys",
 		ParameterList:   paramsType,
 		Block:           nil,

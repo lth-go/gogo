@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"strconv"
 )
 
 // 原生函数
@@ -22,7 +23,8 @@ type GoGoFunction struct {
 }
 
 func (vm *VirtualMachine) AddNativeFunctions() {
-	vm.addNativeFunction("_sys", "print", printProc, 1, 0)
+	vm.addNativeFunction("_sys", "print", nativeFuncPrint, 1, 0)
+	vm.addNativeFunction("_sys", "itoa", nativeFuncItoa, 1, 1)
 }
 
 func (vm *VirtualMachine) addNativeFunction(
@@ -45,10 +47,17 @@ func (vm *VirtualMachine) addNativeFunction(
 	vm.static.Append(function)
 }
 
-func printProc(vm *VirtualMachine, argCount int, args []Object) []Object {
+func nativeFuncPrint(vm *VirtualMachine, argCount int, args []Object) []Object {
 	str := args[0].(*ObjectString).Value
 
 	fmt.Println(str)
 
 	return nil
+}
+
+func nativeFuncItoa(vm *VirtualMachine, argCount int, args []Object) []Object {
+	obj := args[0].(*ObjectInt)
+	println("=============")
+
+	return []Object{NewObjectString(strconv.Itoa(obj.Value))}
 }

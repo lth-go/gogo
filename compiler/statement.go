@@ -234,8 +234,11 @@ func (stmt *ReturnStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 		// 函数定义了返回值,却没返回
 		compileError(stmt.Position(), BAD_RETURN_TYPE_ERR)
 	} else {
-		stmt.ValueList = []Expression{
-			CreateAssignCast(stmt.ValueList[0].fix(currentBlock), fd.GetType().funcType.Results[0].Type),
+		// 只定义了单个返回值
+		stmt.ValueList = []Expression{stmt.ValueList[0].fix(currentBlock)}
+
+		if !fd.GetType().funcType.Results[0].Type.Equal(stmt.ValueList[0].GetType()) {
+			compileError(stmt.Position(), BAD_RETURN_TYPE_ERR)
 		}
 	}
 }

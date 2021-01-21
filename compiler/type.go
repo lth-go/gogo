@@ -99,6 +99,10 @@ func (t *Type) SetBasicType(basicType vm.BasicType) {
 	t.basicType = basicType
 }
 
+func (t *Type) Equal(t2 *Type) bool {
+	return compareType(t, t2)
+}
+
 func NewType(basicType vm.BasicType) *Type {
 	return &Type{
 		basicType: basicType,

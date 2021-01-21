@@ -323,7 +323,7 @@ func FixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	newBinaryExprLeftType := newBinaryExpr.left.GetType()
 	newBinaryExprRightType := newBinaryExpr.right.GetType()
 
-	if !compareType(newBinaryExprLeftType, newBinaryExprRightType) {
+	if !newBinaryExprLeftType.Equal(newBinaryExprRightType) {
 		if !(newBinaryExprLeftType.IsComposite() &&
 			isNilExpression(newBinaryExpr.right) ||
 			(isNilExpression(newBinaryExpr.left) &&

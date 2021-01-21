@@ -94,7 +94,7 @@ func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Ex
 
 	for i := 0; i < paramLen; i++ {
 		argumentList[i] = argumentList[i].fix(currentBlock)
-		if !compareType(argumentList[i].GetType(), parameterList[i].Type) {
+		if !argumentList[i].GetType().Equal(parameterList[i].Type) {
 			compileError(
 				argumentList[i].Position(),
 				ARGUMENT_COUNT_MISMATCH_ERR,

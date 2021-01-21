@@ -10,7 +10,7 @@ func CreateAssignCast(src Expression, destTye *Type) Expression {
 
 	srcTye := src.GetType()
 
-	if compareType(srcTye, destTye) {
+	if srcTye.Equal(destTye) {
 		return src
 	}
 

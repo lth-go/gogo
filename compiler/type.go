@@ -29,6 +29,22 @@ func (t *ArrayType) Copy() *ArrayType {
 	return NewArrayType(t.ElementType.Copy())
 }
 
+func (t *ArrayType) Equal(t2 *ArrayType) bool {
+	if t == nil && t2 == nil {
+		return true
+	}
+
+	if t == nil && t2 != nil {
+		return false
+	}
+
+	if t != nil && t2 == nil {
+		return false
+	}
+
+	return t.ElementType.Equal(t2.ElementType)
+}
+
 type FuncType struct {
 	Params  []*Parameter
 	Results []*Parameter
@@ -59,6 +75,42 @@ func (t *FuncType) Copy() *FuncType {
 	}
 
 	return NewFuncType(copyParams(t.Params), copyParams(t.Results))
+}
+
+func (t *FuncType) Equal(t2 *FuncType) bool {
+	if t == nil && t2 == nil {
+		return true
+	}
+
+	if t == nil && t2 != nil {
+		return false
+	}
+
+	if t != nil && t2 == nil {
+		return false
+	}
+
+	if len(t.Params) != len(t2.Params) {
+		return false
+	}
+
+	if len(t.Results) != len(t2.Results) {
+		return false
+	}
+
+	for i := 0; i < len(t.Params); i++ {
+		if !t.Params[i].Type.Equal(t2.Params[i].Type) {
+			return false
+		}
+	}
+
+	for i := 0; i < len(t.Results); i++ {
+		if !t.Results[i].Type.Equal(t2.Results[i].Type) {
+			return false
+		}
+	}
+
+	return true
 }
 
 type MapType struct {
@@ -100,7 +152,19 @@ func (t *Type) SetBasicType(basicType vm.BasicType) {
 }
 
 func (t *Type) Equal(t2 *Type) bool {
-	return compareType(t, t2)
+	if t.GetBasicType() != t2.GetBasicType() {
+		return false
+	}
+
+	if !t.sliceType.Equal(t2.sliceType) {
+		return false
+	}
+
+	if !t.funcType.Equal(t2.funcType) {
+		return false
+	}
+
+	return true
 }
 
 func NewType(basicType vm.BasicType) *Type {

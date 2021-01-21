@@ -82,7 +82,7 @@ func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {
 	fd.DeclarationList = append(fd.DeclarationList, decl)
 }
 
-func (fd *FunctionDefinition) checkArgument(currentBlock *Block, argumentList []Expression, arrayBase *Type) {
+func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Expression, arrayBase *Type) {
 	var tempType *Type
 
 	parameterList := fd.ParameterList

@@ -245,7 +245,7 @@ func (c *Compiler) searchPackage(name string) *Package {
 		if name == importedC.packageName {
 			return &Package{
 				compiler: importedC,
-				typ:      NewType(vm.BasicTypePackage),
+				Type:      NewType(vm.BasicTypePackage),
 			}
 		}
 

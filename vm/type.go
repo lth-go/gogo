@@ -36,6 +36,10 @@ type Type struct {
 	FuncType  *FuncType
 }
 
+func (t *Type) GetBasicType() BasicType {
+	return t.BasicType
+}
+
 func (t *Type) SetSliceType(typ *Type, length int64) {
 	t.SliceType = &SliceType{
 		Len:         length,

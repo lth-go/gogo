@@ -42,6 +42,15 @@ func (stmt *ExpressionStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	}
 }
 
+func NewExpressionStatement(pos Position, expr Expression) *ExpressionStatement {
+	stmt := &ExpressionStatement{
+		expression: expr,
+	}
+	stmt.SetPosition(pos)
+
+	return stmt
+}
+
 //
 // IfStatement
 //
@@ -374,7 +383,7 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	for _, expr := range stmt.left {
 		switch expr.(type) {
-		case *IdentifierExpression, *IndexExpression, *MemberExpression:
+		case *IdentifierExpression, *IndexExpression, *SelectorExpression:
 		default:
 			compileError(expr.Position(), NOT_LVALUE_ERR, "")
 		}

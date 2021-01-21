@@ -95,6 +95,10 @@ func (t *Type) GetBasicType() vm.BasicType {
 	return t.basicType
 }
 
+func (t *Type) SetBasicType(basicType vm.BasicType) {
+	t.basicType = basicType
+}
+
 func NewType(basicType vm.BasicType) *Type {
 	return &Type{
 		basicType: basicType,

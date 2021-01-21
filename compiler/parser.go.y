@@ -350,8 +350,7 @@ primary_expression
         : INT_LITERAL
         {
             value, _ := strconv.Atoi($1.Lit)
-            $$ = &IntExpression{Value: value}
-            $$.SetPosition($1.Position())
+            $$ = CreateIntExpression($1.Position(), value)
         }
         | FLOAT_LITERAL
         {
@@ -360,17 +359,15 @@ primary_expression
         }
         | STRING_LITERAL
         {
-            $$ = NewStringExpression($1.Position(), $1.Lit)
+            $$ = CreateStringExpression($1.Position(), $1.Lit)
         }
         | TRUE
         {
-            $$ = &BooleanExpression{Value: true}
-            $$.SetPosition($1.Position())
+            $$ = CreateBooleanExpression($1.Position(), true)
         }
         | FALSE
         {
-            $$ = &BooleanExpression{Value: false}
-            $$.SetPosition($1.Position())
+            $$ = CreateBooleanExpression($1.Position(), false)
         }
         | NIL
         {
@@ -378,23 +375,23 @@ primary_expression
         }
         | composite_type LC expression_list_or_nil RC
         {
-            $$ = NewArrayExpression($1.Position(), $3)
+            $$ = CreateArrayExpression($1.Position(), $3)
         }
         | composite_type LC expression_list_or_nil COMMA RC
         {
-            $$ = NewArrayExpression($1.Position(), $3)
+            $$ = CreateArrayExpression($1.Position(), $3)
         }
         | IDENTIFIER
         {
-            $$ = createIdentifierExpression($1.Lit, $1.Position());
+            $$ = CreateIdentifierExpression($1.Position(), $1.Lit);
         }
         | primary_expression DOT IDENTIFIER
         {
-            $$ = createMemberExpression($1, $3.Lit)
+            $$ = CreateSelectorExpression($1, $3.Lit)
         }
         | primary_expression LB expression RB
         {
-            $$ = createIndexExpression($1, $3, $1.Position())
+            $$ = CreateIndexExpression($1.Position(), $1, $3)
         }
         | primary_expression LP argument_list RP
         {
@@ -445,8 +442,7 @@ simple_statement_or_nil
 simple_statement
         : expression
         {
-            $$ = &ExpressionStatement{expression: $1}
-            $$.SetPosition($1.Position())
+            $$ = NewExpressionStatement($1.Position(), $1)
         }
         | assign_statement
         ;

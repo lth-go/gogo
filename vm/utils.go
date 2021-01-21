@@ -35,7 +35,7 @@ func initializeValue(typ *Type) interface{} {
 		return value
 	}
 
-	switch typ.BasicType {
+	switch typ.GetBasicType() {
 	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
 		value = 0
 	case BasicTypeFloat:

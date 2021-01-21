@@ -37,6 +37,13 @@ var operatorCodeMap = map[BinaryOperatorKind]byte{
 	DivOperator: vm.VM_DIV_INT,
 }
 
+type UnaryOperatorKind int
+
+const (
+	UnaryOperatorKindMinus UnaryOperatorKind = iota
+	UnaryOperatorKindNot
+)
+
 //
 // Cast
 //
@@ -75,20 +82,20 @@ func (expr *ExpressionBase) GetType() *Type                              { retur
 func (expr *ExpressionBase) SetType(t *Type)                             { expr.Type = t }
 
 //
-// BooleanExpression
+// BoolExpression
 //
-type BooleanExpression struct {
+type BoolExpression struct {
 	ExpressionBase
 	Value bool
 }
 
-func (expr *BooleanExpression) fix(currentBlock *Block) Expression {
+func (expr *BoolExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeBool))
 	expr.GetType().Fix()
 	return expr
 }
 
-func (expr *BooleanExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *BoolExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	value := 0
 	if expr.Value {
 		value = 1
@@ -97,8 +104,8 @@ func (expr *BooleanExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, value)
 }
 
-func CreateBooleanExpression(pos Position, value bool) *BooleanExpression {
-	expr := &BooleanExpression{
+func CreateBooleanExpression(pos Position, value bool) *BoolExpression {
+	expr := &BoolExpression{
 		Value: value,
 	}
 	expr.SetPosition(pos)
@@ -402,27 +409,47 @@ func (expr *BinaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	}
 }
 
-//
-// MinusExpression
-//
-// MinusExpression 负数表达式
-type MinusExpression struct {
+type UnaryExpression struct {
 	ExpressionBase
-	operand Expression
+	Operator UnaryOperatorKind
+	Value    Expression
 }
 
-func (expr *MinusExpression) fix(currentBlock *Block) Expression {
+func (expr *UnaryExpression) fix(currentBlock *Block) Expression {
+	switch expr.Operator {
+	case UnaryOperatorKindMinus:
+		return expr.FixMinus(currentBlock)
+	case UnaryOperatorKindNot:
+		return expr.FixNot(currentBlock)
+	default:
+		panic("TODO")
+	}
+}
+
+func (expr *UnaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+	switch expr.Operator {
+	case UnaryOperatorKindMinus:
+		expr.GenerateMinus(currentBlock, ob)
+	case UnaryOperatorKindNot:
+		expr.GenerateNot(currentBlock, ob)
+	default:
+		panic("TODO")
+	}
+}
+
+func (expr *UnaryExpression) FixMinus(currentBlock *Block) Expression {
 	var newExpr Expression
 
-	expr.operand = expr.operand.fix(currentBlock)
+	expr.Value = expr.Value.fix(currentBlock)
 
-	if !expr.operand.GetType().IsInt() && !expr.operand.GetType().IsFloat() {
+	if !expr.Value.GetType().IsInt() && !expr.Value.GetType().IsFloat() {
 		compileError(expr.Position(), MINUS_TYPE_MISMATCH_ERR, "")
 	}
 
-	expr.SetType(expr.operand.GetType())
+	expr.SetType(expr.Value.GetType().Copy())
 
-	switch operand := expr.operand.(type) {
+	// 如果值是常量,则直接转换
+	switch operand := expr.Value.(type) {
 	case *IntExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
@@ -438,36 +465,22 @@ func (expr *MinusExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *MinusExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	expr.operand.generate(currentBlock, ob)
-	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.GetType())
-	ob.generateCode(expr.Position(), code)
-}
-
-//
-// LogicalNotExpression
-//
-// LogicalNotExpression 逻辑非表达式
-type LogicalNotExpression struct {
-	ExpressionBase
-	operand Expression
-}
-
-func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
+func (expr *UnaryExpression) FixNot(currentBlock *Block) Expression {
 	var newExpr Expression
 
-	expr.operand = expr.operand.fix(currentBlock)
+	expr.Value = expr.Value.fix(currentBlock)
 
-	switch operand := expr.operand.(type) {
-	case *BooleanExpression:
+	if !expr.Value.GetType().IsBool() {
+		compileError(expr.Position(), LOGICAL_NOT_TYPE_MISMATCH_ERR, "")
+	}
+
+	expr.SetType(expr.Value.GetType().Copy())
+
+	switch operand := expr.Value.(type) {
+	case *BoolExpression:
 		operand.Value = !operand.Value
-		operand.SetType(CreateType(vm.BasicTypeBool, expr.Position()))
 		newExpr = operand
 	default:
-		if !expr.operand.GetType().IsBool() {
-			compileError(expr.Position(), LOGICAL_NOT_TYPE_MISMATCH_ERR, "")
-		}
-		expr.SetType(expr.operand.GetType())
 		newExpr = expr
 	}
 
@@ -476,9 +489,25 @@ func (expr *LogicalNotExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *LogicalNotExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	expr.operand.generate(currentBlock, ob)
+func (expr *UnaryExpression) GenerateMinus(currentBlock *Block, ob *OpCodeBuf) {
+	expr.Value.generate(currentBlock, ob)
+	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.GetType())
+	ob.generateCode(expr.Position(), code)
+}
+
+func (expr *UnaryExpression) GenerateNot(currentBlock *Block, ob *OpCodeBuf) {
+	expr.Value.generate(currentBlock, ob)
 	ob.generateCode(expr.Position(), vm.VM_LOGICAL_NOT)
+}
+
+func NewUnaryExpression(pos Position, operator UnaryOperatorKind, value Expression) *UnaryExpression {
+	expr := &UnaryExpression{
+		Operator: operator,
+		Value:    value,
+	}
+	expr.SetPosition(pos)
+
+	return expr
 }
 
 //

@@ -20,7 +20,6 @@ make test
 ## TODO
 
 + 移除CastExpression
-+ 负数表达式,逻辑非表达式合并成一元表达式
 + 块重复声明修正,引用全局声明
 + 增加package声明
 + 静态区垃圾回收

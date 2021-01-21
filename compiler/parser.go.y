@@ -337,13 +337,11 @@ unary_expression
         : primary_expression
         | SUB unary_expression
         {
-            $$ = &MinusExpression{operand: $2}
-            $$.SetPosition($1.Position())
+            $$ = NewUnaryExpression($1.Position(), UnaryOperatorKindMinus, $2)
         }
         | EXCLAMATION unary_expression
         {
-            $$ = &LogicalNotExpression{operand: $2}
-            $$.SetPosition($1.Position())
+            $$ = NewUnaryExpression($1.Position(), UnaryOperatorKindNot, $2)
         }
         ;
 primary_expression

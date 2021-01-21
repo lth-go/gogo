@@ -107,7 +107,7 @@ func expressionToString(expr Expression) string {
 	var newStr string
 
 	switch e := expr.(type) {
-	case *BooleanExpression:
+	case *BoolExpression:
 		if e.Value {
 			newStr = "true"
 		} else {
@@ -130,9 +130,9 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 
 	switch leftExpr := binaryExpr.left.(type) {
 
-	case *BooleanExpression:
+	case *BoolExpression:
 		switch rightExpr := binaryExpr.right.(type) {
-		case *BooleanExpression:
+		case *BoolExpression:
 			newExpr := evalCompareExpressionBoolean(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 		}
@@ -166,7 +166,7 @@ func evalCompareExpression(binaryExpr *BinaryExpression) Expression {
 	case *NilExpression:
 		switch binaryExpr.right.(type) {
 		case *NilExpression:
-			newExpr := &BooleanExpression{Value: true}
+			newExpr := &BoolExpression{Value: true}
 			newExpr.SetType(NewType(vm.BasicTypeBool))
 			return newExpr
 		}
@@ -187,7 +187,7 @@ func evalCompareExpressionBoolean(binaryExpr *BinaryExpression, left, right bool
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
-	newExpr := &BooleanExpression{Value: value}
+	newExpr := &BoolExpression{Value: value}
 	newExpr.SetType(NewType(vm.BasicTypeBool))
 
 	return newExpr
@@ -213,7 +213,7 @@ func evalCompareExpressionInt(binaryExpr *BinaryExpression, left, right int) Exp
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
-	newExpr := &BooleanExpression{Value: value}
+	newExpr := &BoolExpression{Value: value}
 	newExpr.SetType(NewType(vm.BasicTypeBool))
 	return newExpr
 }
@@ -238,7 +238,7 @@ func evalCompareExpressionDouble(binaryExpr *BinaryExpression, left, right float
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
-	newExpr := &BooleanExpression{Value: value}
+	newExpr := &BoolExpression{Value: value}
 	newExpr.SetType(NewType(vm.BasicTypeBool))
 	return newExpr
 }
@@ -263,7 +263,7 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 		compileError(binaryExpr.Position(), COMPARE_TYPE_MISMATCH_ERR)
 	}
 
-	newExpr := &BooleanExpression{Value: value}
+	newExpr := &BoolExpression{Value: value}
 	newExpr.SetType(NewType(vm.BasicTypeBool))
 
 	return newExpr
@@ -314,7 +314,7 @@ func FixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 
 	newExpr := evalCompareExpression(expr)
 	switch newExpr.(type) {
-	case *BooleanExpression:
+	case *BoolExpression:
 		return newExpr
 	}
 

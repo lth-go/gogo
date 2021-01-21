@@ -252,10 +252,6 @@ func testCast() {
 
 };
 
-func testFuncCast(a int, b float) {
-    print("a.." + a + ", b.." + b + "\n");
-};
-
 #
 # Check function
 #
@@ -562,12 +558,11 @@ func main() {
     testOperators();
     testStringComparing();
     testCast();
-    testFuncCast(3.0, 4);
     testFuncNoArg();
     testFunc2Arg(13, 15);
     testFuncLocalVal(3.0);
     println("testFuncBool.." + testFuncBool(true));
-    println("testFuncInit.." + testFuncInit(3));
+    println("testFuncInit.." + testFuncInit(3.0));
     println("testFuncFloat.." + testFuncFloat(3));
     println("testFuncString.." + testFuncString("hoge"));
     recursive(10);

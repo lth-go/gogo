@@ -82,9 +82,7 @@ func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {
 	fd.DeclarationList = append(fd.DeclarationList, decl)
 }
 
-func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Expression, arrayBase *Type) {
-	var tempType *Type
-
+func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Expression) {
 	parameterList := fd.ParameterList
 
 	paramLen := len(parameterList)
@@ -96,10 +94,15 @@ func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Ex
 
 	for i := 0; i < paramLen; i++ {
 		argumentList[i] = argumentList[i].fix(currentBlock)
-
-		paramType := parameterList[i].Type
-		tempType = paramType
-		argumentList[i] = CreateAssignCast(argumentList[i], tempType)
+		if !compareType(argumentList[i].GetType(), parameterList[i].Type) {
+			compileError(
+				argumentList[i].Position(),
+				ARGUMENT_COUNT_MISMATCH_ERR,
+				parameterList[i].Name,
+				parameterList[i].Type.GetBasicType(),
+				argumentList[i].GetType().GetBasicType(),
+			)
+		}
 	}
 }
 

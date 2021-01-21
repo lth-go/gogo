@@ -522,7 +522,6 @@ type FunctionCallExpression struct {
 // TODO: 函数调用有多返回值,如何处理
 func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	var fd *FunctionDefinition
-	var arrayBase *Type
 	var name string
 
 	expr.funcName = expr.funcName.fix(currentBlock)
@@ -537,7 +536,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, name)
 	}
 
-	fd.FixArgument(currentBlock, expr.argumentList, arrayBase)
+	fd.FixArgument(currentBlock, expr.argumentList)
 
 	expr.SetType(fd.GetType().Copy())
 

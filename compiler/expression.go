@@ -538,14 +538,21 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 
 	fd.FixArgument(currentBlock, expr.argumentList)
 
+	// TODO: 不拷贝
 	expr.SetType(fd.GetType().Copy())
 
 	// 设置返回值类型
-	// TODO: 兼容代码, 待移除
 	if len(fd.Type.funcType.Results) == 0 {
 		expr.GetType().SetBasicType(vm.BasicTypeVoid)
-	} else {
+	} else if len(fd.Type.funcType.Results) == 1 {
 		expr.GetType().SetBasicType(fd.Type.funcType.Results[0].Type.GetBasicType())
+	} else {
+		typeList := make([]*Type, len(fd.Type.funcType.Results))
+		for i, resultType := range fd.Type.funcType.Results {
+			typeList[i] = resultType.Type.Copy()
+		}
+		expr.GetType().SetBasicType(vm.BasicTypeMultipleValues)
+		expr.GetType().multipleValuesType = NewMultipleValuesType(typeList)
 	}
 
 	expr.GetType().Fix()
@@ -691,7 +698,7 @@ func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
 		expr.List[i] = CreateAssignCast(expr.List[i], elemType)
 	}
 
-	expr.SetType(NewType(vm.BasicTypeSlice))
+	expr.SetType(NewType(vm.BasicTypeArray))
 	expr.GetType().sliceType = NewArrayType(elemType)
 	expr.GetType().Fix()
 

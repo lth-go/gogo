@@ -45,6 +45,9 @@ func (t *ArrayType) Equal(t2 *ArrayType) bool {
 	return t.ElementType.Equal(t2.ElementType)
 }
 
+//
+// FuncType
+//
 type FuncType struct {
 	Params  []*Parameter
 	Results []*Parameter
@@ -125,13 +128,67 @@ func NewMapType(keyType, valueType *Type) *MapType {
 	}
 }
 
+type MultipleValuesType struct {
+	List []*Type
+}
+
+func NewMultipleValuesType(list []*Type) *MultipleValuesType {
+	return &MultipleValuesType{
+		List: list,
+	}
+}
+
+func (t *MultipleValuesType) Copy() *MultipleValuesType {
+	if t == nil {
+		return nil
+	}
+
+	list := make([]*Type, len(t.List))
+
+	for i, subType := range t.List {
+		list[i] = subType.Copy()
+	}
+
+	return &MultipleValuesType{
+		List: list,
+	}
+}
+
+func (t *MultipleValuesType) Equal(t2 *MultipleValuesType) bool {
+	if t == nil && t2 == nil {
+		return true
+	}
+
+	if t == nil && t2 != nil {
+		return false
+	}
+
+	if t != nil && t2 == nil {
+		return false
+	}
+	if len(t.List) != len(t2.List) {
+		return false
+	}
+
+	for i := 0; i < len(t.List); i++ {
+		if !t.List[i].Equal(t2.List[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+//
 // Type 表达式类型
+//
 type Type struct {
 	PosBase
-	basicType vm.BasicType
-	sliceType *ArrayType
-	funcType  *FuncType
-	mapType   *MapType
+	basicType          vm.BasicType
+	sliceType          *ArrayType
+	funcType           *FuncType
+	mapType            *MapType
+	multipleValuesType *MultipleValuesType // TODO: 用于处理函数多返回值
 }
 
 func (t *Type) Fix() {
@@ -164,6 +221,10 @@ func (t *Type) Equal(t2 *Type) bool {
 		return false
 	}
 
+	if !t.multipleValuesType.Equal(t2.multipleValuesType) {
+		return false
+	}
+
 	return true
 }
 
@@ -183,7 +244,7 @@ func CreateType(basicType vm.BasicType, pos Position) *Type {
 }
 
 func CreateArrayType(typ *Type, pos Position) *Type {
-	newType := CreateType(vm.BasicTypeSlice, pos)
+	newType := CreateType(vm.BasicTypeArray, pos)
 	newType.sliceType = NewArrayType(typ)
 	return newType
 }
@@ -201,7 +262,7 @@ func CreateMapType(keyType *Type, valueType *Type, pos Position) *Type {
 }
 
 func (t *Type) IsArray() bool {
-	return t.GetBasicType() == vm.BasicTypeSlice
+	return t.GetBasicType() == vm.BasicTypeArray
 }
 
 func (t *Type) IsFunc() bool {
@@ -317,6 +378,7 @@ func (t *Type) Copy() *Type {
 
 	newType.sliceType = t.sliceType.Copy()
 	newType.funcType = t.funcType.Copy()
+	newType.multipleValuesType = t.multipleValuesType.Copy()
 
 	return newType
 }

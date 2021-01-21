@@ -14,10 +14,11 @@ const (
 	BasicTypeNil
 	BasicTypeVoid
 	BasicTypePackage
-	BasicTypeSlice
+	BasicTypeArray
 	BasicTypeMap
 	BasicTypeStruct
 	BasicTypeFunc
+	BasicTypeMultipleValues
 )
 
 type SliceType struct {
@@ -55,5 +56,5 @@ func (t *Type) SetFuncType(paramsTypeList []*Type, resultTypeList []*Type) {
 }
 
 func (t *Type) IsSliceType() bool {
-	return t.BasicType == BasicTypeSlice
+	return t.BasicType == BasicTypeArray
 }

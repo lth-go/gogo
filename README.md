@@ -19,7 +19,9 @@ make test
 
 ## TODO
 
-+ 修正栈指针移动
++ 增加printf函数
++ 增加...
++ 增加类型interface{}
 + int 改int64
 + 增加原生函数int, float, string
 + 移除CastExpression

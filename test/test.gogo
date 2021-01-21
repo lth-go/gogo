@@ -579,8 +579,8 @@ func main() {
     testFlowControl();
     testArray();
     testNil();
-    testPackageCall();
     testMultiAssign();
     testFuncMultiResult();
+    testPackageCall();
     testNativeFuncItoa();
 };

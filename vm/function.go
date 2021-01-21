@@ -7,8 +7,9 @@ import (
 // 原生函数
 type GoGoNativeFunction struct {
 	StaticBase
-	proc     NativeFunctionProc
-	argCount int
+	proc        NativeFunctionProc // 函数指针
+	argCount    int                // 参数数量
+	resultCount int                // 返回值数量, TODO: 暂时用不上
 }
 
 type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Object) []Object
@@ -21,17 +22,24 @@ type GoGoFunction struct {
 }
 
 func (vm *VirtualMachine) AddNativeFunctions() {
-	vm.addNativeFunction("_sys", "print", printProc, 1)
+	vm.addNativeFunction("_sys", "print", printProc, 1, 0)
 }
 
-func (vm *VirtualMachine) addNativeFunction(packageName string, funcName string, proc NativeFunctionProc, argCount int) {
+func (vm *VirtualMachine) addNativeFunction(
+	packageName string,
+	funcName string,
+	proc NativeFunctionProc,
+	argCount int,
+	resultCount int,
+) {
 	function := &GoGoNativeFunction{
 		StaticBase: StaticBase{
 			PackageName: packageName,
 			Name:        funcName,
 		},
-		proc:     proc,
-		argCount: argCount,
+		proc:        proc,
+		argCount:    argCount,
+		resultCount: resultCount,
 	}
 
 	vm.static.Append(function)

@@ -564,18 +564,36 @@ func (vm *VirtualMachine) SearchStatic(packageName, name string) int {
 //
 // 执行原生函数
 func (vm *VirtualMachine) InvokeNativeFunction(f *GoGoNativeFunction, spP *int) {
+	// 5 -- sp
+	// 4 funcName
+	// 3 arg3
+	// 2 arg2
+	// 1 arg1
+	// 0 base
+
 	sp := *spP
 
-	// TODO: return value
-	f.proc(vm, f.argCount, vm.stack.objectList[sp-f.argCount-1:])
+	resultList := f.proc(vm, f.argCount, vm.stack.objectList[sp-f.argCount-1:])
 
-	// vm.stack.Set(sp-f.argCount-1, ret)
+	resultLen := len(resultList)
 
-	*spP = sp - f.argCount
+	for i, value := range resultList {
+		vm.stack.Set(sp-f.argCount-1+resultLen-i-1, value)
+	}
+
+	*spP = sp - f.argCount - 1 + resultLen
 }
 
 // 函数执行
-func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunction, codeP *[]byte, pcP *int, spP *int, baseP *int, exe **Executable) {
+func (vm *VirtualMachine) InvokeFunction(
+	caller **GoGoFunction,
+	callee *GoGoFunction,
+	codeP *[]byte,
+	pcP *int,
+	spP *int,
+	baseP *int,
+	exe **Executable,
+) {
 	// caller 调用者, 当前所属的函数调用域
 	// callee 要调用的函数的基本信息
 
@@ -618,7 +636,13 @@ func (vm *VirtualMachine) InvokeFunction(caller **GoGoFunction, callee *GoGoFunc
 }
 
 // 保存返回值,并恢复栈
-func (vm *VirtualMachine) returnFunction(funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) {
+func (vm *VirtualMachine) returnFunction(
+	funcP **GoGoFunction,
+	codeP *[]byte,
+	pcP *int,
+	baseP *int,
+	exeP **Executable,
+) {
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
 	resultCount := calleeP.GetResultCount()
 

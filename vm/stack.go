@@ -6,7 +6,7 @@ const (
 
 // 虚拟机栈
 type Stack struct {
-	stackPointer int      // 栈偏移量
+	stackPointer int      // 栈偏移量, 指向当前最大空栈
 	objectList   []Object // 对象栈
 }
 

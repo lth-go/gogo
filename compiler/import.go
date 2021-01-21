@@ -47,5 +47,18 @@ func CreateImport(packageName string) *Import {
 }
 
 func setImportList(importList []*Import) {
-	getCurrentCompiler().importList = importList
+	c := getCurrentCompiler()
+	c.importList = importList
+
+	// TODO: add to decl
+	// for _, import_ := range importList {
+	//     c.AddDeclarationList(
+	//         NewDeclaration(
+	//             import_.Position(),
+	//             NewType(vm.BasicTypePackage),
+	//             import_.packageName,
+	//             nil,
+	//         ),
+	//     )
+	// }
 }

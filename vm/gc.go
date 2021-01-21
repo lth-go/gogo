@@ -25,7 +25,16 @@ func (vm *VirtualMachine) Mark() {
 		obj.ResetMark()
 	}
 
-	// TODO: 静态区
+	// 静态区
+	for _, v := range vm.static.list {
+		staticValue, ok := v.(*StaticVariable)
+		if ok {
+			obj, ok := staticValue.Value.(Object)
+			if ok {
+				mark(obj)
+			}
+		}
+	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
 		mark(vm.stack.Get(i))

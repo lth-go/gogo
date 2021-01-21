@@ -57,7 +57,6 @@ func nativeFuncPrint(vm *VirtualMachine, argCount int, args []Object) []Object {
 
 func nativeFuncItoa(vm *VirtualMachine, argCount int, args []Object) []Object {
 	obj := args[0].(*ObjectInt)
-	println("=============")
 
 	return []Object{NewObjectString(strconv.Itoa(obj.Value))}
 }

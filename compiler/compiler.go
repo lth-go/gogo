@@ -25,8 +25,8 @@ type Compiler struct {
 	lexer           *Lexer                // 词法解析器
 	path            string                // 源文件路径
 	packageName     string                // 包名
-	importedList    []*Compiler           // 已加载compiler列表
 	importList      []*Import             // 依赖的包
+	importedList    []*Compiler           // 已加载compiler列表
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
 	ConstantList    []interface{}         // 常量定义
@@ -406,14 +406,6 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 	return nil
 }
 
-func (c *Compiler) GetCurrentBlock() *Block {
-	return c.currentBlock
-}
-
-func (c *Compiler) SetCurrentBlock(block *Block) {
-	c.currentBlock = block
-}
-
 func AddDeclList(decl *Declaration) {
 	c := getCurrentCompiler()
 	decl.PackageName = c.packageName
@@ -428,4 +420,21 @@ func SetPackageName(packageName string) {
 func SetImportList(importList []*Import) {
 	c := getCurrentCompiler()
 	c.importList = importList
+}
+
+func PushCurrentBlock() *Block {
+	c := getCurrentCompiler()
+	c.currentBlock = &Block{outerBlock: c.currentBlock}
+
+	return c.currentBlock
+}
+
+func PopCurrentBlock() *Block {
+	c := getCurrentCompiler()
+
+	b := c.currentBlock
+
+	c.currentBlock = c.currentBlock.outerBlock
+
+	return b
 }

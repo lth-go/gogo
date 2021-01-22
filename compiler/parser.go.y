@@ -526,24 +526,17 @@ assign_statement
 block
         : LC
         {
-            l := yylex.(*Lexer)
-            l.compiler.currentBlock = &Block{outerBlock: l.compiler.currentBlock}
-            $<block>$ = l.compiler.currentBlock
+            $<block>$ = PushCurrentBlock()
         }
           statement_list RC
         {
-            currentBlock := $<block>2
-            currentBlock.statementList = $3
-
-            l := yylex.(*Lexer)
-
-            $<block>$ = l.compiler.currentBlock
-            l.compiler.currentBlock = currentBlock.outerBlock
+            $<block>2.statementList = $3
+            $<block>$ = PopCurrentBlock()
         }
         | LC RC
         {
-            l := yylex.(*Lexer)
-            $<block>$ = &Block{outerBlock: l.compiler.currentBlock}
+            PushCurrentBlock()
+            $<block>$ = PopCurrentBlock()
         }
         ;
 block_or_nil

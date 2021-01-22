@@ -19,7 +19,6 @@ make test
 
 ## TODO
 
-+ parser.go.y里面block代码迁移
 + 代码解耦
 + 全局常量支持布尔值
 + 增加printf函数

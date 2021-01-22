@@ -119,6 +119,8 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 // 修正树
 //
 func (c *Compiler) FixTree() {
+	// 修正全局变量
+	c.FixDeclarationList()
 	// TODO: check func list, if is redifined
 
 	// 原先函数在func fix之前添加,类型c头文件
@@ -130,6 +132,15 @@ func (c *Compiler) FixTree() {
 	// 修正函数
 	for _, fd := range c.funcList {
 		fd.fix()
+	}
+}
+
+func (c *Compiler) FixDeclarationList() {
+	for _, decl := range c.declarationList {
+		if decl.InitValue != nil {
+			decl.InitValue = decl.InitValue.fix(nil)
+			decl.InitValue = CreateAssignCast(decl.InitValue, decl.Type)
+		}
 	}
 }
 
@@ -172,8 +183,20 @@ func (c *Compiler) Generate() *vm.Executable {
 func (c *Compiler) GetVmVariableList() []*vm.Variable {
 	variableList := make([]*vm.Variable, 0)
 
-	for _, dl := range c.declarationList {
-		newValue := vm.NewVmVariable(dl.Name, CopyToVmType(dl.Type))
+	for _, decl := range c.declarationList {
+		newValue := vm.NewVmVariable(decl.PackageName, decl.Name, CopyToVmType(decl.Type))
+		switch value := decl.InitValue.(type) {
+		case *BoolExpression:
+			newValue.Value = value.Value
+		case *IntExpression:
+			newValue.Value = value.Value
+		case *FloatExpression:
+			newValue.Value = value.Value
+		case *StringExpression:
+			newValue.Value = value.Value
+		case *ArrayExpression:
+			// TODO:
+		}
 		variableList = append(variableList, newValue)
 	}
 
@@ -353,6 +376,7 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 }
 
 func AddDeclList(decl *Declaration) {
-	// TODO: need fix?
-	getCurrentCompiler().AddDeclarationList(decl)
+	c := getCurrentCompiler()
+	decl.PackageName = c.packageName
+	c.AddDeclarationList(decl)
 }

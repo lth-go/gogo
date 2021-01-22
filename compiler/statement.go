@@ -306,11 +306,12 @@ func (stmt *ContinueStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 //
 type Declaration struct {
 	StatementBase
-	Type      *Type
-	Name      string
-	InitValue Expression
-	Index     int
-	IsLocal   bool
+	Type        *Type
+	PackageName string
+	Name        string
+	InitValue   Expression
+	Index       int
+	IsLocal     bool
 }
 
 func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
@@ -336,10 +337,11 @@ func (stmt *Declaration) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 func NewDeclaration(pos Position, typ *Type, name string, value Expression) *Declaration {
 	decl := &Declaration{
-		Type:      typ,
-		Name:      name,
-		InitValue: value,
-		Index:     -1,
+		Type:        typ,
+		PackageName: "",
+		Name:        name,
+		InitValue:   value,
+		Index:       -1,
 	}
 	decl.SetPosition(pos)
 
@@ -384,17 +386,13 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 
 	if isCall {
 		for i := 0; i < len(stmt.left); i++ {
-			leftExpr := stmt.left[i]
-			leftExpr.fix(currentBlock)
+			stmt.left[i] = stmt.left[i].fix(currentBlock)
 		}
 	} else {
 		for i := 0; i < len(stmt.left); i++ {
-			leftExpr := stmt.left[i]
-			leftExpr.fix(currentBlock)
-
-			rightExpr := stmt.right[i]
-			rightExpr.fix(currentBlock)
-			stmt.right[i] = CreateAssignCast(stmt.right[i], leftExpr.GetType())
+			stmt.left[i] = stmt.left[i].fix(currentBlock)
+			stmt.right[i] = stmt.right[i].fix(currentBlock)
+			stmt.right[i] = CreateAssignCast(stmt.right[i], stmt.left[i].GetType())
 		}
 	}
 

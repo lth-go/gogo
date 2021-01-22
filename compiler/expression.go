@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/lth-go/gogo/vm"
 )
 
@@ -583,7 +585,7 @@ func NewFunctionCallExpression(pos Position, function Expression, argumentList [
 type SelectorExpression struct {
 	ExpressionBase
 	expression Expression // 实例
-	memberName string     // 成员名称
+	Field      string     // 成员名称
 }
 
 func (expr *SelectorExpression) fix(currentBlock *Block) Expression {
@@ -594,7 +596,7 @@ func (expr *SelectorExpression) fix(currentBlock *Block) Expression {
 
 	switch {
 	case typ.IsPackage():
-		newExpr = fixPackageMemberExpression(expr, expr.memberName)
+		newExpr = fixPackageSelectorExpression(expr, expr.Field)
 	default:
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
 	}
@@ -607,39 +609,48 @@ func (expr *SelectorExpression) fix(currentBlock *Block) Expression {
 func (expr *SelectorExpression) generate(currentBlock *Block, ob *OpCodeBuf) {}
 
 // 仅限函数
-func fixPackageMemberExpression(expr *SelectorExpression, memberName string) Expression {
+func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expression {
 	innerExpr := expr.expression
-
 	innerExpr.GetType().Fix()
 
 	p := innerExpr.(*IdentifierExpression).inner.(*Package)
 
-	fd := p.compiler.searchFunction(memberName)
-	if fd == nil {
-		panic("TODO")
-	}
-
-	// TODO 得用当前compiler来添加
-	currentCompiler := getCurrentCompiler()
-
-	newExpr := &IdentifierExpression{
-		name: memberName,
-		inner: &FunctionIdentifier{
+	fd := p.compiler.searchFunction(field)
+	if fd != nil {
+		newExpr := CreateIdentifierExpression(expr.Position(), field)
+		newExpr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              currentCompiler.AddFuncList(fd),
-		},
+			Index:              getCurrentCompiler().AddFuncList(fd),
+		}
+
+		newExpr.SetType(fd.CopyType())
+		newExpr.GetType().Fix()
+
+		return newExpr
 	}
 
-	newExpr.SetType(fd.CopyType())
-	newExpr.GetType().Fix()
+	decl := p.compiler.SearchDeclaration(field)
+	if decl != nil {
+		// TODO: 初始值直接给会有问题
+		newDecl := NewDeclaration(decl.Position(), decl.Type.Copy(), decl.Name, nil)
+		newDecl.PackageName = p.compiler.packageName
+		newDecl.Index = getCurrentCompiler().AddDeclarationList(newDecl)
 
-	return newExpr
+		newExpr := CreateIdentifierExpression(expr.Position(), field)
+		newExpr.SetType(newDecl.Type.Copy())
+		newExpr.inner = newDecl
+		expr.GetType().Fix()
+
+		return newExpr
+	}
+
+	panic(fmt.Sprintf("package filed not found '%s'", field))
 }
 
 func CreateSelectorExpression(expression Expression, memberName string) *SelectorExpression {
 	expr := &SelectorExpression{
 		expression: expression,
-		memberName: memberName,
+		Field:      memberName,
 	}
 	expr.SetPosition(expression.Position())
 

@@ -180,15 +180,50 @@ func (t *MultipleValueType) Equal(t2 *MultipleValueType) bool {
 }
 
 //
+// PackageType
+//
+type PackageType struct {
+}
+
+func NewPackageType() *PackageType {
+	return &PackageType{}
+}
+
+func (t *PackageType) Copy() *PackageType {
+	if t == nil {
+		return nil
+	}
+
+	return &PackageType{}
+}
+
+func (t *Package) Equal(t2 *PackageType) bool {
+	if t == nil && t2 == nil {
+		return true
+	}
+
+	if t == nil && t2 != nil {
+		return false
+	}
+
+	if t != nil && t2 == nil {
+		return false
+	}
+
+	return true
+}
+
+//
 // Type 表达式类型
 //
 type Type struct {
 	PosBase
-	basicType          vm.BasicType
-	sliceType          *ArrayType
-	funcType           *FuncType
-	mapType            *MapType
+	basicType         vm.BasicType
+	sliceType         *ArrayType
+	funcType          *FuncType
+	mapType           *MapType
 	multipleValueType *MultipleValueType // TODO: 用于处理函数多返回值
+	packageType       *PackageType
 }
 
 func (t *Type) Fix() {

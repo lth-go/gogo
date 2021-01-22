@@ -562,6 +562,17 @@ func testNativeFuncItoa() {
     print(b);
 };
 
+func testPackageVariable() {
+    print("other old is " + utils.other);
+    utils.other = 250;
+    print("other new is " + utils.other);
+
+    utils.setOther(520);
+    print("other change is " + utils.other);
+
+    utils.printOther();
+};
+
 func main() {
     testLex();
     testOperators();
@@ -583,4 +594,5 @@ func main() {
     testFuncMultiResult();
     testPackageCall();
     testNativeFuncItoa();
+    testPackageVariable();
 };

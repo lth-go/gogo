@@ -97,7 +97,13 @@ func (vm *VirtualMachine) AddStatic(exe *Executable) {
 	exe.VariableList.Init()
 
 	for _, value := range exe.VariableList.VariableList {
-		vm.static.Append(NewStaticVariable(exe.PackageName, value.Name, value.Value))
+		if exe.PackageName != value.PackageName {
+			continue
+		}
+
+		if vm.static.Index(value.PackageName, value.Name) == -1 {
+			vm.static.Append(NewStaticVariable(value.PackageName, value.Name, value.Value))
+		}
 	}
 }
 
@@ -531,7 +537,11 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 			VM_POP_STATIC_INT, VM_POP_STATIC_FLOAT, VM_POP_STATIC_OBJECT:
 
 			idxInExe := get2ByteInt(codeList[i+1:])
-			funcIdx := vm.SearchStatic(exe.PackageName, exe.VariableList.VariableList[idxInExe].Name)
+			packageName := exe.PackageName
+			if exe.VariableList.VariableList[idxInExe].PackageName != "" {
+				packageName = exe.VariableList.VariableList[idxInExe].PackageName
+			}
+			funcIdx := vm.SearchStatic(packageName, exe.VariableList.VariableList[idxInExe].Name)
 			set2ByteInt(codeList[i+1:], funcIdx)
 
 		case VM_PUSH_FUNCTION:

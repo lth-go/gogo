@@ -1,3 +1,13 @@
 func printTest(str string) {
     print(str + " ========" + "\n");
 };
+
+var other int = 100;
+
+func setOther(v int) {
+    other = v;
+};
+
+func printOther() {
+    print("printOther " + other);
+};

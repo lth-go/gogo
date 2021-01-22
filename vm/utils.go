@@ -27,30 +27,6 @@ func set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
 }
 
-func initializeValue(typ *Type) interface{} {
-	var value interface{}
-
-	if typ.IsSliceType() {
-		value = NilObject
-		return value
-	}
-
-	switch typ.GetBasicType() {
-	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
-		value = 0
-	case BasicTypeFloat:
-		value = 0.0
-	case BasicTypeString:
-		value = NilObject
-	case BasicTypeNil:
-		fallthrough
-	default:
-		panic("TODO")
-	}
-
-	return value
-}
-
 func createMethodFunctionName(className, methodName string) string {
 	ret := fmt.Sprintf("%s#%s", className, methodName)
 	return ret

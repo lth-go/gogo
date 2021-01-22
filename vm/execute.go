@@ -124,19 +124,44 @@ func NewVmVariableList() *VariableList {
 }
 
 type Variable struct {
-	Name  string
-	Type  *Type
-	Value interface{}
+	PackageName string
+	Name        string
+	Type        *Type
+	Value       interface{}
 }
 
 func (v *Variable) Init() {
-	v.Value = initializeValue(v.Type)
+	if v.Value != nil {
+		return
+	}
+
+	var value interface{}
+
+	if v.Type.IsSliceType() {
+		value = NilObject
+	} else {
+		switch v.Type.GetBasicType() {
+		case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
+			value = 0
+		case BasicTypeFloat:
+			value = 0.0
+		case BasicTypeString:
+			value = NilObject
+		case BasicTypeNil:
+			fallthrough
+		default:
+			panic("TODO")
+		}
+	}
+
+	v.Value = value
 }
 
-func NewVmVariable(name string, typ *Type) *Variable {
+func NewVmVariable(packageName string, name string, typ *Type) *Variable {
 	return &Variable{
-		Name: name,
-		Type: typ,
+		PackageName: packageName,
+		Name:        name,
+		Type:        typ,
 	}
 }
 

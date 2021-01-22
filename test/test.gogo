@@ -2,6 +2,8 @@ package main;
 
 import "utils";
 
+var globalArray []int = []int{100, 200, 300, 400};
+
 func println(str string) {
     print(str + "\n");
 };
@@ -575,6 +577,26 @@ func testPackageVariable() {
     utils.printOther();
 };
 
+func testGlobalVariable() {
+    var i int;
+    for (i = 0; i < 4; i = i + 1) {
+        print("globalArray[" + i + "].." + globalArray[i] + "\n");
+    };
+
+    globalArray[0] = 0;
+    globalArray[1] = 2;
+    globalArray[2] = 4;
+    globalArray[3] = 8;
+
+    for (i = 0; i < 4; i = i + 1) {
+        print("globalArray[" + i + "].." + globalArray[i] + "\n");
+    };
+
+    for (i = 0; i < 4; i = i + 1) {
+        print("utils.globalArray[" + i + "].." + utils.globalArray[i] + "\n");
+    };
+};
+
 func main() {
     testLex();
     testOperators();
@@ -597,4 +619,5 @@ func main() {
     testPackageCall();
     testNativeFuncItoa();
     testPackageVariable();
+    testGlobalVariable();
 };

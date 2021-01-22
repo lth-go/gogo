@@ -13,3 +13,5 @@ func setOther(v int) {
 func printOther() {
     print("printOther " + other);
 };
+
+var globalArray []int = []int{1000, 2000, 3000, 4000};

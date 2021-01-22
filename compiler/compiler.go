@@ -207,7 +207,28 @@ func GetVmVariable(valueIFS Expression) interface{} {
 	case *StringExpression:
 		return value.Value
 	case *ArrayExpression:
-		// TODO:
+		return TODOGetVmVariable(value)
+	}
+
+	return nil
+}
+
+func TODOGetVmVariable(valueIFS Expression) vm.Object {
+	switch value := valueIFS.(type) {
+	// case *BoolExpression:
+	//     return vm.NewObjectInt()
+	case *IntExpression:
+		return vm.NewObjectInt(value.Value)
+	case *FloatExpression:
+		return vm.NewObjectFloat(value.Value)
+	case *StringExpression:
+		return vm.NewObjectString(value.Value)
+	case *ArrayExpression:
+		arrayValue := vm.NewObjectArray(len(value.List))
+		for i, subValue := range value.List {
+			arrayValue.List[i] = TODOGetVmVariable(subValue)
+		}
+		return arrayValue
 	}
 
 	return nil

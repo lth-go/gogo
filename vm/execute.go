@@ -57,8 +57,14 @@ type ExecutableList struct {
 	List []*Executable
 }
 
-func NewExecutableList() *ExecutableList {
-	return &ExecutableList{}
+func NewExecutableList(exeList []*Executable) *ExecutableList {
+	l := &ExecutableList{}
+
+	for _, exe := range exeList {
+		l.AddExe(exe)
+	}
+
+	return l
 }
 
 func (exeList *ExecutableList) AddExe(exe *Executable) bool {

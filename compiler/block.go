@@ -26,13 +26,10 @@ type FunctionBlockInfo struct {
 // Block
 //
 type Block struct {
-	outerBlock *Block
-
+	outerBlock      *Block
 	statementList   []Statement
 	declarationList []*Declaration
-
-	// 块信息，函数块，还是条件语句
-	parent BlockInfo
+	parent          BlockInfo // 块信息，函数块，还是条件语句
 }
 
 func (b *Block) AddDeclaration(declaration *Declaration, fd *FunctionDefinition) {

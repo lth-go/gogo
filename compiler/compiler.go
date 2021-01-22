@@ -16,8 +16,11 @@ func GetCurrentCompiler() *Compiler {
 	return CurrentCompiler
 }
 
-func SetCurrentCompiler(c *Compiler) {
+func PushCurrentCompiler(c *Compiler) *Compiler {
+	old := CurrentCompiler
 	CurrentCompiler = c
+
+	return old
 }
 
 // Compiler 编译器
@@ -67,45 +70,43 @@ func createFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 	c.funcList = append(c.funcList, fd)
 }
 
-//
-// 编译
-//
-func (c *Compiler) compile() []*vm.Executable {
-	compilerBackup := GetCurrentCompiler()
-	SetCurrentCompiler(c)
+func Parse(path string) {
+	c := NewCompiler(path)
+	CompilerList = append(CompilerList, c)
 
-	// 开始解析文件
+	compilerBackup := PushCurrentCompiler(c)
+
+	// 生成语法树
 	if yyParse(c.lexer) != 0 {
 		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
 	}
 
-	exeList := make([]*vm.Executable, 0)
-
 	for _, import_ := range c.importList {
 		// 判断是否已经被解析过
-		importedCompiler := searchCompiler(CompilerList, import_.packageName)
+		importedCompiler := SearchGlobalCompiler(import_.packageName)
 		if importedCompiler != nil {
 			continue
 		}
 
-		// new compiler
-		importedCompiler = NewCompiler(import_.GetPath())
-
-		// add global
-		CompilerList = append(CompilerList, importedCompiler)
-
-		// parse
-		tmpExeList := importedCompiler.compile()
-		exeList = append(exeList, tmpExeList...)
+		Parse(import_.GetPath())
 	}
 
-	// fix and generate
-	c.FixTree()
-	exe := c.Generate()
+	PushCurrentCompiler(compilerBackup)
+}
 
-	exeList = append(exeList, exe)
+func Compile() []*vm.Executable {
+	exeList := make([]*vm.Executable, 0)
 
-	SetCurrentCompiler(compilerBackup)
+	// 倒序编译,防止依赖问题
+	for i := len(CompilerList) - 1; i >= 0; i-- {
+		c := CompilerList[i]
+		compilerBackup := PushCurrentCompiler(c)
+		c.FixTree()
+		exe := c.Generate()
+
+		exeList = append(exeList, exe)
+		PushCurrentCompiler(compilerBackup)
+	}
 
 	return exeList
 }
@@ -315,27 +316,18 @@ func CompileFile(path string) *vm.ExecutableList {
 		yyErrorVerbose = true
 	}
 
-	compiler := NewCompiler(path)
+	Parse(path)
+	exeList := Compile()
 
-	return compiler.Compile()
-}
-
-func (c *Compiler) Compile() *vm.ExecutableList {
-	exeList := vm.NewExecutableList()
-
-	for _, exe := range c.compile() {
-		exeList.AddExe(exe)
-	}
-
-	return exeList
+	return vm.NewExecutableList(exeList)
 }
 
 func (c *Compiler) GetPackageNameList() []string {
 	return strings.Split(c.packageName, "/")
 }
 
-func searchCompiler(list []*Compiler, packageName string) *Compiler {
-	for _, c := range list {
+func SearchGlobalCompiler(packageName string) *Compiler {
+	for _, c := range CompilerList {
 		if c.packageName == packageName {
 			return c
 		}

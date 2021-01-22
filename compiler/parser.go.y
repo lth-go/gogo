@@ -24,7 +24,7 @@ import (
     import_spec          *Import
     import_spec_list     []*Import
 
-    function_definition  *FunctionDefinition
+    function_decl       *FunctionDefinition
 
     tok                  Token
 }
@@ -36,15 +36,15 @@ import (
     LOGICAL_AND LOGICAL_OR
     EQ NE GT GE LT LE
     ADD SUB MUL DIV
-    INT_LITERAL FLOAT_LITERAL STRING_LITERAL
+    INT FLOAT STRING
     TRUE FALSE NIL
     IDENTIFIER
     EXCLAMATION DOT
     PACKAGE IMPORT VAR FUNC
     TYPE STRUCT MAP
 
-%type <import_spec> import_declaration
-%type <import_spec_list> import_declaration_list
+%type <import_spec> import_decl
+%type <import_spec_list> import_decl_list
 
 %type <expression> expression expression_or_nil
     logical_and_expression logical_or_expression
@@ -66,12 +66,12 @@ import (
     type_list_or_nil type_list
 %type <block> block block_or_nil
 %type <else_if> else_if
-%type <type_specifier> type_specifier composite_type array_type_specifier func_type_specifier signature map_type_specifier
+%type <type_specifier> type_specifier composite_type array_type func_type signature map_type
 
 %%
 
-translation_unit
-        : package_clause SEMICOLON import_declaration_list_or_nil top_level_decl_list
+source_file
+        : package_clause SEMICOLON import_decl_list_or_nil top_level_decl_list
         ;
 package_clause
         : PACKAGE IDENTIFIER
@@ -79,28 +79,25 @@ package_clause
             SetPackageName($2.Lit)
         }
         ;
-import_declaration_list_or_nil
-        : /* empty */
+import_decl_list_or_nil
+        :
+        | import_decl_list
         {
-            setImportList(nil)
-        }
-        | import_declaration_list
-        {
-            setImportList($1)
+            SetImportList($1)
         }
         ;
-import_declaration_list
-        : import_declaration
+import_decl_list
+        : import_decl
         {
             $$ = CreateImportList($1)
         }
-        | import_declaration_list import_declaration
+        | import_decl_list import_decl
         {
             $$ = append($1, $2)
         }
         ;
-import_declaration
-        : IMPORT STRING_LITERAL SEMICOLON
+import_decl
+        : IMPORT STRING SEMICOLON
         {
             $$ = CreateImport($2.Lit)
         }
@@ -111,7 +108,7 @@ top_level_decl_list
         ;
 top_level_decl
         : declaration
-        | function_definition
+        | function_decl
         ;
 declaration
         : var_decl
@@ -126,20 +123,20 @@ var_decl
             AddDeclList(NewDeclaration($1.Position(), $3, $2.Lit, $5))
         }
         ;
-array_type_specifier
+array_type
         : LB RB type_specifier
         {
             $$ = CreateArrayType($3, $1.Position())
             $$.SetPosition($1.Position())
         }
         ;
-map_type_specifier
+map_type
         : MAP LB type_specifier RB type_specifier
         {
             $$ = CreateMapType($3, $5, $1.Position())
         }
         ;
-func_type_specifier
+func_type
         : FUNC signature
         {
             $$ = $2
@@ -156,13 +153,13 @@ type_specifier
             $$ = CreateTypeByName($1.Lit + "." + $3.Lit, $1.Position())
         }
         | composite_type
-        | func_type_specifier
+        | func_type
         ;
 composite_type
-        : array_type_specifier
-        | map_type_specifier
+        : array_type
+        | map_type
         ;
-function_definition
+function_decl
         : FUNC receiver_or_nil IDENTIFIER signature block_or_nil
         {
             createFunctionDefine($1.Position(), $2, $3.Lit, $4, $5)
@@ -351,17 +348,17 @@ unary_expression
         }
         ;
 primary_expression
-        : INT_LITERAL
+        : INT
         {
             value, _ := strconv.Atoi($1.Lit)
             $$ = CreateIntExpression($1.Position(), value)
         }
-        | FLOAT_LITERAL
+        | FLOAT
         {
             value, _ := strconv.ParseFloat($1.Lit, 64)
             $$ = CreateFloatExpression($1.Position(), value)
         }
-        | STRING_LITERAL
+        | STRING
         {
             $$ = CreateStringExpression($1.Position(), $1.Lit)
         }

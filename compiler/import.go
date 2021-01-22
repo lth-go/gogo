@@ -45,8 +45,3 @@ func CreateImport(packageName string) *Import {
 		packageName: packageName,
 	}
 }
-
-func setImportList(importList []*Import) {
-	c := getCurrentCompiler()
-	c.importList = importList
-}

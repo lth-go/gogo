@@ -406,6 +406,14 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 	return nil
 }
 
+func (c *Compiler) GetCurrentBlock() *Block {
+	return c.currentBlock
+}
+
+func (c *Compiler) SetCurrentBlock(block *Block) {
+	c.currentBlock = block
+}
+
 func AddDeclList(decl *Declaration) {
 	c := getCurrentCompiler()
 	decl.PackageName = c.packageName
@@ -415,4 +423,9 @@ func AddDeclList(decl *Declaration) {
 func SetPackageName(packageName string) {
 	c := getCurrentCompiler()
 	c.packageName = packageName
+}
+
+func SetImportList(importList []*Import) {
+	c := getCurrentCompiler()
+	c.importList = importList
 }

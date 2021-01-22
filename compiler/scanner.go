@@ -98,19 +98,19 @@ retry:
 		}
 		// 判断lit中有无 `.`
 		if strings.Contains(lit, ".") {
-			tok = FLOAT_LITERAL
+			tok = FLOAT
 		} else {
-			tok = INT_LITERAL
+			tok = INT
 		}
 	// 字符串
 	case ch == '"':
-		tok = STRING_LITERAL
+		tok = STRING
 		lit, err = s.scanString('"')
 		if err != nil {
 			return
 		}
 	case ch == '\'':
-		tok = STRING_LITERAL
+		tok = STRING
 		lit, err = s.scanString('\'')
 		if err != nil {
 			return

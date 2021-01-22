@@ -135,7 +135,7 @@ func (expr *IntExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	} else if expr.Value >= 0 && expr.Value < 65536 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.Value)
 	} else {
-		cpIdx := getCurrentCompiler().AddConstantList(expr.Value)
+		cpIdx := GetCurrentCompiler().AddConstantList(expr.Value)
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
 	}
 }
@@ -169,7 +169,7 @@ func (expr *FloatExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	} else if expr.Value == 1.0 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_1)
 	} else {
-		cpIdx := getCurrentCompiler().AddConstantList(expr.Value)
+		cpIdx := GetCurrentCompiler().AddConstantList(expr.Value)
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT, cpIdx)
 	}
 }
@@ -199,7 +199,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 }
 
 func (expr *StringExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	cpIdx := getCurrentCompiler().AddConstantList(expr.Value)
+	cpIdx := GetCurrentCompiler().AddConstantList(expr.Value)
 	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
 }
 
@@ -268,12 +268,12 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// 判断是否是函数
-	fd := getCurrentCompiler().searchFunction(expr.name)
+	fd := GetCurrentCompiler().searchFunction(expr.name)
 	if fd != nil {
 		expr.SetType(fd.CopyType())
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              getCurrentCompiler().AddFuncList(fd),
+			Index:              GetCurrentCompiler().AddFuncList(fd),
 		}
 		expr.GetType().Fix()
 
@@ -281,7 +281,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// TODO 判断是否是包
-	pkg := getCurrentCompiler().searchPackage(expr.name)
+	pkg := GetCurrentCompiler().searchPackage(expr.name)
 	if pkg != nil {
 		expr.SetType(pkg.Type.Copy())
 		expr.inner = pkg
@@ -620,7 +620,7 @@ func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
 		newExpr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              getCurrentCompiler().AddFuncList(fd),
+			Index:              GetCurrentCompiler().AddFuncList(fd),
 		}
 
 		newExpr.SetType(fd.CopyType())
@@ -634,7 +634,7 @@ func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 		// TODO: 初始值直接给会有问题
 		newDecl := NewDeclaration(decl.Position(), decl.Type.Copy(), decl.Name, nil)
 		newDecl.PackageName = p.compiler.packageName
-		newDecl.Index = getCurrentCompiler().AddDeclarationList(newDecl)
+		newDecl.Index = GetCurrentCompiler().AddDeclarationList(newDecl)
 
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
 		newExpr.SetType(newDecl.Type.Copy())

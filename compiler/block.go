@@ -67,7 +67,7 @@ func (b *Block) searchDeclaration(name string) *Declaration {
 	}
 
 	// 从全局作用域查找
-	return getCurrentCompiler().SearchDeclaration(name)
+	return GetCurrentCompiler().SearchDeclaration(name)
 }
 
 func (b *Block) FixStatementList(fd *FunctionDefinition) {

@@ -7,7 +7,7 @@ import (
 
 func compileError(pos Position, errorNumber int, a ...interface{}) {
 	fmt.Println("编译错误:")
-	fmt.Printf("Filename: %s\n", getCurrentCompiler().path)
+	fmt.Printf("Filename: %s\n", GetCurrentCompiler().path)
 	fmt.Printf("Line: %d:%d\n", pos.Line, pos.Column)
 	errMsg := fmt.Sprintf(errMessageMap[errorNumber], a...)
 	msg := fmt.Sprintf("%d\n%s", errorNumber, errMsg)

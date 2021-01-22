@@ -8,16 +8,16 @@ import (
 )
 
 var (
-	stCompilerList    []*Compiler // 全局compiler列表
-	stCurrentCompiler *Compiler   // 全局compiler
+	CompilerList    []*Compiler // 全局compiler列表
+	CurrentCompiler *Compiler   // 全局compiler
 )
 
-func getCurrentCompiler() *Compiler {
-	return stCurrentCompiler
+func GetCurrentCompiler() *Compiler {
+	return CurrentCompiler
 }
 
-func setCurrentCompiler(c *Compiler) {
-	stCurrentCompiler = c
+func SetCurrentCompiler(c *Compiler) {
+	CurrentCompiler = c
 }
 
 // Compiler 编译器
@@ -26,7 +26,6 @@ type Compiler struct {
 	path            string                // 源文件路径
 	packageName     string                // 包名
 	importList      []*Import             // 依赖的包
-	importedList    []*Compiler           // 已加载compiler列表
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
 	ConstantList    []interface{}         // 常量定义
@@ -39,7 +38,6 @@ func NewCompiler(path string) *Compiler {
 		importList:      []*Import{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*Declaration{},
-		importedList:    []*Compiler{},
 		ConstantList:    []interface{}{},
 	}
 
@@ -51,7 +49,7 @@ func NewCompiler(path string) *Compiler {
 // 函数定义
 //
 func createFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
-	c := getCurrentCompiler()
+	c := GetCurrentCompiler()
 
 	fd := &FunctionDefinition{
 		Type:            typ,
@@ -72,9 +70,9 @@ func createFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 //
 // 编译
 //
-func (c *Compiler) compile(isRequired bool) []*vm.Executable {
-	compilerBackup := getCurrentCompiler()
-	setCurrentCompiler(c)
+func (c *Compiler) compile() []*vm.Executable {
+	compilerBackup := GetCurrentCompiler()
+	SetCurrentCompiler(c)
 
 	// 开始解析文件
 	if yyParse(c.lexer) != 0 {
@@ -85,22 +83,19 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 
 	for _, import_ := range c.importList {
 		// 判断是否已经被解析过
-		importedCompiler := searchCompiler(stCompilerList, import_.packageName)
+		importedCompiler := searchCompiler(CompilerList, import_.packageName)
 		if importedCompiler != nil {
-			c.importedList = append(c.importedList, importedCompiler)
 			continue
 		}
 
 		// new compiler
 		importedCompiler = NewCompiler(import_.GetPath())
-		importedCompiler.packageName = import_.packageName
 
 		// add global
-		c.importedList = append(c.importedList, importedCompiler)
-		stCompilerList = append(stCompilerList, importedCompiler)
+		CompilerList = append(CompilerList, importedCompiler)
 
 		// parse
-		tmpExeList := importedCompiler.compile(true)
+		tmpExeList := importedCompiler.compile()
 		exeList = append(exeList, tmpExeList...)
 	}
 
@@ -110,7 +105,7 @@ func (c *Compiler) compile(isRequired bool) []*vm.Executable {
 
 	exeList = append(exeList, exe)
 
-	setCurrentCompiler(compilerBackup)
+	SetCurrentCompiler(compilerBackup)
 
 	return exeList
 }
@@ -295,15 +290,19 @@ func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 }
 
 func (c *Compiler) searchPackage(name string) *Package {
-	for _, importedC := range c.importedList {
-		if name == importedC.packageName {
-			return &Package{
-				compiler: importedC,
-				Type:     NewType(vm.BasicTypePackage),
+	for _, imp := range c.importList {
+		if name == imp.packageName {
+			for _, importCompiler := range CompilerList {
+				if name == importCompiler.packageName {
+					return &Package{
+						compiler: importCompiler,
+						Type:     NewType(vm.BasicTypePackage),
+					}
+				}
 			}
 		}
-
 	}
+
 	return nil
 }
 
@@ -324,7 +323,7 @@ func CompileFile(path string) *vm.ExecutableList {
 func (c *Compiler) Compile() *vm.ExecutableList {
 	exeList := vm.NewExecutableList()
 
-	for _, exe := range c.compile(false) {
+	for _, exe := range c.compile() {
 		exeList.AddExe(exe)
 	}
 
@@ -407,30 +406,30 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 }
 
 func AddDeclList(decl *Declaration) {
-	c := getCurrentCompiler()
+	c := GetCurrentCompiler()
 	decl.PackageName = c.packageName
 	c.AddDeclarationList(decl)
 }
 
 func SetPackageName(packageName string) {
-	c := getCurrentCompiler()
+	c := GetCurrentCompiler()
 	c.packageName = packageName
 }
 
 func SetImportList(importList []*Import) {
-	c := getCurrentCompiler()
+	c := GetCurrentCompiler()
 	c.importList = importList
 }
 
 func PushCurrentBlock() *Block {
-	c := getCurrentCompiler()
+	c := GetCurrentCompiler()
 	c.currentBlock = &Block{outerBlock: c.currentBlock}
 
 	return c.currentBlock
 }
 
 func PopCurrentBlock() *Block {
-	c := getCurrentCompiler()
+	c := GetCurrentCompiler()
 
 	b := c.currentBlock
 

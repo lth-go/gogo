@@ -42,6 +42,7 @@ func (b *Block) AddDeclaration(declaration *Declaration, fd *FunctionDefinition)
 	fd.AddDeclarationList(declaration)
 }
 
+// TODO: 暂时无用
 func (b *Block) getCurrentFunction() *FunctionDefinition {
 	for block := b; block != nil; block = block.outerBlock {
 		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)

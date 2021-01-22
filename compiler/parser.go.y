@@ -162,7 +162,7 @@ composite_type
 function_decl
         : FUNC receiver_or_nil IDENTIFIER signature block_or_nil
         {
-            createFunctionDefine($1.Position(), $2, $3.Lit, $4, $5)
+            CreateFunctionDefine($1.Position(), $2, $3.Lit, $4, $5)
         }
         ;
 receiver_or_nil

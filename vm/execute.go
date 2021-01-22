@@ -8,46 +8,23 @@ import (
 // 字节码解释器
 //
 type Executable struct {
-	PackageName    string        // 包名
-	Path           string        // 源码路径
-	ConstantPool   ConstantPool  // 常量池
-	VariableList   *VariableList // 全局变量
-	FunctionList   []*Function   // 函数列表
-	CodeList       []byte        // 顶层结构代码
-	LineNumberList []*LineNumber // 行号对应表,保存字节码和与之对应的源代码的行号
+	PackageName  string        // 包名
+	Path         string        // 源码路径
+	ConstantPool ConstantPool  // 常量池
+	VariableList *VariableList // 全局变量
+	FunctionList []*Function   // 函数列表
+	CodeList     []byte        // 顶层结构代码
 }
 
 func NewExecutable() *Executable {
 	exe := &Executable{
-		ConstantPool:   NewConstantPool(),
-		VariableList:   NewVmVariableList(),
-		FunctionList:   []*Function{},
-		CodeList:       []byte{},
-		LineNumberList: []*LineNumber{},
+		ConstantPool: NewConstantPool(),
+		VariableList: NewVmVariableList(),
+		FunctionList: []*Function{},
+		CodeList:     []byte{},
 	}
 
 	return exe
-}
-
-func (exe *Executable) ShowCode() {
-	for i := 0; i < len(exe.CodeList); {
-		code := exe.CodeList[i]
-		info := OpcodeInfo[int(code)]
-		paramList := []byte(info.Parameter)
-
-		fmt.Println(info.Mnemonic)
-		for _, param := range paramList {
-			switch param {
-			case 'b':
-				i += 1
-			case 's', 'p':
-				i += 2
-			default:
-				panic("TODO")
-			}
-		}
-		i += 1
-	}
 }
 
 //

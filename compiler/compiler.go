@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"log"
-	"strings"
 
 	"github.com/lth-go/gogo/vm"
 )
@@ -48,28 +47,6 @@ func NewCompiler(path string) *Compiler {
 	return c
 }
 
-//
-// 函数定义
-//
-func createFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
-	c := GetCurrentCompiler()
-
-	fd := &FunctionDefinition{
-		Type:            typ,
-		Name:            identifier,
-		PackageName:     c.packageName,
-		ParameterList:   typ.funcType.Params,
-		Block:           block,
-		DeclarationList: nil,
-	}
-
-	if block != nil {
-		block.parent = &FunctionBlockInfo{function: fd}
-	}
-
-	c.funcList = append(c.funcList, fd)
-}
-
 func Parse(path string) {
 	c := NewCompiler(path)
 	CompilerList = append(CompilerList, c)
@@ -95,17 +72,21 @@ func Parse(path string) {
 }
 
 func Compile() []*vm.Executable {
-	exeList := make([]*vm.Executable, 0)
-
 	// 倒序编译,防止依赖问题
 	for i := len(CompilerList) - 1; i >= 0; i-- {
 		c := CompilerList[i]
+
 		compilerBackup := PushCurrentCompiler(c)
 		c.FixTree()
-		exe := c.Generate()
-
-		exeList = append(exeList, exe)
 		PushCurrentCompiler(compilerBackup)
+	}
+
+	exeList := make([]*vm.Executable, 0)
+	for i := len(CompilerList) - 1; i >= 0; i-- {
+		c := CompilerList[i]
+
+		exe := c.Generate()
+		exeList = append(exeList, exe)
 	}
 
 	return exeList
@@ -136,9 +117,33 @@ func (c *Compiler) FixDeclarationList() {
 		if decl.InitValue != nil {
 			decl.InitValue = decl.InitValue.fix(nil)
 			decl.InitValue = CreateAssignCast(decl.InitValue, decl.Type)
+			decl.InitValue = decl.InitValue.fix(nil)
 		}
 	}
 }
+
+//
+// 函数定义
+//
+func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
+	c := GetCurrentCompiler()
+
+	fd := &FunctionDefinition{
+		Type:            typ,
+		Name:            identifier,
+		PackageName:     c.packageName,
+		ParameterList:   typ.funcType.Params,
+		Block:           block,
+		DeclarationList: nil,
+	}
+
+	if block != nil {
+		block.parent = &FunctionBlockInfo{function: fd}
+	}
+
+	c.funcList = append(c.funcList, fd)
+}
+
 
 func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 	packageName := fd.GetPackageName()
@@ -163,14 +168,6 @@ func (c *Compiler) Generate() *vm.Executable {
 	exe.PackageName = c.packageName
 	exe.FunctionList = c.GetVmFunctionList(exe)
 	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
-
-	// 添加字节码
-	opCodeBuf := NewOpCodeBuf()
-
-	exe.CodeList = opCodeBuf.fixOpcodeBuf()
-	exe.LineNumberList = opCodeBuf.lineNumberList
-
-	// TODO: remove
 	exe.ConstantPool.SetPool(c.ConstantList)
 
 	return exe
@@ -247,7 +244,7 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 	dest := &vm.Function{
 		PackageName: src.GetPackageName(),
 		Name:        src.Name,
-		Type:        CopyToVmType(src.GetType()),
+		Type:        CopyToVmType(src.GetType().Copy()),
 		IsMethod:    false,
 	}
 
@@ -290,17 +287,20 @@ func (c *Compiler) searchFunction(name string) *FunctionDefinition {
 	return nil
 }
 
-func (c *Compiler) searchPackage(name string) *Package {
+func (c *Compiler) searchPackage(packageName string) *Package {
 	for _, imp := range c.importList {
-		if name == imp.packageName {
-			for _, importCompiler := range CompilerList {
-				if name == importCompiler.packageName {
-					return &Package{
-						compiler: importCompiler,
-						Type:     NewType(vm.BasicTypePackage),
-					}
-				}
-			}
+		if packageName != imp.packageName {
+			continue
+		}
+
+		importCompiler := SearchGlobalCompiler(packageName)
+		if importCompiler == nil {
+			panic("TODO")
+		}
+
+		return &Package{
+			compiler: importCompiler,
+			Type:     NewType(vm.BasicTypePackage),
 		}
 	}
 
@@ -320,10 +320,6 @@ func CompileFile(path string) *vm.ExecutableList {
 	exeList := Compile()
 
 	return vm.NewExecutableList(exeList)
-}
-
-func (c *Compiler) GetPackageNameList() []string {
-	return strings.Split(c.packageName, "/")
 }
 
 func SearchGlobalCompiler(packageName string) *Compiler {

@@ -57,17 +57,17 @@ func NewVirtualMachine(exeList *ExecutableList) *VirtualMachine {
 //
 // 虚拟机初始化操作
 //
-
 func (vm *VirtualMachine) SetTopExe(exe *Executable) {
 	vm.topLevel = exe
 }
 
 func (vm *VirtualMachine) SetMainEntrypoint() {
-	// TODO: 设置入口为main函数
+	// 设置入口为main函数
 	idx := vm.SearchStatic("main", "main")
 	if idx == -1 {
 		panic("TODO")
 	}
+
 	b := make([]byte, 2)
 	set2ByteInt(b, idx)
 	vm.topLevel.CodeList = append(vm.topLevel.CodeList, b...)
@@ -84,7 +84,6 @@ func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 	// 修正字节码
 	// 方法调用修正
 	// 函数下标修正
-	vm.ConvertOpCode(exe, exe.CodeList, nil)
 	for _, f := range exe.FunctionList {
 		vm.ConvertOpCode(exe, f.CodeList, f)
 	}

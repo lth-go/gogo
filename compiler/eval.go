@@ -14,6 +14,7 @@ func FixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	newExpr := evalMathExpression(expr)
 	switch newExpr.(type) {
 	case *IntExpression, *FloatExpression, *StringExpression:
+		newExpr = newExpr.fix(currentBlock)
 		return newExpr
 	}
 
@@ -150,7 +151,7 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
 
-	newExpr := &IntExpression{Value: value}
+	newExpr := CreateIntExpression(binaryExpr.Position(), value)
 	newExpr.SetType(NewType(vm.BasicTypeInt))
 
 	return newExpr
@@ -174,7 +175,7 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 	default:
 		compileError(binaryExpr.Position(), MATH_TYPE_MISMATCH_ERR)
 	}
-	newExpr := &FloatExpression{Value: value}
+	newExpr := CreateFloatExpression(binaryExpr.Position(), value)
 	newExpr.SetType(NewType(vm.BasicTypeFloat))
 
 	return newExpr

@@ -53,10 +53,9 @@ func getLineNumberByPc(exe *Executable, function *GoGoFunction, pc int) int {
 	var lineNumber []*LineNumber
 	var ret int
 
+	// TODO: function == nil
 	if function != nil {
 		lineNumber = exe.FunctionList[function.Index].LineNumberList
-	} else {
-		lineNumber = exe.LineNumberList
 	}
 
 	for _, line := range lineNumber {

@@ -121,11 +121,17 @@ func CreateBooleanExpression(pos Position, value bool) *BoolExpression {
 type IntExpression struct {
 	ExpressionBase
 	Value int
+	Index int
 }
 
 func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeInt))
 	expr.GetType().Fix()
+
+	if expr.Value > 65535 || expr.Value < 0 {
+		expr.Index = GetCurrentCompiler().AddConstantList(expr.Value)
+	}
+
 	return expr
 }
 
@@ -135,8 +141,7 @@ func (expr *IntExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	} else if expr.Value >= 0 && expr.Value < 65536 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.Value)
 	} else {
-		cpIdx := GetCurrentCompiler().AddConstantList(expr.Value)
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, cpIdx)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, expr.Index)
 	}
 }
 
@@ -155,11 +160,16 @@ func CreateIntExpression(pos Position, value int) *IntExpression {
 type FloatExpression struct {
 	ExpressionBase
 	Value float64
+	Index int
 }
 
 func (expr *FloatExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeFloat))
 	expr.GetType().Fix()
+
+	if expr.Value != 0.0 && expr.Value != 1.0 {
+		expr.Index = GetCurrentCompiler().AddConstantList(expr.Value)
+	}
 	return expr
 }
 
@@ -169,14 +179,14 @@ func (expr *FloatExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	} else if expr.Value == 1.0 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_1)
 	} else {
-		cpIdx := GetCurrentCompiler().AddConstantList(expr.Value)
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT, cpIdx)
+		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT, expr.Index)
 	}
 }
 
 func CreateFloatExpression(pos Position, value float64) *FloatExpression {
 	expr := &FloatExpression{
 		Value: value,
+		Index: -1,
 	}
 	expr.SetPosition(pos)
 
@@ -189,18 +199,19 @@ func CreateFloatExpression(pos Position, value float64) *FloatExpression {
 type StringExpression struct {
 	ExpressionBase
 	Value string
+	Index int
 }
 
 func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	expr.SetType(NewType(vm.BasicTypeString))
 	expr.GetType().Fix()
 
+	expr.Index = GetCurrentCompiler().AddConstantList(expr.Value)
 	return expr
 }
 
 func (expr *StringExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	cpIdx := GetCurrentCompiler().AddConstantList(expr.Value)
-	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, cpIdx)
+	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, expr.Index)
 }
 
 func CreateStringExpression(pos Position, value string) *StringExpression {
@@ -455,9 +466,11 @@ func (expr *UnaryExpression) FixMinus(currentBlock *Block) Expression {
 	case *IntExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
+		newExpr = newExpr.fix(currentBlock)
 	case *FloatExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
+		newExpr = newExpr.fix(currentBlock)
 	default:
 		newExpr = expr
 	}
@@ -709,6 +722,7 @@ func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
 	for i := 1; i < len(expr.List); i++ {
 		expr.List[i] = expr.List[i].fix(currentBlock)
 		expr.List[i] = CreateAssignCast(expr.List[i], elemType)
+		expr.List[i] = expr.List[i].fix(currentBlock)
 	}
 
 	expr.SetType(NewType(vm.BasicTypeArray))

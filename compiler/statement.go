@@ -299,7 +299,15 @@ type BreakStatement struct {
 	StatementBase
 }
 
-func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {}
+func (stmt *BreakStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
+	for block := currentBlock; block != nil; block = block.outerBlock {
+		switch block.parent.(type) {
+		case *StatementBlockInfo:
+			return
+		}
+	}
+	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
+}
 
 func (stmt *BreakStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	// 向外寻找,直到找到for的block
@@ -308,11 +316,9 @@ func (stmt *BreakStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 		case *StatementBlockInfo:
 			ob.generateCode(stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).breakLabel)
 			return
-		default:
-			continue
 		}
 	}
-	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
+	panic("TODO")
 }
 
 func NewBreakStatement(pos Position) *BreakStatement {
@@ -375,6 +381,7 @@ func (stmt *Declaration) fix(currentBlock *Block, fd *FunctionDefinition) {
 	if stmt.InitValue != nil {
 		stmt.InitValue = stmt.InitValue.fix(currentBlock)
 		stmt.InitValue = CreateAssignCast(stmt.InitValue, stmt.Type)
+		stmt.InitValue = stmt.InitValue.fix(currentBlock)
 	}
 }
 
@@ -445,6 +452,8 @@ func (stmt *AssignStatement) fix(currentBlock *Block, fd *FunctionDefinition) {
 			stmt.left[i] = stmt.left[i].fix(currentBlock)
 			stmt.right[i] = stmt.right[i].fix(currentBlock)
 			stmt.right[i] = CreateAssignCast(stmt.right[i], stmt.left[i].GetType())
+			// TODO:
+			stmt.right[i] = stmt.right[i].fix(currentBlock)
 		}
 	}
 

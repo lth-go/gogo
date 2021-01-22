@@ -11,6 +11,12 @@ type StatementBlockInfo struct {
 	breakLabel    int
 }
 
+func NewStatementBlockInfo(statement Statement) *StatementBlockInfo {
+	return &StatementBlockInfo{
+		statement: statement,
+	}
+}
+
 type FunctionBlockInfo struct {
 	function *FunctionDefinition
 	endLabel int

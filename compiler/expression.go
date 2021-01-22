@@ -696,6 +696,7 @@ type ArrayExpression struct {
 }
 
 func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
+	// TODO: 可以为空
 	if expr.List == nil || len(expr.List) == 0 {
 		compileError(expr.Position(), ARRAY_LITERAL_EMPTY_ERR)
 	}
@@ -711,7 +712,7 @@ func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
 	}
 
 	expr.SetType(NewType(vm.BasicTypeArray))
-	expr.GetType().sliceType = NewArrayType(elemType)
+	expr.GetType().arrayType = NewArrayType(elemType)
 	expr.GetType().Fix()
 
 	return expr
@@ -762,8 +763,8 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
 	}
 
-	expr.SetType(expr.array.GetType().sliceType.ElementType.Copy())
-	expr.GetType().sliceType = nil
+	expr.SetType(expr.array.GetType().arrayType.ElementType.Copy())
+	expr.GetType().arrayType = nil
 
 	if !expr.index.GetType().IsInt() {
 		compileError(expr.Position(), INDEX_NOT_INT_ERR)

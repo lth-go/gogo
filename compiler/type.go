@@ -219,7 +219,7 @@ func (t *Package) Equal(t2 *PackageType) bool {
 type Type struct {
 	PosBase
 	basicType         vm.BasicType
-	sliceType         *ArrayType
+	arrayType         *ArrayType
 	funcType          *FuncType
 	mapType           *MapType
 	multipleValueType *MultipleValueType // TODO: 用于处理函数多返回值
@@ -248,7 +248,7 @@ func (t *Type) Equal(t2 *Type) bool {
 		return false
 	}
 
-	if !t.sliceType.Equal(t2.sliceType) {
+	if !t.arrayType.Equal(t2.arrayType) {
 		return false
 	}
 
@@ -292,7 +292,7 @@ func CreateType(basicType vm.BasicType, pos Position) *Type {
 
 func CreateArrayType(typ *Type, pos Position) *Type {
 	newType := CreateType(vm.BasicTypeArray, pos)
-	newType.sliceType = NewArrayType(typ)
+	newType.arrayType = NewArrayType(typ)
 	return newType
 }
 
@@ -427,7 +427,7 @@ func CreateTypeByName(name string, pos Position) *Type {
 func (t *Type) Copy() *Type {
 	newType := NewType(t.GetBasicType())
 
-	newType.sliceType = t.sliceType.Copy()
+	newType.arrayType = t.arrayType.Copy()
 	newType.funcType = t.funcType.Copy()
 	newType.multipleValueType = t.multipleValueType.Copy()
 

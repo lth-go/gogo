@@ -191,7 +191,7 @@ parameter_list
 parameters
         : LP RP
         {
-            $$ = []*Parameter{}
+            $$ = make([]*Parameter, 0)
         }
         | LP parameter_list RP
         {
@@ -403,7 +403,7 @@ primary_expression
         }
         | primary_expression LP RP
         {
-            $$ = NewFunctionCallExpression($1.Position(), $1, []Expression{})
+            $$ = NewFunctionCallExpression($1.Position(), $1, make([]Expression, 0))
         }
         | LP expression RP
         {
@@ -453,41 +453,36 @@ simple_statement
 if_statement
         : IF expression block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*ElseIf{}, elseBlock: nil}
-            $$.SetPosition($1.Position())
+            $$ = NewIfStatement($1.Position(), $2, $3, make([]*ElseIf, 0), nil)
         }
         | IF expression block ELSE block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: []*ElseIf{}, elseBlock: $5}
-            $$.SetPosition($1.Position())
+            $$ = NewIfStatement($1.Position(), $2, $3, make([]*ElseIf, 0), $5)
         }
         | IF expression block else_if
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: $4, elseBlock: nil}
-            $$.SetPosition($1.Position())
+            $$ = NewIfStatement($1.Position(), $2, $3, $4, nil)
         }
         | IF expression block else_if ELSE block
         {
-            $$ = &IfStatement{condition: $2, thenBlock: $3, elifList: $4, elseBlock: $6}
-            $$.SetPosition($1.Position())
+            $$ = NewIfStatement($1.Position(), $2, $3, $4, $6)
         }
         ;
 else_if
         : ELSE IF expression block
         {
-            $$ = []*ElseIf{&ElseIf{condition: $3, block: $4}}
+            $$ = []*ElseIf{NewElseIf($3, $4)}
         }
         | else_if ELSE IF expression block
         {
-            $$ = append($1, &ElseIf{condition: $4, block: $5})
+            $$ = append($1, NewElseIf($4, $5))
         }
         ;
 for_statement
         : FOR LP simple_statement_or_nil SEMICOLON expression_or_nil SEMICOLON simple_statement_or_nil RP block
         {
-            $$ = &ForStatement{init: $3, condition: $5, post: $7, block: $9}
-            $$.SetPosition($1.Position())
-            $9.parent = &StatementBlockInfo{statement: $$}
+            $$ = NewForStatement($1.Position(), $3, $5, $7, $9)
+            $9.parent = NewStatementBlockInfo($$)
         }
         ;
 expression_or_nil
@@ -506,15 +501,13 @@ return_statement
 break_statement
         : BREAK
         {
-            $$ = &BreakStatement{}
-            $$.SetPosition($1.Position())
+            $$ = NewBreakStatement($1.Position())
         }
         ;
 continue_statement
         : CONTINUE
         {
-            $$ = &ContinueStatement{}
-            $$.SetPosition($1.Position())
+            $$ = NewContinueStatement($1.Position())
         }
         ;
 declaration_statement
@@ -530,8 +523,7 @@ declaration_statement
 assign_statement
         : expression_list ASSIGN expression_list
         {
-            $$ = &AssignStatement{left: $1, right: $3}
-            $$.SetPosition($2.Position())
+            $$ = NewAssignStatement($2.Position(), $1, $3)
         }
         ;
 block

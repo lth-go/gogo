@@ -139,7 +139,7 @@ func CopyToVmType(src *Type) *vm.Type {
 		BasicType: src.GetBasicType(),
 	}
 	if src.IsArray() {
-		dest.SetSliceType(CopyToVmType(src.sliceType.ElementType), src.sliceType.Len)
+		dest.SetSliceType(CopyToVmType(src.arrayType.ElementType), src.arrayType.Len)
 	}
 
 	if src.IsFunc() {

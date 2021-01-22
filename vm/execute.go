@@ -141,12 +141,12 @@ func (v *Variable) Init() {
 		value = NilObject
 	} else {
 		switch v.Type.GetBasicType() {
-		case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
+		case BasicTypeBool, BasicTypeInt:
 			value = 0
 		case BasicTypeFloat:
 			value = 0.0
 		case BasicTypeString:
-			value = NilObject
+			value = ""
 		case BasicTypeNil:
 			fallthrough
 		default:

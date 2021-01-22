@@ -185,22 +185,32 @@ func (c *Compiler) GetVmVariableList() []*vm.Variable {
 
 	for _, decl := range c.declarationList {
 		newValue := vm.NewVmVariable(decl.PackageName, decl.Name, CopyToVmType(decl.Type))
-		switch value := decl.InitValue.(type) {
-		case *BoolExpression:
-			newValue.Value = value.Value
-		case *IntExpression:
-			newValue.Value = value.Value
-		case *FloatExpression:
-			newValue.Value = value.Value
-		case *StringExpression:
-			newValue.Value = value.Value
-		case *ArrayExpression:
-			// TODO:
-		}
+		newValue.Value = GetVmVariable(decl.InitValue)
 		variableList = append(variableList, newValue)
 	}
 
 	return variableList
+}
+
+func GetVmVariable(valueIFS Expression) interface{} {
+	if valueIFS == nil {
+		return nil
+	}
+
+	switch value := valueIFS.(type) {
+	case *BoolExpression:
+		return value.Value
+	case *IntExpression:
+		return value.Value
+	case *FloatExpression:
+		return value.Value
+	case *StringExpression:
+		return value.Value
+	case *ArrayExpression:
+		// TODO:
+	}
+
+	return nil
 }
 
 func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {

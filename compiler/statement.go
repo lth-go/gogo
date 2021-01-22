@@ -49,11 +49,6 @@ func NewExpressionStatement(pos Position, expr Expression) *ExpressionStatement 
 //
 // IfStatement
 //
-type ElseIf struct {
-	condition Expression
-	block     *Block
-}
-
 // IfStatement if表达式
 type IfStatement struct {
 	StatementBase
@@ -132,12 +127,30 @@ func (stmt *IfStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.setLabel(endLabel)
 }
 
+func NewIfStatement(
+	pos Position,
+	condition Expression,
+	thenBlock *Block,
+	elifList []*ElseIf,
+	elseBlock *Block,
+) *IfStatement {
+	stmt := &IfStatement{
+		condition: condition,
+		thenBlock: thenBlock,
+		elifList:  elifList,
+		elseBlock: elseBlock,
+	}
+
+	stmt.SetPosition(pos)
+
+	return stmt
+}
+
 //
 // ForStatement
 //
 type ForStatement struct {
 	StatementBase
-
 	init      Statement
 	condition Expression
 	post      Statement
@@ -211,6 +224,31 @@ func (stmt *ForStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	ob.setLabel(label)
 }
 
+func NewForStatement(pos Position, init Statement, condition Expression, post Statement, block *Block) *ForStatement {
+	stmt := &ForStatement{
+		init:      init,
+		condition: condition,
+		post:      post,
+		block:     block,
+	}
+
+	stmt.SetPosition(pos)
+
+	return stmt
+}
+
+type ElseIf struct {
+	condition Expression
+	block     *Block
+}
+
+func NewElseIf(condition Expression, block *Block) *ElseIf {
+	return &ElseIf{
+		condition: condition,
+		block:     block,
+	}
+}
+
 //
 // ReturnStatement
 //
@@ -277,6 +315,13 @@ func (stmt *BreakStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
 }
 
+func NewBreakStatement(pos Position) *BreakStatement {
+	stmt := &BreakStatement{}
+	stmt.SetPosition(pos)
+
+	return stmt
+}
+
 //
 // ContinueStatement
 //
@@ -299,6 +344,13 @@ func (stmt *ContinueStatement) generate(currentBlock *Block, ob *OpCodeBuf) {
 	}
 	compileError(stmt.Position(), LABEL_NOT_FOUND_ERR)
 
+}
+
+func NewContinueStatement(pos Position) *ContinueStatement {
+	stmt := &ContinueStatement{}
+	stmt.SetPosition(pos)
+
+	return stmt
 }
 
 //
@@ -433,4 +485,14 @@ func (stmt *AssignStatement) isFuncCall() bool {
 		}
 	}
 	return false
+}
+
+func NewAssignStatement(pos Position, left []Expression, right []Expression) *AssignStatement {
+	stmt := &AssignStatement{
+		left:  left,
+		right: right,
+	}
+	stmt.SetPosition(pos)
+
+	return stmt
 }

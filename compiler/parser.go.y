@@ -40,7 +40,7 @@ import (
     TRUE FALSE NIL
     IDENTIFIER
     EXCLAMATION DOT
-    IMPORT VAR FUNC
+    PACKAGE IMPORT VAR FUNC
     TYPE STRUCT MAP
 
 %type <import_spec> import_declaration
@@ -71,7 +71,13 @@ import (
 %%
 
 translation_unit
-        : import_declaration_list_or_nil top_level_decl_list
+        : package_clause SEMICOLON import_declaration_list_or_nil top_level_decl_list
+        ;
+package_clause
+        : PACKAGE IDENTIFIER
+        {
+            SetPackageName($2.Lit)
+        }
         ;
 import_declaration_list_or_nil
         : /* empty */

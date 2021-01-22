@@ -24,6 +24,7 @@ var opName = map[string]int{
 	"return":   RETURN,
 	"break":    BREAK,
 	"continue": CONTINUE,
+	"package":  PACKAGE,
 	"import":   IMPORT,
 	"var":      VAR,
 	"func":     FUNC,

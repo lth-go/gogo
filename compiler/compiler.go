@@ -380,3 +380,8 @@ func AddDeclList(decl *Declaration) {
 	decl.PackageName = c.packageName
 	c.AddDeclarationList(decl)
 }
+
+func SetPackageName(packageName string) {
+	c := getCurrentCompiler()
+	c.packageName = packageName
+}

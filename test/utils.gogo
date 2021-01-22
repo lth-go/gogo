@@ -1,3 +1,5 @@
+package utils;
+
 func printTest(str string) {
     print(str + " ========" + "\n");
 };

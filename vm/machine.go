@@ -64,8 +64,7 @@ func (vm *VirtualMachine) SetTopExe(exe *Executable) {
 
 func (vm *VirtualMachine) SetMainEntrypoint() {
 	// TODO: 设置入口为main函数
-	// TODO: packageName 是main
-	idx := vm.SearchStatic("", "main")
+	idx := vm.SearchStatic("main", "main")
 	if idx == -1 {
 		panic("TODO")
 	}

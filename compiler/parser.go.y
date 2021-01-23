@@ -51,7 +51,11 @@ import (
     equality_expression relational_expression
     additive_expression multiplicative_expression
     unary_expression primary_expression
-%type <expression_list> expression_list expression_list_or_nil argument_list
+    composite_lit
+    keyed_element
+%type <expression_list> expression_list expression_list_or_nil
+    argument_list
+    element_list literal_value
 
 %type <statement> statement simple_statement_or_nil
     simple_statement
@@ -66,7 +70,7 @@ import (
     type_list_or_nil type_list
 %type <block> block block_or_nil
 %type <else_if> else_if
-%type <type_specifier> type_specifier composite_type array_type func_type signature map_type
+%type <type_specifier> type_specifier literal_type array_type func_type signature map_type
 
 %%
 
@@ -152,12 +156,8 @@ type_specifier
         {
             $$ = CreateTypeByName($1.Lit + "." + $3.Lit, $1.Position())
         }
-        | composite_type
+        | literal_type
         | func_type
-        ;
-composite_type
-        : array_type
-        | map_type
         ;
 function_decl
         : FUNC receiver_or_nil IDENTIFIER signature block_or_nil
@@ -374,14 +374,7 @@ primary_expression
         {
             $$ = createNilExpression($1.Position())
         }
-        | composite_type LC expression_list_or_nil RC
-        {
-            $$ = CreateArrayExpression($1.Position(), $1, $3)
-        }
-        | composite_type LC expression_list_or_nil COMMA RC
-        {
-            $$ = CreateArrayExpression($1.Position(), $1, $3)
-        }
+        | composite_lit
         | IDENTIFIER
         {
             $$ = CreateIdentifierExpression($1.Position(), $1.Lit);
@@ -545,5 +538,49 @@ block_or_nil
             $$ = nil
         }
         | block
+        ;
+composite_lit
+        : literal_type literal_value
+        {
+            $$ = CreateCompositeLit($1, $2)
+        }
+        ;
+literal_type
+        : array_type
+        | map_type
+        ;
+literal_value
+        : LC RC
+        {
+            $$ = nil
+        }
+        | LC element_list COMMA RC
+        {
+            $$ = $2
+        }
+        | LC element_list RC
+        {
+            $$ = $2
+        }
+        ;
+element_list
+        : keyed_element
+        {
+            $$ = []Expression{$1}
+        }
+        | element_list COMMA keyed_element
+        {
+            $$ = append($1, $3)
+        }
+        ;
+keyed_element
+        : expression COLON expression
+        {
+            $$ = CreateKeyValueExpression($1.Position(), $1, $3)
+        }
+        | expression
+        {
+            $$ = CreateKeyValueExpression($1.Position(), nil, $1)
+        }
         ;
 %%

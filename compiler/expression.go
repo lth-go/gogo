@@ -660,7 +660,13 @@ type ArrayExpression struct {
 func (expr *ArrayExpression) Fix() Expression {
 	elemType := expr.GetType().arrayType.ElementType
 
-	for i := 1; i < len(expr.List); i++ {
+	for i := 0; i < len(expr.List); i++ {
+		// TODO: 直接使用value
+		keyValueExpr, ok := expr.List[i].(*KeyValueExpression)
+		if ok {
+			expr.List[i] = keyValueExpr.Value
+		}
+
 		expr.List[i] = expr.List[i].Fix()
 		expr.List[i] = CreateAssignCast(expr.List[i], elemType)
 	}
@@ -679,12 +685,11 @@ func (expr *ArrayExpression) Generate(ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, count)
 }
 
-func CreateArrayExpression(pos Position, typ *Type, exprList []Expression) *ArrayExpression {
+func CreateArrayExpression(typ *Type, exprList []Expression) *ArrayExpression {
 	expr := &ArrayExpression{
 		List: exprList,
 	}
 	expr.SetType(typ)
-	expr.SetPosition(pos)
 
 	return expr
 }
@@ -792,4 +797,50 @@ func CreateIndexExpression(pos Position, array, index Expression) *IndexExpressi
 type Package struct {
 	Type     *Type
 	compiler *Compiler
+}
+
+type KeyValueExpression struct {
+	ExpressionBase
+	Key   Expression
+	Value Expression
+}
+
+func (expr *KeyValueExpression) Fix() Expression {
+	if expr.Key != nil {
+		expr.Key = expr.Key.Fix()
+	}
+	if expr.Value != nil {
+		expr.Value = expr.Value.Fix()
+	}
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *KeyValueExpression) Generate(ob *OpCodeBuf) {
+	if expr.Value != nil {
+		expr.Value.Generate(ob)
+	}
+
+	if expr.Key != nil {
+		expr.Key.Generate(ob)
+	}
+}
+
+func CreateKeyValueExpression(pos Position, key, value Expression) *KeyValueExpression {
+	expr := &KeyValueExpression{
+		Key:   key,
+		Value: value,
+	}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+func CreateCompositeLit(typ *Type, literalValueList []Expression) Expression {
+	if typ.IsArray() {
+		return CreateArrayExpression(typ, literalValueList)
+	}
+	return nil
 }

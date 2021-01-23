@@ -132,7 +132,7 @@ func (c *Compiler) FixTree() {
 func (c *Compiler) Generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.GetPackageName()
-	exe.FunctionList = c.GetVmFunctionList(exe)
+	exe.FunctionList = c.GetVmFunctionList()
 	exe.VariableList.SetVariableList(c.GetVmVariableList()) // 添加全局变量声明
 	exe.ConstantPool.SetPool(c.ConstantList)
 

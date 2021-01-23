@@ -41,18 +41,18 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 	return nil
 }
 
-func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {
+func (c *Compiler) GetVmFunctionList() []*vm.Function {
 	vmFuncList := make([]*vm.Function, 0)
 
 	for _, fd := range c.funcList {
-		vmFunc := c.GetVmFunction(exe, fd, fd.GetPackageName() == c.GetPackageName())
+		vmFunc := c.GetVmFunction(fd, fd.GetPackageName() == c.GetPackageName())
 		vmFuncList = append(vmFuncList, vmFunc)
 	}
 
 	return vmFuncList
 }
 
-func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, inThisExe bool) *vm.Function {
+func (c *Compiler) GetVmFunction(src *FunctionDefinition, inThisExe bool) *vm.Function {
 	ob := NewOpCodeBuf()
 
 	dest := &vm.Function{

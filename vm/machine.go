@@ -191,67 +191,27 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(0, NilObject)
 			vm.stack.stackPointer++
 			pc++
-		case VM_PUSH_STACK_INT:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.SetIntPlus(0, stack.GetInt(base+index))
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_PUSH_STACK_FLOAT:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.SetFloatPlus(0, stack.GetFloat(base+index))
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_PUSH_STACK_OBJECT:
+		case VM_PUSH_STACK:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, stack.Get(base+index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_POP_STACK_INT:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.SetInt(base+index, stack.GetIntPlus(-1))
-			vm.stack.stackPointer--
-			pc += 3
-		case VM_POP_STACK_FLOAT:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.SetFloat(base+index, stack.GetFloatPlus(-1))
-			vm.stack.stackPointer--
-			pc += 3
-		case VM_POP_STACK_OBJECT:
+		case VM_POP_STACK:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.Set(base+index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_STATIC_INT:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.SetIntPlus(0, static.GetVariableInt(index))
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_PUSH_STATIC_FLOAT:
-			index := get2ByteInt(codeList[pc+1:])
-			stack.SetFloatPlus(0, static.GetVariableFloat(index))
-			vm.stack.stackPointer++
-			pc += 3
-		case VM_PUSH_STATIC_OBJECT:
+		case VM_PUSH_STATIC:
 			index := get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, static.GetVariableObject(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_POP_STATIC_INT:
-			index := get2ByteInt(codeList[pc+1:])
-			static.SetVariable(index, stack.GetIntPlus(-1))
-			vm.stack.stackPointer--
-			pc += 3
-		case VM_POP_STATIC_FLOAT:
-			index := get2ByteInt(codeList[pc+1:])
-			static.SetVariable(index, stack.GetFloatPlus(-1))
-			vm.stack.stackPointer--
-			pc += 3
-		case VM_POP_STATIC_OBJECT:
+		case VM_POP_STATIC:
 			index := get2ByteInt(codeList[pc+1:])
 			static.SetVariable(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_ARRAY_OBJECT:
+		case VM_PUSH_ARRAY:
 			array := stack.GetArrayPlus(-2)
 			index := stack.GetIntPlus(-1)
 
@@ -260,7 +220,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(-2, object)
 			vm.stack.stackPointer--
 			pc++
-		case VM_POP_ARRAY_OBJECT:
+		case VM_POP_ARRAY:
 			value := stack.GetPlus(-3)
 			array := stack.GetArrayPlus(-2)
 			index := stack.GetIntPlus(-1)
@@ -342,12 +302,12 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) == stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_EQ_OBJECT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetPlus(-2) == stack.GetPlus(-1)))
-			vm.stack.stackPointer--
-			pc++
 		case VM_EQ_STRING:
 			stack.SetIntPlus(-2, boolToInt(!(stack.GetStringPlus(-2) == stack.GetStringPlus(-1))))
+			vm.stack.stackPointer--
+			pc++
+		case VM_EQ_OBJECT:
+			stack.SetIntPlus(-2, boolToInt(stack.GetPlus(-2) == stack.GetPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
@@ -508,9 +468,7 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 		code := codeList[i]
 		switch code {
 		// 函数内的本地声明
-		case VM_PUSH_STACK_INT, VM_POP_STACK_INT,
-			VM_PUSH_STACK_FLOAT, VM_POP_STACK_FLOAT,
-			VM_PUSH_STACK_OBJECT, VM_POP_STACK_OBJECT:
+		case VM_PUSH_STACK, VM_POP_STACK:
 
 			var parameterCount int
 
@@ -531,8 +489,7 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 				destIdx = srcIdx
 			}
 			set2ByteInt(codeList[i+1:], destIdx)
-		case VM_PUSH_STATIC_INT, VM_PUSH_STATIC_FLOAT, VM_PUSH_STATIC_OBJECT,
-			VM_POP_STATIC_INT, VM_POP_STATIC_FLOAT, VM_POP_STATIC_OBJECT:
+		case VM_PUSH_STATIC, VM_POP_STATIC:
 
 			idxInExe := get2ByteInt(codeList[i+1:])
 			packageName := exe.PackageName
@@ -700,4 +657,18 @@ func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int,
 func (vm *VirtualMachine) restorePc(ee *Executable, function *GoGoFunction, pc int) {
 	vm.currentExecutable = ee
 	vm.pc = pc
+}
+
+func (vm *VirtualMachine) NewObjectArray(size int) Object {
+	obj := NewObjectArray(size)
+
+	// add heap
+	vm.AddObject(obj)
+
+	// init
+	for i := 0; i < size; i++ {
+		obj.Set(i, vm.stack.GetPlus(-size+i))
+	}
+
+	return obj
 }

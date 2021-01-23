@@ -7,14 +7,14 @@ import (
 )
 
 func FixMathBinaryExpression(expr *BinaryExpression) Expression {
-	expr.left = expr.left.fix()
-	expr.right = expr.right.fix()
+	expr.left = expr.left.Fix()
+	expr.right = expr.right.Fix()
 
 	// 能否合并计算
 	newExpr := evalMathExpression(expr)
 	switch newExpr.(type) {
 	case *IntExpression, *FloatExpression, *StringExpression:
-		newExpr = newExpr.fix()
+		newExpr = newExpr.Fix()
 		return newExpr
 	}
 
@@ -46,8 +46,8 @@ func FixMathBinaryExpression(expr *BinaryExpression) Expression {
 }
 
 func FixCompareBinaryExpression(expr *BinaryExpression) Expression {
-	expr.left = expr.left.fix()
-	expr.right = expr.right.fix()
+	expr.left = expr.left.Fix()
+	expr.right = expr.right.Fix()
 
 	newExpr := evalCompareExpression(expr)
 	switch newExpr.(type) {
@@ -85,8 +85,8 @@ func FixCompareBinaryExpression(expr *BinaryExpression) Expression {
 }
 
 func FixLogicalBinaryExpression(expr *BinaryExpression) Expression {
-	expr.left = expr.left.fix()
-	expr.right = expr.right.fix()
+	expr.left = expr.left.Fix()
+	expr.right = expr.right.Fix()
 
 	if expr.left.GetType().IsBool() && expr.right.GetType().IsBool() {
 		expr.Type = NewType(vm.BasicTypeBool)

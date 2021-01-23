@@ -9,7 +9,7 @@ type ConstantPool struct {
 
 func NewConstantPool() ConstantPool {
 	return ConstantPool{
-		pool: []interface{}{},
+		pool: make([]interface{}, 0),
 	}
 }
 

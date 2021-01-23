@@ -6,7 +6,6 @@ const (
 
 // 虚拟机堆
 type Heap struct {
-	// TODO:阈值
 	currentThreshold int
 	objectList       []Object
 }
@@ -14,7 +13,7 @@ type Heap struct {
 func NewHeap() *Heap {
 	h := &Heap{
 		currentThreshold: heapThresholdSize,
-		objectList:       []Object{},
+		objectList:       make([]Object, 0),
 	}
 	return h
 }

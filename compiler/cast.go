@@ -19,14 +19,18 @@ func CreateAssignCast(src Expression, destType *Type) Expression {
 	if destType.IsFloat() {
 		expr, ok := src.(*IntExpression)
 		if ok {
-			return CreateFloatExpression(expr.Position(), float64(expr.Value))
+			newExpr := CreateFloatExpression(expr.Position(), float64(expr.Value))
+			newExpr.Fix()
+			return newExpr
 		}
 	}
 
 	if destType.IsInt() {
 		expr, ok := src.(*FloatExpression)
 		if ok {
-			return CreateIntExpression(expr.Position(), int(expr.Value))
+			newExpr := CreateIntExpression(expr.Position(), int(expr.Value))
+			newExpr.Fix()
+			return newExpr
 		}
 	}
 

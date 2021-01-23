@@ -7,7 +7,7 @@ import (
 // Statement 语句接口
 type Statement interface {
 	Pos
-	fix()
+	Fix()
 	Generate(ob *OpCodeBuf)
 }
 
@@ -23,13 +23,13 @@ type ExpressionStatement struct {
 	expression Expression
 }
 
-func (stmt *ExpressionStatement) fix() {
-	stmt.expression = stmt.expression.fix()
+func (stmt *ExpressionStatement) Fix() {
+	stmt.expression = stmt.expression.Fix()
 }
 
 func (stmt *ExpressionStatement) Generate(ob *OpCodeBuf) {
 	expr := stmt.expression
-	expr.generate(ob)
+	expr.Generate(ob)
 
 	// TODO: 没有返回值也会pop
 	for i := 0; i < expr.GetType().GetResultCount(); i++ {
@@ -58,33 +58,33 @@ type IfStatement struct {
 	elseBlock *Block
 }
 
-func (stmt *IfStatement) fix() {
-	stmt.condition = stmt.condition.fix()
+func (stmt *IfStatement) Fix() {
+	stmt.condition = stmt.condition.Fix()
 
 	if !stmt.condition.GetType().IsBool() {
 		compileError(stmt.condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
 	}
 
 	if stmt.thenBlock != nil {
-		stmt.thenBlock.FixStatementList()
+		stmt.thenBlock.Fix()
 	}
 
 	for _, elif := range stmt.elifList {
-		elif.condition = elif.condition.fix()
+		elif.condition = elif.condition.Fix()
 
 		if elif.block != nil {
-			elif.block.FixStatementList()
+			elif.block.Fix()
 		}
 	}
 
 	if stmt.elseBlock != nil {
-		stmt.elseBlock.FixStatementList()
+		stmt.elseBlock.Fix()
 	}
 }
 
 func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 
-	stmt.condition.generate(ob)
+	stmt.condition.Generate(ob)
 
 	// 获取false跳转地址
 	ifFalseLabel := ob.getLabel()
@@ -104,7 +104,7 @@ func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 	ob.setLabel(ifFalseLabel)
 
 	for _, elif := range stmt.elifList {
-		elif.condition.generate(ob)
+		elif.condition.Generate(ob)
 
 		// 获取false跳转地址
 		ifFalseLabel = ob.getLabel()
@@ -157,13 +157,13 @@ type ForStatement struct {
 	block     *Block
 }
 
-func (stmt *ForStatement) fix() {
+func (stmt *ForStatement) Fix() {
 	if stmt.init != nil {
-		stmt.init.fix()
+		stmt.init.Fix()
 	}
 
 	if stmt.condition != nil {
-		stmt.condition = stmt.condition.fix()
+		stmt.condition = stmt.condition.Fix()
 
 		if !stmt.condition.GetType().IsBool() {
 			compileError(stmt.condition.Position(), FOR_CONDITION_NOT_BOOLEAN_ERR)
@@ -171,11 +171,11 @@ func (stmt *ForStatement) fix() {
 	}
 
 	if stmt.post != nil {
-		stmt.post.fix()
+		stmt.post.Fix()
 	}
 
 	if stmt.block != nil {
-		stmt.block.FixStatementList()
+		stmt.block.Fix()
 	}
 }
 
@@ -191,7 +191,7 @@ func (stmt *ForStatement) Generate(ob *OpCodeBuf) {
 	ob.setLabel(loopLabel)
 
 	if stmt.condition != nil {
-		stmt.condition.generate(ob)
+		stmt.condition.Generate(ob)
 	}
 
 	label := ob.getLabel()
@@ -258,20 +258,23 @@ type ReturnStatement struct {
 	Block     *Block
 }
 
-func (stmt *ReturnStatement) fix() {
+func (stmt *ReturnStatement) Fix() {
 	fd := stmt.Block.getCurrentFunction()
 
-	if len(fd.GetType().funcType.Results) == 0 && len(stmt.ValueList) == 0 {
+	resultCount := len(fd.GetType().funcType.Results)
+	valueCount := len(stmt.ValueList)
+
+	if resultCount == 0 && valueCount == 0 {
 		return
-	} else if len(fd.GetType().funcType.Results) == 0 && len(stmt.ValueList) > 0 {
+	} else if resultCount == 0 && valueCount > 0 {
 		// 函数没有定义返回值,却返回了
 		compileError(stmt.Position(), RETURN_IN_VOID_FUNCTION_ERR)
-	} else if len(fd.GetType().funcType.Results) != 0 && len(stmt.ValueList) == 0 {
+	} else if resultCount != 0 && valueCount == 0 {
 		// 函数定义了返回值,却没返回
 		compileError(stmt.Position(), BAD_RETURN_TYPE_ERR)
 	} else {
 		// 只定义了单个返回值
-		stmt.ValueList = []Expression{stmt.ValueList[0].fix()}
+		stmt.ValueList = []Expression{stmt.ValueList[0].Fix()}
 
 		if !fd.GetType().funcType.Results[0].Type.Equal(stmt.ValueList[0].GetType()) {
 			compileError(stmt.Position(), BAD_RETURN_TYPE_ERR)
@@ -281,7 +284,7 @@ func (stmt *ReturnStatement) fix() {
 
 func (stmt *ReturnStatement) Generate(ob *OpCodeBuf) {
 	for _, value := range stmt.ValueList {
-		value.generate(ob)
+		value.Generate(ob)
 	}
 	ob.generateCode(stmt.Position(), vm.VM_RETURN)
 }
@@ -305,7 +308,7 @@ type BreakStatement struct {
 	Block *Block
 }
 
-func (stmt *BreakStatement) fix() {
+func (stmt *BreakStatement) Fix() {
 	for block := stmt.Block; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
 		case *StatementBlockInfo:
@@ -343,7 +346,7 @@ type ContinueStatement struct {
 	Block *Block
 }
 
-func (stmt *ContinueStatement) fix() {}
+func (stmt *ContinueStatement) Fix() {}
 
 func (stmt *ContinueStatement) Generate(ob *OpCodeBuf) {
 	// 向外寻找,直到找到for的block
@@ -376,13 +379,13 @@ type Declaration struct {
 	Type        *Type
 	PackageName string
 	Name        string
-	InitValue   Expression
+	Value       Expression
 	Index       int
 	IsLocal     bool
 	Block       *Block
 }
 
-func (stmt *Declaration) fix() {
+func (stmt *Declaration) Fix() {
 	fd := stmt.Block.getCurrentFunction()
 	stmt.IsLocal = true
 	stmt.Block.declarationList = append(stmt.Block.declarationList, stmt)
@@ -391,19 +394,18 @@ func (stmt *Declaration) fix() {
 	stmt.Type.Fix()
 
 	// 类型转换
-	if stmt.InitValue != nil {
-		stmt.InitValue = stmt.InitValue.fix()
-		stmt.InitValue = CreateAssignCast(stmt.InitValue, stmt.Type)
-		stmt.InitValue = stmt.InitValue.fix()
+	if stmt.Value != nil {
+		stmt.Value = stmt.Value.Fix()
+		stmt.Value = CreateAssignCast(stmt.Value, stmt.Type)
 	}
 }
 
 func (stmt *Declaration) Generate(ob *OpCodeBuf) {
-	if stmt.InitValue == nil {
+	if stmt.Value == nil {
 		return
 	}
 
-	stmt.InitValue.generate(ob)
+	stmt.Value.Generate(ob)
 	generatePopToIdentifier(stmt, stmt.Position(), ob)
 }
 
@@ -412,7 +414,7 @@ func NewDeclaration(pos Position, typ *Type, name string, value Expression) *Dec
 		Type:        typ,
 		PackageName: "",
 		Name:        name,
-		InitValue:   value,
+		Value:       value,
 		Index:       -1,
 		Block:       GetCurrentCompiler().currentBlock,
 	}
@@ -430,7 +432,8 @@ type AssignStatement struct {
 	right []Expression
 }
 
-func (stmt *AssignStatement) fix() {
+func (stmt *AssignStatement) Fix() {
+	// 检查左值类型
 	for _, expr := range stmt.left {
 		switch expr.(type) {
 		case *IdentifierExpression, *IndexExpression, *SelectorExpression:
@@ -439,38 +442,39 @@ func (stmt *AssignStatement) fix() {
 		}
 	}
 
-	leftLen := len(stmt.left)
-	rightLen := len(stmt.right)
-
 	// 校验右边是否有函数调用,如果有取函数返回值为长度
-	isCall := stmt.isFuncCall()
-	if isCall {
-		if rightLen > 1 {
+	if stmt.isFuncCall() {
+		leftLen := len(stmt.left)
+		rightLen := len(stmt.right)
+
+		if rightLen != 1 {
 			panic("TODO")
 		}
 
-		stmt.right[0] = stmt.right[0].fix()
+		stmt.right[0] = stmt.right[0].Fix()
 		rightLen = stmt.right[0].GetType().GetResultCount()
-	}
 
-	if leftLen != rightLen {
-		panic("TODO")
-	}
+		if leftLen != rightLen {
+			panic("TODO")
+		}
 
-	if isCall {
 		for i := 0; i < len(stmt.left); i++ {
-			stmt.left[i] = stmt.left[i].fix()
+			stmt.left[i] = stmt.left[i].Fix()
 		}
 	} else {
+		leftLen := len(stmt.left)
+		rightLen := len(stmt.right)
+
+		if leftLen != rightLen {
+			panic("TODO")
+		}
+
 		for i := 0; i < len(stmt.left); i++ {
-			stmt.left[i] = stmt.left[i].fix()
-			stmt.right[i] = stmt.right[i].fix()
+			stmt.left[i] = stmt.left[i].Fix()
+			stmt.right[i] = stmt.right[i].Fix()
 			stmt.right[i] = CreateAssignCast(stmt.right[i], stmt.left[i].GetType())
-			// TODO:
-			stmt.right[i] = stmt.right[i].fix()
 		}
 	}
-
 }
 
 func (stmt *AssignStatement) Generate(ob *OpCodeBuf) {
@@ -478,7 +482,7 @@ func (stmt *AssignStatement) Generate(ob *OpCodeBuf) {
 
 	if isCall {
 		for _, expr := range stmt.right {
-			expr.generate(ob)
+			expr.Generate(ob)
 		}
 
 		count := len(stmt.left)
@@ -493,7 +497,7 @@ func (stmt *AssignStatement) Generate(ob *OpCodeBuf) {
 			leftExpr := stmt.left[i]
 			rightExpr := stmt.right[i]
 
-			rightExpr.generate(ob)
+			rightExpr.Generate(ob)
 			ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
 			generatePopToLvalue(leftExpr, ob)
 		}

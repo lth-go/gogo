@@ -28,14 +28,14 @@ type FunctionDefinition struct {
 	DeclarationList []*Declaration
 }
 
-func (fd *FunctionDefinition) fix() {
+func (fd *FunctionDefinition) Fix() {
 	// 添加形参声明
 	fd.addParameterAsDeclaration()
 	fd.Type.Fix()
 
 	if fd.Block != nil {
 		// 修正表达式列表
-		fd.Block.FixStatementList()
+		fd.Block.Fix()
 		// 修正返回值
 		fd.FixReturnStatement()
 	}
@@ -75,7 +75,7 @@ func (fd *FunctionDefinition) FixReturnStatement() {
 
 	returnStmt := NewReturnStatement(fd.Type.Position(), nil)
 	returnStmt.Block = fd.Block
-	returnStmt.fix()
+	returnStmt.Fix()
 
 	if fd.Block.statementList == nil {
 		fd.Block.statementList = []Statement{}
@@ -89,6 +89,7 @@ func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {
 }
 
 func (fd *FunctionDefinition) FixArgument(argumentList []Expression) {
+	// TODO: 函数返回值算多个
 	parameterList := fd.ParameterList
 
 	paramLen := len(parameterList)
@@ -99,7 +100,7 @@ func (fd *FunctionDefinition) FixArgument(argumentList []Expression) {
 	}
 
 	for i := 0; i < paramLen; i++ {
-		argumentList[i] = argumentList[i].fix()
+		argumentList[i] = argumentList[i].Fix()
 		if !argumentList[i].GetType().Equal(parameterList[i].Type) {
 			compileError(
 				argumentList[i].Position(),

@@ -267,9 +267,8 @@ func (t *Type) GetResultCount() int {
 	// TODO: 无返回值需要返回1
 	if t.IsMultipleValues() {
 		return len(t.multipleValueType.List)
-	} else if t.funcType != nil {
-		// TODO: remove
-		return len(t.funcType.Results)
+	} else if t.IsVoid() {
+		return 0
 	} else {
 		return 1
 	}

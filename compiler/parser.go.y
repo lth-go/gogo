@@ -376,11 +376,11 @@ primary_expression
         }
         | composite_type LC expression_list_or_nil RC
         {
-            $$ = CreateArrayExpression($1.Position(), $3)
+            $$ = CreateArrayExpression($1.Position(), $1, $3)
         }
         | composite_type LC expression_list_or_nil COMMA RC
         {
-            $$ = CreateArrayExpression($1.Position(), $3)
+            $$ = CreateArrayExpression($1.Position(), $1, $3)
         }
         | IDENTIFIER
         {

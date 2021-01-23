@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"encoding/binary"
-	"log"
 
 	"github.com/lth-go/gogo/vm"
 )
@@ -181,9 +180,9 @@ func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
 	case *IdentifierExpression:
 		generatePopToIdentifier(e.inner.(*Declaration), expr.Position(), ob)
 	case *IndexExpression:
-		e.array.generate(ob)
-		e.index.generate(ob)
-		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_OBJECT)
+		e.array.Generate(ob)
+		e.index.Generate(ob)
+		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY)
 	default:
 		panic("TODO")
 	}
@@ -192,42 +191,18 @@ func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
 func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	var code byte
 
-	offset := getOpcodeTypeOffset(decl.Type)
 	if decl.IsLocal {
-		code = vm.VM_POP_STACK_INT
+		code = vm.VM_POP_STACK
 	} else {
-		code = vm.VM_POP_STATIC_INT
+		code = vm.VM_POP_STATIC
 	}
-	ob.generateCode(pos, code+offset, decl.Index)
+	ob.generateCode(pos, code, decl.Index)
 }
 
 func generatePushArgument(argList []Expression, ob *OpCodeBuf) {
 	for _, arg := range argList {
-		arg.generate(ob)
+		arg.Generate(ob)
 	}
-}
-
-func getOpcodeTypeOffset(typ *Type) byte {
-	if typ.IsComposite() {
-		return byte(2)
-	}
-
-	switch {
-	case typ.IsVoid():
-		panic("basic type is void")
-	case typ.IsBool(), typ.IsInt():
-		return byte(0)
-	case typ.IsFloat():
-		return byte(1)
-	case typ.IsString():
-		return byte(2)
-	case typ.IsNil():
-		fallthrough
-	default:
-		log.Fatalf("TODO")
-	}
-
-	return byte(0)
 }
 
 func get2ByteInt(b []byte) int {

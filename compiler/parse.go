@@ -1,14 +1,36 @@
 package compiler
 
+//
+// 函数定义
+//
+func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
+	c := GetCurrentCompiler()
+
+	fd := &FunctionDefinition{
+		Type:            typ,
+		Name:            identifier,
+		PackageName:     c.GetPackageName(),
+		ParameterList:   typ.funcType.Params,
+		Block:           block,
+		DeclarationList: nil,
+	}
+
+	if block != nil {
+		block.parent = &FunctionBlockInfo{function: fd}
+	}
+
+	c.funcList = append(c.funcList, fd)
+}
+
 func AddDeclList(decl *Declaration) {
 	c := GetCurrentCompiler()
-	decl.PackageName = c.packageName
+	decl.PackageName = c.GetPackageName()
 	c.AddDeclarationList(decl)
 }
 
 func SetPackageName(packageName string) {
 	c := GetCurrentCompiler()
-	c.packageName = packageName
+	c.SetPackageName(packageName)
 }
 
 func SetImportList(importList []*Import) {

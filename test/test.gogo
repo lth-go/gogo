@@ -3,6 +3,7 @@ package main;
 import "utils";
 
 var globalArray []int = []int{100, 200, 300, 400};
+var emptyArray []int = []int{};
 
 func println(str string) {
     print(str + "\n");

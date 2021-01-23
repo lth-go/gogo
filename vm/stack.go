@@ -69,16 +69,12 @@ func (s *Stack) getIndex(incr int) int {
 	return index
 }
 
-//
 // 直据sp返回栈中元素
-//
 func (s *Stack) Get(sp int) Object {
 	return s.objectList[sp]
 }
 
-//
 // 根据incr以及stackPointer向栈中写入元素
-//
 func (s *Stack) GetPlus(incr int) Object {
 	index := s.getIndex(incr)
 	return s.Get(index)

@@ -66,8 +66,8 @@ type VariableList struct {
 	VariableList []*Variable
 }
 
-func (vl *VariableList) Append(v *Variable) {
-	vl.VariableList = append(vl.VariableList, v)
+func (vl *VariableList) SetVariableList(list []*Variable) {
+	vl.VariableList = list
 }
 
 func (vl *VariableList) Init() {

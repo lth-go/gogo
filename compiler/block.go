@@ -54,8 +54,8 @@ func (b *Block) SearchDeclaration(name string) *Declaration {
 	return GetCurrentCompiler().SearchDeclaration(name)
 }
 
-func (b *Block) FixStatementList() {
+func (b *Block) Fix() {
 	for _, statement := range b.statementList {
-		statement.fix()
+		statement.Fix()
 	}
 }

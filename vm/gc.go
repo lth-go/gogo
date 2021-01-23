@@ -30,14 +30,17 @@ func (vm *VirtualMachine) Mark() {
 		staticValue, ok := v.(*StaticVariable)
 		if ok {
 			obj, ok := staticValue.Value.(Object)
-			if ok {
-				mark(obj)
+			if ok && obj != nil {
+				obj.Mark()
 			}
 		}
 	}
 
 	for i := 0; i < vm.stack.stackPointer; i++ {
-		mark(vm.stack.Get(i))
+		obj := vm.stack.Get(i)
+		if obj != nil {
+			obj.Mark()
+		}
 	}
 }
 
@@ -57,16 +60,6 @@ func (vm *VirtualMachine) Sweep() {
 }
 
 //
-// 标记，取消标记
-//
-func mark(obj Object) {
-	if obj == nil {
-		return
-	}
-	obj.Mark()
-}
-
-//
 // 创建对象
 //
 
@@ -75,18 +68,4 @@ func (vm *VirtualMachine) AddObject(value Object) {
 	vm.Check()
 	value.ResetMark()
 	vm.heap.Append(value)
-}
-
-func (vm *VirtualMachine) NewObjectArray(size int) Object {
-	obj := NewObjectArray(size)
-
-	// add heap
-	vm.AddObject(obj)
-
-	// init
-	for i := 0; i < size; i++ {
-		obj.Set(i, vm.stack.GetPlus(-size+i))
-	}
-
-	return obj
 }

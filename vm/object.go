@@ -9,6 +9,7 @@ type Object interface {
 	Len() int       // 计算堆阈值
 }
 
+// ObjectBase
 type ObjectBase struct {
 	marked bool
 }
@@ -18,6 +19,9 @@ func (obj *ObjectBase) isMarked() bool {
 }
 
 func (obj *ObjectBase) Mark() {
+	if obj == nil {
+		return
+	}
 	obj.marked = true
 }
 
@@ -33,25 +37,30 @@ func (obj *ObjectBase) Len() int {
 	return 1
 }
 
+// ObjectInt
 type ObjectInt struct {
 	ObjectBase
 	Value int
 }
 
+// ObjectFloat
 type ObjectFloat struct {
 	ObjectBase
 	Value float64
 }
 
+// ObjectString
 type ObjectString struct {
 	ObjectBase
 	Value string
 }
 
+// ObjectNil
 type ObjectNil struct {
 	ObjectBase
 }
 
+// ObjectArray
 type ObjectArray struct {
 	ObjectBase
 	// Length int
@@ -60,6 +69,9 @@ type ObjectArray struct {
 }
 
 func (obj *ObjectArray) Mark() {
+	if obj == nil {
+		return
+	}
 	obj.ObjectBase.Mark()
 
 	for _, subObj := range obj.List {
@@ -134,6 +146,7 @@ func NewObjectArray(size int) *ObjectArray {
 	}
 }
 
+// ObjectMap
 type ObjectMap struct {
 	ObjectBase
 	KeyType   int
@@ -142,11 +155,13 @@ type ObjectMap struct {
 	ValueList []Object
 }
 
+// ObjectStruct
 type ObjectStruct struct {
 	ObjectBase
 	FieldList []Object
 }
 
+// ObjectPointer
 type ObjectPointer struct {
 	ObjectBase
 }

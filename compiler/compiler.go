@@ -22,6 +22,15 @@ func PushCurrentCompiler(c *Compiler) *Compiler {
 	return old
 }
 
+func SearchGlobalCompiler(packageName string) *Compiler {
+	for _, c := range CompilerList {
+		if c.GetPackageName() == packageName {
+			return c
+		}
+	}
+	return nil
+}
+
 // Compiler 编译器
 type Compiler struct {
 	lexer           *Lexer                // 词法解析器
@@ -32,6 +41,14 @@ type Compiler struct {
 	declarationList []*Declaration        // 声明列表
 	ConstantList    []interface{}         // 常量定义
 	currentBlock    *Block                // 当前块
+}
+
+func (c *Compiler) GetPackageName() string {
+	return c.packageName
+}
+
+func (c *Compiler) SetPackageName(packageName string) {
+	c.packageName = packageName
 }
 
 func NewCompiler(path string) *Compiler {
@@ -50,7 +67,6 @@ func NewCompiler(path string) *Compiler {
 func Parse(path string) {
 	c := NewCompiler(path)
 	CompilerList = append(CompilerList, c)
-
 	compilerBackup := PushCurrentCompiler(c)
 
 	// 生成语法树
@@ -58,14 +74,14 @@ func Parse(path string) {
 		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
 	}
 
-	for _, import_ := range c.importList {
+	for _, imp := range c.importList {
 		// 判断是否已经被解析过
-		importedCompiler := SearchGlobalCompiler(import_.packageName)
-		if importedCompiler != nil {
+		impCompiler := SearchGlobalCompiler(imp.packageName)
+		if impCompiler != nil {
 			continue
 		}
 
-		Parse(import_.GetPath())
+		Parse(imp.GetPath())
 	}
 
 	PushCurrentCompiler(compilerBackup)
@@ -77,7 +93,9 @@ func Compile() []*vm.Executable {
 		c := CompilerList[i]
 
 		compilerBackup := PushCurrentCompiler(c)
+
 		c.FixTree()
+
 		PushCurrentCompiler(compilerBackup)
 	}
 
@@ -98,17 +116,13 @@ func Compile() []*vm.Executable {
 func (c *Compiler) FixTree() {
 	// 修正全局变量
 	c.FixDeclarationList()
-	// TODO: check func list, if is redifined
-
-	// 原先函数在func fix之前添加,类型c头文件
-	// 表达式fix中会添加其他包函数到本包
 
 	// 添加原生函数
-	c.AddNativeFunctions()
+	c.AddNativeFunctionList()
 
 	// 修正函数
 	for _, fd := range c.funcList {
-		fd.fix()
+		fd.Fix()
 	}
 }
 
@@ -117,9 +131,9 @@ func (c *Compiler) FixTree() {
 //
 func (c *Compiler) Generate() *vm.Executable {
 	exe := vm.NewExecutable()
-	exe.PackageName = c.packageName
+	exe.PackageName = c.GetPackageName()
 	exe.FunctionList = c.GetVmFunctionList(exe)
-	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
+	exe.VariableList.SetVariableList(c.GetVmVariableList()) // 添加全局变量声明
 	exe.ConstantPool.SetPool(c.ConstantList)
 
 	return exe
@@ -127,37 +141,15 @@ func (c *Compiler) Generate() *vm.Executable {
 
 func (c *Compiler) FixDeclarationList() {
 	for _, decl := range c.declarationList {
-		if decl.InitValue != nil {
-			decl.InitValue = decl.InitValue.fix()
-			decl.InitValue = CreateAssignCast(decl.InitValue, decl.Type)
-			decl.InitValue = decl.InitValue.fix()
+		if decl.Value != nil {
+			decl.Value = decl.Value.Fix()
+			decl.Value = CreateAssignCast(decl.Value, decl.Type)
 		}
 	}
 }
 
-//
-// 函数定义
-//
-func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
-	c := GetCurrentCompiler()
-
-	fd := &FunctionDefinition{
-		Type:            typ,
-		Name:            identifier,
-		PackageName:     c.packageName,
-		ParameterList:   typ.funcType.Params,
-		Block:           block,
-		DeclarationList: nil,
-	}
-
-	if block != nil {
-		block.parent = &FunctionBlockInfo{function: fd}
-	}
-
-	c.funcList = append(c.funcList, fd)
-}
-
-func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
+// TODO: 添加引用包函数
+func (c *Compiler) GetFuncIndex(fd *FunctionDefinition) int {
 	packageName := fd.GetPackageName()
 	name := fd.GetName()
 
@@ -170,96 +162,6 @@ func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 	c.funcList = append(c.funcList, fd)
 
 	return len(c.funcList) - 1
-}
-
-func (c *Compiler) GetVmVariableList() []*vm.Variable {
-	variableList := make([]*vm.Variable, 0)
-
-	for _, decl := range c.declarationList {
-		newValue := vm.NewVmVariable(decl.PackageName, decl.Name, CopyToVmType(decl.Type))
-		newValue.Value = GetVmVariable(decl.InitValue)
-		variableList = append(variableList, newValue)
-	}
-
-	return variableList
-}
-
-func GetVmVariable(valueIFS Expression) interface{} {
-	if valueIFS == nil {
-		return nil
-	}
-
-	switch value := valueIFS.(type) {
-	case *BoolExpression:
-		return value.Value
-	case *IntExpression:
-		return value.Value
-	case *FloatExpression:
-		return value.Value
-	case *StringExpression:
-		return value.Value
-	case *ArrayExpression:
-		return TODOGetVmVariable(value)
-	}
-
-	return nil
-}
-
-func TODOGetVmVariable(valueIFS Expression) vm.Object {
-	switch value := valueIFS.(type) {
-	// case *BoolExpression:
-	//     return vm.NewObjectInt()
-	case *IntExpression:
-		return vm.NewObjectInt(value.Value)
-	case *FloatExpression:
-		return vm.NewObjectFloat(value.Value)
-	case *StringExpression:
-		return vm.NewObjectString(value.Value)
-	case *ArrayExpression:
-		arrayValue := vm.NewObjectArray(len(value.List))
-		for i, subValue := range value.List {
-			arrayValue.List[i] = TODOGetVmVariable(subValue)
-		}
-		return arrayValue
-	}
-
-	return nil
-}
-
-func (c *Compiler) GetVmFunctionList(exe *vm.Executable) []*vm.Function {
-	vmFuncList := make([]*vm.Function, 0)
-
-	for _, fd := range c.funcList {
-		vmFunc := c.GetVmFunction(exe, fd, fd.GetPackageName() == c.packageName)
-		vmFuncList = append(vmFuncList, vmFunc)
-	}
-
-	return vmFuncList
-}
-
-func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, inThisExe bool) *vm.Function {
-	ob := NewOpCodeBuf()
-
-	dest := &vm.Function{
-		PackageName: src.GetPackageName(),
-		Name:        src.Name,
-		Type:        CopyToVmType(src.GetType().Copy()),
-		IsMethod:    false,
-	}
-
-	if src.Block != nil && inThisExe {
-		generateStatementList(src.Block.statementList, ob)
-
-		dest.IsImplemented = true
-		dest.CodeList = ob.fixOpcodeBuf()
-		dest.LineNumberList = ob.lineNumberList
-		dest.LocalVariableList = copyVmVariableList(src)
-	} else {
-		dest.IsImplemented = false
-		dest.LocalVariableList = nil
-	}
-
-	return dest
 }
 
 //
@@ -305,15 +207,6 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 	return nil
 }
 
-func SearchGlobalCompiler(packageName string) *Compiler {
-	for _, c := range CompilerList {
-		if c.packageName == packageName {
-			return c
-		}
-	}
-	return nil
-}
-
 func (c *Compiler) SearchFunction(name string) *FunctionDefinition {
 	for _, func_ := range c.funcList {
 		if func_.Name == name {
@@ -329,13 +222,13 @@ func (c *Compiler) SearchPackage(packageName string) *Package {
 			continue
 		}
 
-		importCompiler := SearchGlobalCompiler(packageName)
-		if importCompiler == nil {
+		impCompiler := SearchGlobalCompiler(packageName)
+		if impCompiler == nil {
 			panic("TODO")
 		}
 
 		return &Package{
-			compiler: importCompiler,
+			compiler: impCompiler,
 			Type:     NewType(vm.BasicTypePackage),
 		}
 	}

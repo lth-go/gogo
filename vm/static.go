@@ -1,5 +1,6 @@
 package vm
 
+// StaticValue function, variable
 type StaticValue interface {
 	GetName() string
 	GetPackageName() string
@@ -13,12 +14,15 @@ type StaticBase struct {
 func (f *StaticBase) GetName() string        { return f.Name }
 func (f *StaticBase) GetPackageName() string { return f.PackageName }
 
+// Static
 type Static struct {
 	list []StaticValue
 }
 
 func NewStatic() *Static {
-	return &Static{}
+	return &Static{
+		list: make([]StaticValue, 0),
+	}
 }
 
 func (s *Static) Append(v StaticValue) {
@@ -39,14 +43,6 @@ func (s *Static) Get(index int) StaticValue {
 	return s.list[index]
 }
 
-func (s *Static) GetVariableInt(index int) int {
-	return s.list[index].(*StaticVariable).Value.(int)
-}
-
-func (s *Static) GetVariableFloat(index int) float64 {
-	return s.list[index].(*StaticVariable).Value.(float64)
-}
-
 func (s *Static) GetVariableObject(index int) Object {
 	return s.list[index].(*StaticVariable).Value.(Object)
 }
@@ -57,7 +53,7 @@ func (s *Static) SetVariable(index int, value interface{}) {
 
 type StaticVariable struct {
 	StaticBase
-	Value interface{}
+	Value interface{} // function or object
 }
 
 func NewStaticVariable(packageName string, name string, value interface{}) *StaticVariable {

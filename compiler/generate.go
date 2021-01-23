@@ -125,9 +125,9 @@ func (ob *OpCodeBuf) fixLabels() {
 //
 // generateStatementList
 //
-func generateStatementList(currentBlock *Block, statementList []Statement, ob *OpCodeBuf) {
+func generateStatementList(statementList []Statement, ob *OpCodeBuf) {
 	for _, stmt := range statementList {
-		stmt.generate(currentBlock, ob)
+		stmt.Generate(ob)
 	}
 }
 
@@ -176,13 +176,13 @@ func copyVmVariableList(fd *FunctionDefinition) []*vm.Variable {
 	return dest
 }
 
-func generatePopToLvalue(block *Block, expr Expression, ob *OpCodeBuf) {
+func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
 	switch e := expr.(type) {
 	case *IdentifierExpression:
 		generatePopToIdentifier(e.inner.(*Declaration), expr.Position(), ob)
 	case *IndexExpression:
-		e.array.generate(block, ob)
-		e.index.generate(block, ob)
+		e.array.generate(ob)
+		e.index.generate(ob)
 		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY_OBJECT)
 	default:
 		panic("TODO")
@@ -201,9 +201,9 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	ob.generateCode(pos, code+offset, decl.Index)
 }
 
-func generatePushArgument(argList []Expression, currentBlock *Block, ob *OpCodeBuf) {
+func generatePushArgument(argList []Expression, ob *OpCodeBuf) {
 	for _, arg := range argList {
-		arg.generate(currentBlock, ob)
+		arg.generate(ob)
 	}
 }
 

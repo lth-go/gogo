@@ -43,7 +43,7 @@ func NewCompiler(path string) *Compiler {
 		ConstantList:    []interface{}{},
 	}
 
-	c.lexer = NewLexer(path, c)
+	c.lexer = NewLexer(path)
 	return c
 }
 
@@ -112,12 +112,25 @@ func (c *Compiler) FixTree() {
 	}
 }
 
+//
+// 生成字节码
+//
+func (c *Compiler) Generate() *vm.Executable {
+	exe := vm.NewExecutable()
+	exe.PackageName = c.packageName
+	exe.FunctionList = c.GetVmFunctionList(exe)
+	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
+	exe.ConstantPool.SetPool(c.ConstantList)
+
+	return exe
+}
+
 func (c *Compiler) FixDeclarationList() {
 	for _, decl := range c.declarationList {
 		if decl.InitValue != nil {
-			decl.InitValue = decl.InitValue.fix(nil)
+			decl.InitValue = decl.InitValue.fix()
 			decl.InitValue = CreateAssignCast(decl.InitValue, decl.Type)
-			decl.InitValue = decl.InitValue.fix(nil)
+			decl.InitValue = decl.InitValue.fix()
 		}
 	}
 }
@@ -144,7 +157,6 @@ func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 	c.funcList = append(c.funcList, fd)
 }
 
-
 func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 	packageName := fd.GetPackageName()
 	name := fd.GetName()
@@ -158,19 +170,6 @@ func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 	c.funcList = append(c.funcList, fd)
 
 	return len(c.funcList) - 1
-}
-
-//
-// 生成字节码
-//
-func (c *Compiler) Generate() *vm.Executable {
-	exe := vm.NewExecutable()
-	exe.PackageName = c.packageName
-	exe.FunctionList = c.GetVmFunctionList(exe)
-	exe.VariableList.VariableList = c.GetVmVariableList() // 添加全局变量声明
-	exe.ConstantPool.SetPool(c.ConstantList)
-
-	return exe
 }
 
 func (c *Compiler) GetVmVariableList() []*vm.Variable {
@@ -249,7 +248,7 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 	}
 
 	if src.Block != nil && inThisExe {
-		generateStatementList(src.Block, src.Block.statementList, ob)
+		generateStatementList(src.Block.statementList, ob)
 
 		dest.IsImplemented = true
 		dest.CodeList = ob.fixOpcodeBuf()
@@ -261,50 +260,6 @@ func (c *Compiler) GetVmFunction(exe *vm.Executable, src *FunctionDefinition, in
 	}
 
 	return dest
-}
-
-func (c *Compiler) getFunctionIndex(src *FunctionDefinition, exe *vm.Executable) int {
-	var funcName string
-
-	srcPackageName := src.GetPackageName()
-	funcName = src.Name
-
-	for i, vmFunc := range exe.FunctionList {
-		if srcPackageName == vmFunc.PackageName && funcName == vmFunc.Name {
-			return i
-		}
-	}
-
-	panic("TODO")
-}
-
-func (c *Compiler) searchFunction(name string) *FunctionDefinition {
-	for _, func_ := range c.funcList {
-		if func_.Name == name {
-			return func_
-		}
-	}
-	return nil
-}
-
-func (c *Compiler) searchPackage(packageName string) *Package {
-	for _, imp := range c.importList {
-		if packageName != imp.packageName {
-			continue
-		}
-
-		importCompiler := SearchGlobalCompiler(packageName)
-		if importCompiler == nil {
-			panic("TODO")
-		}
-
-		return &Package{
-			compiler: importCompiler,
-			Type:     NewType(vm.BasicTypePackage),
-		}
-	}
-
-	return nil
 }
 
 //
@@ -320,49 +275,6 @@ func CompileFile(path string) *vm.ExecutableList {
 	exeList := Compile()
 
 	return vm.NewExecutableList(exeList)
-}
-
-func SearchGlobalCompiler(packageName string) *Compiler {
-	for _, c := range CompilerList {
-		if c.packageName == packageName {
-			return c
-		}
-	}
-	return nil
-}
-
-func (c *Compiler) AddNativeFunctions() {
-	c.AddNativeFunctionPrint()
-	c.AddNativeFunctionItoa()
-}
-
-func (c *Compiler) AddNativeFunctionPrint() {
-	paramsType := []*Parameter{{Type: NewType(vm.BasicTypeString), Name: "str"}}
-	fd := &FunctionDefinition{
-		Type:            CreateFuncType(paramsType, nil),
-		Name:            "print",
-		PackageName:     "_sys",
-		ParameterList:   paramsType,
-		Block:           nil,
-		DeclarationList: nil,
-	}
-
-	c.funcList = append(c.funcList, fd)
-}
-
-func (c *Compiler) AddNativeFunctionItoa() {
-	paramsType := []*Parameter{{Type: NewType(vm.BasicTypeInt), Name: "int"}}
-	resultsType := []*Parameter{{Type: NewType(vm.BasicTypeString)}}
-	fd := &FunctionDefinition{
-		Type:            CreateFuncType(paramsType, resultsType),
-		Name:            "itoa",
-		PackageName:     "_sys",
-		ParameterList:   paramsType,
-		Block:           nil,
-		DeclarationList: nil,
-	}
-
-	c.funcList = append(c.funcList, fd)
 }
 
 func (c *Compiler) AddConstantList(value interface{}) int {
@@ -393,35 +305,40 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 	return nil
 }
 
-func AddDeclList(decl *Declaration) {
-	c := GetCurrentCompiler()
-	decl.PackageName = c.packageName
-	c.AddDeclarationList(decl)
+func SearchGlobalCompiler(packageName string) *Compiler {
+	for _, c := range CompilerList {
+		if c.packageName == packageName {
+			return c
+		}
+	}
+	return nil
 }
 
-func SetPackageName(packageName string) {
-	c := GetCurrentCompiler()
-	c.packageName = packageName
+func (c *Compiler) SearchFunction(name string) *FunctionDefinition {
+	for _, func_ := range c.funcList {
+		if func_.Name == name {
+			return func_
+		}
+	}
+	return nil
 }
 
-func SetImportList(importList []*Import) {
-	c := GetCurrentCompiler()
-	c.importList = importList
-}
+func (c *Compiler) SearchPackage(packageName string) *Package {
+	for _, imp := range c.importList {
+		if packageName != imp.packageName {
+			continue
+		}
 
-func PushCurrentBlock() *Block {
-	c := GetCurrentCompiler()
-	c.currentBlock = &Block{outerBlock: c.currentBlock}
+		importCompiler := SearchGlobalCompiler(packageName)
+		if importCompiler == nil {
+			panic("TODO")
+		}
 
-	return c.currentBlock
-}
+		return &Package{
+			compiler: importCompiler,
+			Type:     NewType(vm.BasicTypePackage),
+		}
+	}
 
-func PopCurrentBlock() *Block {
-	c := GetCurrentCompiler()
-
-	b := c.currentBlock
-
-	c.currentBlock = c.currentBlock.outerBlock
-
-	return b
+	return nil
 }

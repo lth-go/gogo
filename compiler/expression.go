@@ -64,8 +64,8 @@ const (
 //
 type Expression interface {
 	Pos
-	fix(*Block) Expression       // 用于类型修正,以及简单的类型转换
-	generate(*Block, *OpCodeBuf) // 生成字节码
+	fix() Expression     // 用于类型修正,以及简单的类型转换
+	generate(*OpCodeBuf) // 生成字节码
 	GetType() *Type
 	SetType(*Type)
 }
@@ -78,10 +78,10 @@ type ExpressionBase struct {
 	Type *Type
 }
 
-func (expr *ExpressionBase) fix(currentBlock *Block) Expression          { return nil }
-func (expr *ExpressionBase) generate(currentBlock *Block, ob *OpCodeBuf) {}
-func (expr *ExpressionBase) GetType() *Type                              { return expr.Type }
-func (expr *ExpressionBase) SetType(t *Type)                             { expr.Type = t }
+func (expr *ExpressionBase) fix() Expression        { return nil }
+func (expr *ExpressionBase) generate(ob *OpCodeBuf) {}
+func (expr *ExpressionBase) GetType() *Type         { return expr.Type }
+func (expr *ExpressionBase) SetType(t *Type)        { expr.Type = t }
 
 //
 // BoolExpression
@@ -91,13 +91,13 @@ type BoolExpression struct {
 	Value bool
 }
 
-func (expr *BoolExpression) fix(currentBlock *Block) Expression {
+func (expr *BoolExpression) fix() Expression {
 	expr.SetType(NewType(vm.BasicTypeBool))
 	expr.GetType().Fix()
 	return expr
 }
 
-func (expr *BoolExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *BoolExpression) generate(ob *OpCodeBuf) {
 	value := 0
 	if expr.Value {
 		value = 1
@@ -124,7 +124,7 @@ type IntExpression struct {
 	Index int
 }
 
-func (expr *IntExpression) fix(currentBlock *Block) Expression {
+func (expr *IntExpression) fix() Expression {
 	expr.SetType(NewType(vm.BasicTypeInt))
 	expr.GetType().Fix()
 
@@ -135,7 +135,7 @@ func (expr *IntExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *IntExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *IntExpression) generate(ob *OpCodeBuf) {
 	if expr.Value >= 0 && expr.Value < 256 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.Value)
 	} else if expr.Value >= 0 && expr.Value < 65536 {
@@ -163,7 +163,7 @@ type FloatExpression struct {
 	Index int
 }
 
-func (expr *FloatExpression) fix(currentBlock *Block) Expression {
+func (expr *FloatExpression) fix() Expression {
 	expr.SetType(NewType(vm.BasicTypeFloat))
 	expr.GetType().Fix()
 
@@ -173,7 +173,7 @@ func (expr *FloatExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *FloatExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *FloatExpression) generate(ob *OpCodeBuf) {
 	if expr.Value == 0.0 {
 		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_0)
 	} else if expr.Value == 1.0 {
@@ -202,7 +202,7 @@ type StringExpression struct {
 	Index int
 }
 
-func (expr *StringExpression) fix(currentBlock *Block) Expression {
+func (expr *StringExpression) fix() Expression {
 	expr.SetType(NewType(vm.BasicTypeString))
 	expr.GetType().Fix()
 
@@ -210,7 +210,7 @@ func (expr *StringExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *StringExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *StringExpression) generate(ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, expr.Index)
 }
 
@@ -230,14 +230,14 @@ type NilExpression struct {
 	ExpressionBase
 }
 
-func (expr *NilExpression) fix(currentBlock *Block) Expression {
+func (expr *NilExpression) fix() Expression {
 	expr.SetType(NewType(vm.BasicTypeNil))
 	expr.GetType().Fix()
 
 	return expr
 }
 
-func (expr *NilExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *NilExpression) generate(ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_PUSH_NIL)
 }
 
@@ -261,6 +261,7 @@ type IdentifierExpression struct {
 	ExpressionBase
 	name  string
 	inner interface{} // 声明要么是变量，要么是函数, 要么是包(FunctionIdentifier Declaration Package)
+	Block *Block
 }
 
 type FunctionIdentifier struct {
@@ -268,9 +269,9 @@ type FunctionIdentifier struct {
 	Index              int
 }
 
-func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
+func (expr *IdentifierExpression) fix() Expression {
 	// 判断是否是变量
-	declaration := currentBlock.searchDeclaration(expr.name)
+	declaration := expr.Block.SearchDeclaration(expr.name)
 	if declaration != nil {
 		expr.SetType(declaration.Type.Copy())
 		expr.inner = declaration
@@ -279,7 +280,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// 判断是否是函数
-	fd := GetCurrentCompiler().searchFunction(expr.name)
+	fd := GetCurrentCompiler().SearchFunction(expr.name)
 	if fd != nil {
 		expr.SetType(fd.CopyType())
 		expr.inner = &FunctionIdentifier{
@@ -292,7 +293,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	}
 
 	// TODO 判断是否是包
-	pkg := GetCurrentCompiler().searchPackage(expr.name)
+	pkg := GetCurrentCompiler().SearchPackage(expr.name)
 	if pkg != nil {
 		expr.SetType(pkg.Type.Copy())
 		expr.inner = pkg
@@ -305,7 +306,7 @@ func (expr *IdentifierExpression) fix(currentBlock *Block) Expression {
 	return nil
 }
 
-func (expr *IdentifierExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *IdentifierExpression) generate(ob *OpCodeBuf) {
 	switch inner := expr.inner.(type) {
 	// 函数
 	case *FunctionIdentifier:
@@ -327,6 +328,7 @@ func (expr *IdentifierExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 func CreateIdentifierExpression(pos Position, name string) *IdentifierExpression {
 	expr := &IdentifierExpression{name: name}
 	expr.SetPosition(pos)
+	expr.Block = GetCurrentCompiler().currentBlock
 	return expr
 }
 
@@ -340,19 +342,19 @@ type BinaryExpression struct {
 	right    Expression
 }
 
-func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
+func (expr *BinaryExpression) fix() Expression {
 	var newExpr Expression
 
 	switch expr.operator {
 	// 数学计算
 	case AddOperator, SubOperator, MulOperator, DivOperator:
-		newExpr = FixMathBinaryExpression(expr, currentBlock)
+		newExpr = FixMathBinaryExpression(expr)
 	// 比较
 	case EqOperator, NeOperator, GtOperator, GeOperator, LtOperator, LeOperator:
-		newExpr = FixCompareBinaryExpression(expr, currentBlock)
+		newExpr = FixCompareBinaryExpression(expr)
 	// && ||
 	case LogicalAndOperator, LogicalOrOperator:
-		newExpr = FixLogicalBinaryExpression(expr, currentBlock)
+		newExpr = FixLogicalBinaryExpression(expr)
 	default:
 		panic("TODO")
 	}
@@ -362,7 +364,7 @@ func (expr *BinaryExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *BinaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *BinaryExpression) generate(ob *OpCodeBuf) {
 
 	switch operator := expr.operator; operator {
 	case GtOperator, GeOperator, LtOperator, LeOperator,
@@ -374,8 +376,8 @@ func (expr *BinaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 		leftExpr := expr.left
 		rightExpr := expr.right
 
-		leftExpr.generate(currentBlock, ob)
-		rightExpr.generate(currentBlock, ob)
+		leftExpr.generate(ob)
+		rightExpr.generate(ob)
 
 		code, ok := operatorCodeMap[operator]
 		if !ok {
@@ -409,11 +411,11 @@ func (expr *BinaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 
 		label := ob.getLabel()
 
-		expr.left.generate(currentBlock, ob)
+		expr.left.generate(ob)
 		ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
 		ob.generateCode(expr.Position(), jumpCode, label)
 
-		expr.right.generate(currentBlock, ob)
+		expr.right.generate(ob)
 
 		// 判断结果
 		ob.generateCode(expr.Position(), logicalCode)
@@ -428,32 +430,32 @@ type UnaryExpression struct {
 	Value    Expression
 }
 
-func (expr *UnaryExpression) fix(currentBlock *Block) Expression {
+func (expr *UnaryExpression) fix() Expression {
 	switch expr.Operator {
 	case UnaryOperatorKindMinus:
-		return expr.FixMinus(currentBlock)
+		return expr.FixMinus()
 	case UnaryOperatorKindNot:
-		return expr.FixNot(currentBlock)
+		return expr.FixNot()
 	default:
 		panic("TODO")
 	}
 }
 
-func (expr *UnaryExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *UnaryExpression) generate(ob *OpCodeBuf) {
 	switch expr.Operator {
 	case UnaryOperatorKindMinus:
-		expr.GenerateMinus(currentBlock, ob)
+		expr.GenerateMinus(ob)
 	case UnaryOperatorKindNot:
-		expr.GenerateNot(currentBlock, ob)
+		expr.GenerateNot(ob)
 	default:
 		panic("TODO")
 	}
 }
 
-func (expr *UnaryExpression) FixMinus(currentBlock *Block) Expression {
+func (expr *UnaryExpression) FixMinus() Expression {
 	var newExpr Expression
 
-	expr.Value = expr.Value.fix(currentBlock)
+	expr.Value = expr.Value.fix()
 
 	if !expr.Value.GetType().IsInt() && !expr.Value.GetType().IsFloat() {
 		compileError(expr.Position(), MINUS_TYPE_MISMATCH_ERR, "")
@@ -466,11 +468,11 @@ func (expr *UnaryExpression) FixMinus(currentBlock *Block) Expression {
 	case *IntExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
-		newExpr = newExpr.fix(currentBlock)
+		newExpr = newExpr.fix()
 	case *FloatExpression:
 		operand.Value = -operand.Value
 		newExpr = operand
-		newExpr = newExpr.fix(currentBlock)
+		newExpr = newExpr.fix()
 	default:
 		newExpr = expr
 	}
@@ -480,10 +482,10 @@ func (expr *UnaryExpression) FixMinus(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *UnaryExpression) FixNot(currentBlock *Block) Expression {
+func (expr *UnaryExpression) FixNot() Expression {
 	var newExpr Expression
 
-	expr.Value = expr.Value.fix(currentBlock)
+	expr.Value = expr.Value.fix()
 
 	if !expr.Value.GetType().IsBool() {
 		compileError(expr.Position(), LOGICAL_NOT_TYPE_MISMATCH_ERR, "")
@@ -504,14 +506,14 @@ func (expr *UnaryExpression) FixNot(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *UnaryExpression) GenerateMinus(currentBlock *Block, ob *OpCodeBuf) {
-	expr.Value.generate(currentBlock, ob)
+func (expr *UnaryExpression) GenerateMinus(ob *OpCodeBuf) {
+	expr.Value.generate(ob)
 	code := vm.VM_MINUS_INT + getOpcodeTypeOffset(expr.GetType())
 	ob.generateCode(expr.Position(), code)
 }
 
-func (expr *UnaryExpression) GenerateNot(currentBlock *Block, ob *OpCodeBuf) {
-	expr.Value.generate(currentBlock, ob)
+func (expr *UnaryExpression) GenerateNot(ob *OpCodeBuf) {
+	expr.Value.generate(ob)
 	ob.generateCode(expr.Position(), vm.VM_LOGICAL_NOT)
 }
 
@@ -535,11 +537,11 @@ type FunctionCallExpression struct {
 }
 
 // TODO: 函数调用有多返回值,如何处理
-func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
+func (expr *FunctionCallExpression) fix() Expression {
 	var fd *FunctionDefinition
 	var name string
 
-	expr.funcName = expr.funcName.fix(currentBlock)
+	expr.funcName = expr.funcName.fix()
 
 	switch funcNameExpr := expr.funcName.(type) {
 	case *IdentifierExpression:
@@ -551,7 +553,7 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, name)
 	}
 
-	fd.FixArgument(currentBlock, expr.argumentList)
+	fd.FixArgument(expr.argumentList)
 
 	// TODO: 不拷贝
 	expr.SetType(fd.GetType().Copy())
@@ -575,9 +577,9 @@ func (expr *FunctionCallExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *FunctionCallExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	generatePushArgument(expr.argumentList, currentBlock, ob)
-	expr.funcName.generate(currentBlock, ob)
+func (expr *FunctionCallExpression) generate(ob *OpCodeBuf) {
+	generatePushArgument(expr.argumentList, ob)
+	expr.funcName.generate(ob)
 	ob.generateCode(expr.Position(), vm.VM_INVOKE)
 }
 
@@ -601,10 +603,10 @@ type SelectorExpression struct {
 	Field      string     // 成员名称
 }
 
-func (expr *SelectorExpression) fix(currentBlock *Block) Expression {
+func (expr *SelectorExpression) fix() Expression {
 	var newExpr Expression
 
-	expr.expression = expr.expression.fix(currentBlock)
+	expr.expression = expr.expression.fix()
 	typ := expr.expression.GetType()
 
 	switch {
@@ -619,7 +621,7 @@ func (expr *SelectorExpression) fix(currentBlock *Block) Expression {
 	return newExpr
 }
 
-func (expr *SelectorExpression) generate(currentBlock *Block, ob *OpCodeBuf) {}
+func (expr *SelectorExpression) generate(ob *OpCodeBuf) {}
 
 // 仅限函数
 func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expression {
@@ -628,7 +630,7 @@ func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 
 	p := innerExpr.(*IdentifierExpression).inner.(*Package)
 
-	fd := p.compiler.searchFunction(field)
+	fd := p.compiler.SearchFunction(field)
 	if fd != nil {
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
 		newExpr.inner = &FunctionIdentifier{
@@ -679,10 +681,10 @@ type CastExpression struct {
 	operand  Expression
 }
 
-func (expr *CastExpression) fix(currentBlock *Block) Expression { return expr }
+func (expr *CastExpression) fix() Expression { return expr }
 
-func (expr *CastExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	expr.operand.generate(currentBlock, ob)
+func (expr *CastExpression) generate(ob *OpCodeBuf) {
+	expr.operand.generate(ob)
 
 	switch expr.castType {
 	case CastTypeIntToFloat:
@@ -708,21 +710,21 @@ type ArrayExpression struct {
 	List []Expression
 }
 
-func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
+func (expr *ArrayExpression) fix() Expression {
 	// TODO: 可以为空
 	if expr.List == nil || len(expr.List) == 0 {
 		compileError(expr.Position(), ARRAY_LITERAL_EMPTY_ERR)
 	}
 
 	firstElem := expr.List[0]
-	firstElem = firstElem.fix(currentBlock)
+	firstElem = firstElem.fix()
 
 	elemType := firstElem.GetType()
 
 	for i := 1; i < len(expr.List); i++ {
-		expr.List[i] = expr.List[i].fix(currentBlock)
+		expr.List[i] = expr.List[i].fix()
 		expr.List[i] = CreateAssignCast(expr.List[i], elemType)
-		expr.List[i] = expr.List[i].fix(currentBlock)
+		expr.List[i] = expr.List[i].fix()
 	}
 
 	expr.SetType(NewType(vm.BasicTypeArray))
@@ -732,7 +734,7 @@ func (expr *ArrayExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *ArrayExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
+func (expr *ArrayExpression) generate(ob *OpCodeBuf) {
 	if !expr.GetType().IsArray() {
 		panic("TODO")
 	}
@@ -743,7 +745,7 @@ func (expr *ArrayExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
 	}
 
 	for _, subExpr := range expr.List {
-		subExpr.generate(currentBlock, ob)
+		subExpr.generate(ob)
 	}
 
 	count := len(expr.List)
@@ -768,10 +770,10 @@ type IndexExpression struct {
 	index Expression
 }
 
-func (expr *IndexExpression) fix(currentBlock *Block) Expression {
+func (expr *IndexExpression) fix() Expression {
 
-	expr.array = expr.array.fix(currentBlock)
-	expr.index = expr.index.fix(currentBlock)
+	expr.array = expr.array.fix()
+	expr.index = expr.index.fix()
 
 	if !expr.array.GetType().IsArray() {
 		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
@@ -789,9 +791,9 @@ func (expr *IndexExpression) fix(currentBlock *Block) Expression {
 	return expr
 }
 
-func (expr *IndexExpression) generate(currentBlock *Block, ob *OpCodeBuf) {
-	expr.array.generate(currentBlock, ob)
-	expr.index.generate(currentBlock, ob)
+func (expr *IndexExpression) generate(ob *OpCodeBuf) {
+	expr.array.generate(ob)
+	expr.index.generate(ob)
 
 	code := vm.VM_PUSH_ARRAY_OBJECT
 	ob.generateCode(expr.Position(), code)

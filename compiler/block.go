@@ -1,8 +1,5 @@
 package compiler
 
-//
-// BlockInfo
-//
 type BlockInfo interface{}
 
 type StatementBlockInfo struct {
@@ -32,17 +29,6 @@ type Block struct {
 	parent          BlockInfo // 块信息，函数块，还是条件语句
 }
 
-func (b *Block) AddDeclaration(declaration *Declaration, fd *FunctionDefinition) {
-	// TODO: 啥时候为空
-	if b != nil {
-		b.declarationList = append(b.declarationList, declaration)
-	}
-
-	declaration.IsLocal = true
-	fd.AddDeclarationList(declaration)
-}
-
-// TODO: 暂时无用
 func (b *Block) getCurrentFunction() *FunctionDefinition {
 	for block := b; block != nil; block = block.outerBlock {
 		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)
@@ -54,7 +40,7 @@ func (b *Block) getCurrentFunction() *FunctionDefinition {
 	return nil
 }
 
-func (b *Block) searchDeclaration(name string) *Declaration {
+func (b *Block) SearchDeclaration(name string) *Declaration {
 	// 从局部作用域查找
 	for block := b; block != nil; block = block.outerBlock {
 		for _, declaration := range block.declarationList {
@@ -68,8 +54,8 @@ func (b *Block) searchDeclaration(name string) *Declaration {
 	return GetCurrentCompiler().SearchDeclaration(name)
 }
 
-func (b *Block) FixStatementList(fd *FunctionDefinition) {
+func (b *Block) FixStatementList() {
 	for _, statement := range b.statementList {
-		statement.fix(b, fd)
+		statement.fix()
 	}
 }

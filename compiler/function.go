@@ -35,7 +35,7 @@ func (fd *FunctionDefinition) fix() {
 
 	if fd.Block != nil {
 		// 修正表达式列表
-		fd.Block.FixStatementList(fd)
+		fd.Block.FixStatementList()
 		// 修正返回值
 		fd.FixReturnStatement()
 	}
@@ -48,7 +48,12 @@ func (fd *FunctionDefinition) GetType() *Type {
 func (fd *FunctionDefinition) addParameterAsDeclaration() {
 	for _, param := range fd.ParameterList {
 		decl := NewDeclaration(param.Type.Position(), param.Type, param.Name, nil)
-		fd.Block.AddDeclaration(decl, fd)
+		decl.IsLocal = true
+		// TODO: 啥时候为空
+		if fd.Block != nil {
+			fd.Block.declarationList = append(fd.Block.declarationList, decl)
+		}
+		fd.AddDeclarationList(decl)
 	}
 }
 
@@ -69,7 +74,8 @@ func (fd *FunctionDefinition) FixReturnStatement() {
 	}
 
 	returnStmt := NewReturnStatement(fd.Type.Position(), nil)
-	returnStmt.fix(fd.Block, fd)
+	returnStmt.Block = fd.Block
+	returnStmt.fix()
 
 	if fd.Block.statementList == nil {
 		fd.Block.statementList = []Statement{}
@@ -82,7 +88,7 @@ func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {
 	fd.DeclarationList = append(fd.DeclarationList, decl)
 }
 
-func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Expression) {
+func (fd *FunctionDefinition) FixArgument(argumentList []Expression) {
 	parameterList := fd.ParameterList
 
 	paramLen := len(parameterList)
@@ -93,7 +99,7 @@ func (fd *FunctionDefinition) FixArgument(currentBlock *Block, argumentList []Ex
 	}
 
 	for i := 0; i < paramLen; i++ {
-		argumentList[i] = argumentList[i].fix(currentBlock)
+		argumentList[i] = argumentList[i].fix()
 		if !argumentList[i].GetType().Equal(parameterList[i].Type) {
 			compileError(
 				argumentList[i].Position(),

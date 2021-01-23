@@ -27,17 +27,15 @@ func (e *Error) Error() string {
 
 // Lexer provides inteface to parse codes.
 type Lexer struct {
-	s        *Scanner
-	lit      string
-	pos      Position
-	e        error
-	compiler *Compiler
+	s   *Scanner
+	lit string
+	pos Position
+	e   error
 }
 
-func NewLexer(path string, compiler *Compiler) *Lexer {
+func NewLexer(path string) *Lexer {
 	return &Lexer{
-		s:        newScannerByFilePath(path),
-		compiler: compiler,
+		s: newScannerByFilePath(path),
 	}
 }
 

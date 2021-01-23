@@ -6,15 +6,15 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-func FixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
-	expr.left = expr.left.fix(currentBlock)
-	expr.right = expr.right.fix(currentBlock)
+func FixMathBinaryExpression(expr *BinaryExpression) Expression {
+	expr.left = expr.left.fix()
+	expr.right = expr.right.fix()
 
 	// 能否合并计算
 	newExpr := evalMathExpression(expr)
 	switch newExpr.(type) {
 	case *IntExpression, *FloatExpression, *StringExpression:
-		newExpr = newExpr.fix(currentBlock)
+		newExpr = newExpr.fix()
 		return newExpr
 	}
 
@@ -45,9 +45,9 @@ func FixMathBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expres
 	return newBinaryExpr
 }
 
-func FixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
-	expr.left = expr.left.fix(currentBlock)
-	expr.right = expr.right.fix(currentBlock)
+func FixCompareBinaryExpression(expr *BinaryExpression) Expression {
+	expr.left = expr.left.fix()
+	expr.right = expr.right.fix()
 
 	newExpr := evalCompareExpression(expr)
 	switch newExpr.(type) {
@@ -84,9 +84,9 @@ func FixCompareBinaryExpression(expr *BinaryExpression, currentBlock *Block) Exp
 	return newBinaryExpr
 }
 
-func FixLogicalBinaryExpression(expr *BinaryExpression, currentBlock *Block) Expression {
-	expr.left = expr.left.fix(currentBlock)
-	expr.right = expr.right.fix(currentBlock)
+func FixLogicalBinaryExpression(expr *BinaryExpression) Expression {
+	expr.left = expr.left.fix()
+	expr.right = expr.right.fix()
 
 	if expr.left.GetType().IsBool() && expr.right.GetType().IsBool() {
 		expr.Type = NewType(vm.BasicTypeBool)

@@ -149,10 +149,21 @@ func NewObjectArray(size int) *ObjectArray {
 // ObjectMap
 type ObjectMap struct {
 	ObjectBase
-	KeyType   int
-	ValueType int
-	KeyList   []Object
-	ValueList []Object
+	Map map[Object]Object
+}
+
+func (obj *ObjectMap) Get(key Object) Object {
+	return obj.Map[key]
+}
+
+func (obj *ObjectMap) Set(key Object, value Object) {
+	obj.Map[key] = value
+}
+
+func NewObjectMap() *ObjectMap {
+	return &ObjectMap{
+		Map: make(map[Object]Object),
+	}
 }
 
 // ObjectStruct

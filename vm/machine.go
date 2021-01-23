@@ -443,6 +443,14 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(0, array)
 			vm.stack.stackPointer++
 			pc += 3
+		case VM_NEW_MAP:
+			size := get2ByteInt(codeList[pc+1:])
+			objectMap := vm.NewObjectMap(size)
+
+			vm.stack.stackPointer -= size
+			stack.SetPlus(0, objectMap)
+			vm.stack.stackPointer++
+			pc += 3
 		default:
 			panic("TODO")
 		}
@@ -662,12 +670,24 @@ func (vm *VirtualMachine) restorePc(ee *Executable, function *GoGoFunction, pc i
 func (vm *VirtualMachine) NewObjectArray(size int) Object {
 	obj := NewObjectArray(size)
 
-	// add heap
 	vm.AddObject(obj)
 
-	// init
 	for i := 0; i < size; i++ {
 		obj.Set(i, vm.stack.GetPlus(-size+i))
+	}
+
+	return obj
+}
+
+func (vm *VirtualMachine) NewObjectMap(size int) Object {
+	obj := NewObjectMap()
+
+	vm.AddObject(obj)
+
+	for i := 0; i < size; i++ {
+		key := vm.stack.GetPlus(-size + i)
+		value := vm.stack.GetPlus((-size + i) * 2)
+		obj.Set(key, value)
 	}
 
 	return obj

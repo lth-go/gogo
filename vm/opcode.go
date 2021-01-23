@@ -73,12 +73,12 @@ const (
 	VM_RETURN
 	/**********/
 	VM_NEW_ARRAY
+	VM_NEW_MAP
 )
 
 type opcodeInfo struct {
 	// 注记符
 	Mnemonic string
-
 	// 参数类型，
 	// `b` 一个字节整数
 	// `s` 两个字节整数
@@ -159,4 +159,5 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"return", "", -1},
 	/**********/
 	{"new_array", "s", 1},
+	{"new_map", "s", 1},
 }

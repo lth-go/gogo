@@ -671,10 +671,6 @@ func (expr *ArrayExpression) Fix() Expression {
 }
 
 func (expr *ArrayExpression) Generate(ob *OpCodeBuf) {
-	if !expr.GetType().IsArray() {
-		panic("TODO")
-	}
-
 	for _, subExpr := range expr.List {
 		subExpr.Generate(ob)
 	}
@@ -701,15 +697,45 @@ type MapExpression struct {
 }
 
 func (expr *MapExpression) Fix() Expression {
+	if len(expr.KeyList) != len(expr.ValueList) {
+		panic("TODO")
+	}
+
+	keyType := expr.GetType().mapType.Key
+	valueType := expr.GetType().mapType.Value
+
+	for i := 1; i < len(expr.KeyList); i++ {
+		expr.KeyList[i] = expr.KeyList[i].Fix()
+		expr.KeyList[i] = CreateAssignCast(expr.KeyList[i], keyType)
+	}
+
+	for i := 1; i < len(expr.ValueList); i++ {
+		expr.ValueList[i] = expr.ValueList[i].Fix()
+		expr.ValueList[i] = CreateAssignCast(expr.ValueList[i], valueType)
+	}
+
+	expr.GetType().Fix()
+
 	return expr
 }
 
 func (expr *MapExpression) Generate(ob *OpCodeBuf) {
+	for _, subExpr := range expr.ValueList {
+		subExpr.Generate(ob)
+	}
 
+	for _, subExpr := range expr.KeyList {
+		subExpr.Generate(ob)
+	}
+
+	size := len(expr.KeyList)
+
+	ob.generateCode(expr.Position(), vm.VM_NEW_MAP, size)
 }
 
-func CreateMapExpression(pos Position) *MapExpression {
+func CreateMapExpression(pos Position, typ *Type) *MapExpression {
 	expr := &MapExpression{}
+	expr.SetType(typ)
 	expr.SetPosition(pos)
 
 	return expr

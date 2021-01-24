@@ -447,7 +447,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			size := get2ByteInt(codeList[pc+1:])
 			objectMap := vm.NewObjectMap(size)
 
-			vm.stack.stackPointer -= size
+			vm.stack.stackPointer -= size * 2
 			stack.SetPlus(0, objectMap)
 			vm.stack.stackPointer++
 			pc += 3

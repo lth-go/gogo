@@ -4,6 +4,8 @@ import "utils";
 
 var globalArray []int = []int{100, 200, 300, 400};
 var emptyArray []int = []int{};
+var emptyMap map[string]int = map[string]int{};
+var globalMap map[string]int = map[string]int{"test": 1};
 
 func println(str string) {
     print(str + "\n");

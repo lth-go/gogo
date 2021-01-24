@@ -58,3 +58,11 @@ func (t *Type) SetFuncType(paramsTypeList []*Type, resultTypeList []*Type) {
 func (t *Type) IsSliceType() bool {
 	return t.BasicType == BasicTypeArray
 }
+
+func (t *Type) IsMapType() bool {
+	return t.BasicType == BasicTypeMap
+}
+
+func (t *Type) IsReferenceType() bool {
+	return t.IsSliceType() || t.IsMapType()
+}

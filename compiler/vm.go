@@ -36,6 +36,13 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 			arrayValue.List[i] = GetVmVariable(subValue)
 		}
 		return arrayValue
+	case *MapExpression:
+		mapValue := vm.NewObjectMap()
+		length := len(value.KeyList)
+		for i := 0; i < length; i++ {
+			mapValue.Map[GetVmVariable(value.KeyList[i])] = GetVmVariable(value.ValueList[i])
+		}
+		return mapValue
 	}
 
 	return nil

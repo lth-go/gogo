@@ -355,6 +355,10 @@ func (t *Type) IsMultipleValues() bool {
 	return t.GetBasicType() == vm.BasicTypeMultipleValues
 }
 
+func (t *Type) IsMap() bool {
+	return t.GetBasicType() == vm.BasicTypeMap
+}
+
 func (t *Type) GetTypeName() string {
 	typeName := GetBasicTypeName(t.GetBasicType())
 

@@ -33,6 +33,7 @@ var opName = map[string]int{
 	"true":     TRUE,
 	"false":    FALSE,
 	"nil":      NIL,
+	"map":      MAP,
 	"(":        LP,
 	")":        RP,
 	"[":        LB,

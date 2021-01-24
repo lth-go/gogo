@@ -120,7 +120,7 @@ func (v *Variable) Init() {
 
 	var value interface{}
 
-	if v.Type.IsSliceType() {
+	if v.Type.IsReferenceType() {
 		value = NilObject
 	} else {
 		switch v.Type.GetBasicType() {

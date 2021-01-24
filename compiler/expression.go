@@ -709,12 +709,12 @@ func (expr *MapExpression) Fix() Expression {
 	keyType := expr.GetType().mapType.Key
 	valueType := expr.GetType().mapType.Value
 
-	for i := 1; i < len(expr.KeyList); i++ {
+	for i := 0; i < len(expr.KeyList); i++ {
 		expr.KeyList[i] = expr.KeyList[i].Fix()
 		expr.KeyList[i] = CreateAssignCast(expr.KeyList[i], keyType)
 	}
 
-	for i := 1; i < len(expr.ValueList); i++ {
+	for i := 0; i < len(expr.ValueList); i++ {
 		expr.ValueList[i] = expr.ValueList[i].Fix()
 		expr.ValueList[i] = CreateAssignCast(expr.ValueList[i], valueType)
 	}
@@ -738,10 +738,21 @@ func (expr *MapExpression) Generate(ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_NEW_MAP, size)
 }
 
-func CreateMapExpression(pos Position, typ *Type) *MapExpression {
-	expr := &MapExpression{}
+func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
+	expr := &MapExpression{
+		KeyList:   make([]Expression, len(valueList)),
+		ValueList: make([]Expression, len(valueList)),
+	}
 	expr.SetType(typ)
-	expr.SetPosition(pos)
+
+	for i, subExpr := range valueList {
+		keyValueExpr, ok := subExpr.(*KeyValueExpression)
+		if !ok {
+			panic("TODO")
+		}
+		expr.KeyList[i] = keyValueExpr.Key
+		expr.ValueList[i] = keyValueExpr.Value
+	}
 
 	return expr
 }
@@ -838,9 +849,13 @@ func CreateKeyValueExpression(pos Position, key, value Expression) *KeyValueExpr
 	return expr
 }
 
-func CreateCompositeLit(typ *Type, literalValueList []Expression) Expression {
+func CreateCompositeLit(typ *Type, valueList []Expression) Expression {
 	if typ.IsArray() {
-		return CreateArrayExpression(typ, literalValueList)
+		return CreateArrayExpression(typ, valueList)
+	}
+
+	if typ.IsMap() {
+		return CreateMapExpression(typ, valueList)
 	}
 	return nil
 }

@@ -14,7 +14,9 @@ type Object interface {
 	Hash() int
 }
 
+//
 // ObjectBase
+//
 type ObjectBase struct {
 	marked bool
 }
@@ -46,30 +48,40 @@ func (obj *ObjectBase) Hash() int {
 	return 0
 }
 
+//
 // ObjectInt
+//
 type ObjectInt struct {
 	ObjectBase
 	Value int
 }
 
+//
 // ObjectFloat
+//
 type ObjectFloat struct {
 	ObjectBase
 	Value float64
 }
 
+//
 // ObjectString
+//
 type ObjectString struct {
 	ObjectBase
 	Value string
 }
 
+//
 // ObjectNil
+//
 type ObjectNil struct {
 	ObjectBase
 }
 
+//
 // ObjectArray
+//
 type ObjectArray struct {
 	ObjectBase
 	// Length int
@@ -155,7 +167,9 @@ func NewObjectArray(size int) *ObjectArray {
 	}
 }
 
+//
 // ObjectMap
+//
 type ObjectMap struct {
 	ObjectBase
 	// TODO: 临时简单处理, 键为对象hash,值为key,
@@ -177,13 +191,26 @@ func NewObjectMap() *ObjectMap {
 	}
 }
 
+//
+// ObjectInterface
+//
+type ObjectInterface struct {
+	ObjectBase
+	// Type
+	Data Object
+}
+
+//
 // ObjectStruct
+//
 type ObjectStruct struct {
 	ObjectBase
 	FieldList []Object
 }
 
+//
 // ObjectPointer
+//
 type ObjectPointer struct {
 	ObjectBase
 }

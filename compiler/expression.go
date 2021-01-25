@@ -171,6 +171,35 @@ func CreateStringExpression(pos Position, value string) *StringExpression {
 }
 
 //
+// InterfaceExpression
+//
+type InterfaceExpression struct {
+	ExpressionBase
+	Type *Type
+	Data Expression
+}
+
+func (expr *InterfaceExpression) Fix() Expression {
+	expr.SetType(NewType(vm.BasicTypeInterface))
+	expr.Data.Fix()
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *InterfaceExpression) Generate(ob *OpCodeBuf) {
+	expr.Data.Generate(ob)
+	ob.generateCode(expr.Position(), vm.VM_NEW_INTERFACE)
+}
+
+func CreateInterfaceExpression(pos Position) *InterfaceExpression {
+	expr := &InterfaceExpression{}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+//
 // NilExpression
 //
 type NilExpression struct {
@@ -188,7 +217,7 @@ func (expr *NilExpression) Generate(ob *OpCodeBuf) {
 	ob.generateCode(expr.Position(), vm.VM_PUSH_NIL)
 }
 
-func createNilExpression(pos Position) *NilExpression {
+func CreateNilExpression(pos Position) *NilExpression {
 	expr := &NilExpression{}
 	expr.SetPosition(pos)
 

@@ -21,6 +21,8 @@ const (
 	VM_POP_ARRAY
 	VM_PUSH_MAP
 	VM_POP_MAP
+	VM_PUSH_INTERFACE
+	VM_POP_INTERFACE
 	/**********/
 	VM_ADD_INT
 	VM_ADD_FLOAT
@@ -76,6 +78,7 @@ const (
 	/**********/
 	VM_NEW_ARRAY
 	VM_NEW_MAP
+	VM_NEW_INTERFACE
 )
 
 type opcodeInfo struct {
@@ -109,6 +112,8 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"pop_array", "", -1},
 	{"push_map", "", 1},
 	{"pop_map", "", -1},
+	{"push_interface", "", 1},
+	{"pop_interface", "", -1},
 	/**********/
 	{"add_int", "", -1},
 	{"add_float", "", -1},
@@ -164,4 +169,5 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	/**********/
 	{"new_array", "s", 1},
 	{"new_map", "s", 1},
+	{"new_interface", "s", 1},
 }

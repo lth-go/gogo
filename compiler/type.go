@@ -342,6 +342,11 @@ func CreateMapType(keyType *Type, valueType *Type, pos Position) *Type {
 	return newType
 }
 
+func CreateInterfaceType(pos Position) *Type {
+	newType := CreateType(vm.BasicTypeInterface, pos)
+	return newType
+}
+
 func (t *Type) IsArray() bool {
 	return t.GetBasicType() == vm.BasicTypeArray
 }

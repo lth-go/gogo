@@ -19,6 +19,7 @@ const (
 	BasicTypeStruct
 	BasicTypeFunc
 	BasicTypeMultipleValues
+	BasicTypeInterface
 )
 
 type SliceType struct {

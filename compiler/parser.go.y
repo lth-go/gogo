@@ -42,6 +42,7 @@ import (
     EXCLAMATION DOT
     PACKAGE IMPORT VAR FUNC
     TYPE STRUCT MAP
+    INTERFACE
 
 %type <import_spec> import_decl
 %type <import_spec_list> import_decl_list
@@ -70,7 +71,7 @@ import (
     type_list_or_nil type_list
 %type <block> block block_or_nil
 %type <else_if> else_if
-%type <type_specifier> type_specifier literal_type array_type func_type signature map_type
+%type <type_specifier> type_specifier literal_type array_type func_type signature map_type interface_type
 
 %%
 
@@ -138,6 +139,12 @@ map_type
         : MAP LB type_specifier RB type_specifier
         {
             $$ = CreateMapType($3, $5, $1.Position())
+        }
+        ;
+interface_type
+        : INTERFACE LC RC
+        {
+            $$ = CreateInterfaceType($1.Position())
         }
         ;
 func_type
@@ -372,7 +379,7 @@ primary_expression
         }
         | NIL
         {
-            $$ = createNilExpression($1.Position())
+            $$ = CreateNilExpression($1.Position())
         }
         | composite_lit
         | IDENTIFIER
@@ -553,6 +560,7 @@ composite_lit
 literal_type
         : array_type
         | map_type
+        | interface_type
         ;
 literal_value
         : LC RC

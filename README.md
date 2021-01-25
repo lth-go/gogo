@@ -23,7 +23,6 @@ make test
 + 常量fix修正
 + 循环导入校验
 + 代码解耦
-+ 全局常量支持布尔值
 + 增加printf函数
 + 增加len,append函数
 + 增加...

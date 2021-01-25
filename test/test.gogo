@@ -616,6 +616,25 @@ func testMap() {
     print("map d is " + localMap["d"] + "\n");
 };
 
+func testBool() {
+    var a bool;
+
+    if !a {
+        print("a is false\n");
+    };
+
+    a = true;
+    if a {
+        print("a is true\n");
+    };
+
+    var boolList []bool = []bool{true, false, true, false};
+    var i int;
+    for i = 0; i < 4; i = i + 1 {
+        print("boolList " + i + " is " + boolList[i] + "\n");
+    };
+};
+
 func main() {
     testLex();
     testOperators();
@@ -640,4 +659,5 @@ func main() {
     testPackageVariable();
     testGlobalVariable();
     testMap();
+    testBool();
 };

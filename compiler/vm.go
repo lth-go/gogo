@@ -22,8 +22,12 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 	}
 
 	switch value := valueIFS.(type) {
-	// case *BoolExpression:
-	//     return value.Value
+	case *BoolExpression:
+		v := 0
+		if value.Value {
+			v = 1
+		}
+		return vm.NewObjectInt(v)
 	case *IntExpression:
 		return vm.NewObjectInt(value.Value)
 	case *FloatExpression:

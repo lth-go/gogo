@@ -19,6 +19,7 @@ make test
 
 ## TODO
 
++ 空for处理, for外层无括号
 + 常量fix修正
 + 循环导入校验
 + 代码解耦
@@ -33,3 +34,4 @@ make test
 + 增加map类型
 + 增加struct类型
 + 增加struct方法
++ 增加指针

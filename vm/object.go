@@ -1,5 +1,9 @@
 package vm
 
+import (
+	"github.com/lth-go/gogo/utils"
+)
+
 // 虚拟机对象接口
 type Object interface {
 	isMarked() bool // 是否设置标记位
@@ -7,6 +11,7 @@ type Object interface {
 	ResetMark()     // 重置标记位
 	Sweep()         // 垃圾回收
 	Len() int       // 计算堆阈值
+	Hash() int
 }
 
 // ObjectBase
@@ -35,6 +40,10 @@ func (obj *ObjectBase) Sweep() {
 
 func (obj *ObjectBase) Len() int {
 	return 1
+}
+
+func (obj *ObjectBase) Hash() int {
+	return 0
 }
 
 // ObjectInt
@@ -149,20 +158,22 @@ func NewObjectArray(size int) *ObjectArray {
 // ObjectMap
 type ObjectMap struct {
 	ObjectBase
-	Map map[Object]Object
+	// TODO: 临时简单处理, 键为对象hash,值为key,
+	Map map[string][2]Object
 }
 
 func (obj *ObjectMap) Get(key Object) Object {
-	return obj.Map[key]
+	hash := utils.Hash(key)
+	return obj.Map[hash][1]
 }
 
 func (obj *ObjectMap) Set(key Object, value Object) {
-	obj.Map[key] = value
+	obj.Map[utils.Hash(key)] = [2]Object{key, value}
 }
 
 func NewObjectMap() *ObjectMap {
 	return &ObjectMap{
-		Map: make(map[Object]Object),
+		Map: make(map[string][2]Object),
 	}
 }
 

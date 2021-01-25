@@ -40,7 +40,7 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 		mapValue := vm.NewObjectMap()
 		length := len(value.KeyList)
 		for i := 0; i < length; i++ {
-			mapValue.Map[GetVmVariable(value.KeyList[i])] = GetVmVariable(value.ValueList[i])
+			mapValue.Set(GetVmVariable(value.KeyList[i]), GetVmVariable(value.ValueList[i]))
 		}
 		return mapValue
 	}

@@ -762,24 +762,27 @@ func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
 //
 type IndexExpression struct {
 	ExpressionBase
-	array Expression
-	index Expression
+	X     Expression
+	Index Expression
 }
 
 func (expr *IndexExpression) Fix() Expression {
 
-	expr.array = expr.array.Fix()
-	expr.index = expr.index.Fix()
+	expr.X = expr.X.Fix()
+	expr.Index = expr.Index.Fix()
 
-	if !expr.array.GetType().IsArray() {
+	if !expr.X.GetType().IsArray() && !expr.X.GetType().IsMap() {
 		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
 	}
 
-	expr.SetType(expr.array.GetType().arrayType.ElementType.Copy())
-	expr.GetType().arrayType = nil
+	if expr.X.GetType().IsArray() {
+		expr.SetType(expr.X.GetType().arrayType.ElementType.Copy())
 
-	if !expr.index.GetType().IsInt() {
-		compileError(expr.Position(), INDEX_NOT_INT_ERR)
+		if !expr.Index.GetType().IsInt() {
+			compileError(expr.Position(), INDEX_NOT_INT_ERR)
+		}
+	} else if expr.X.GetType().IsMap() {
+		expr.SetType(expr.X.GetType().mapType.Value.Copy())
 	}
 
 	expr.GetType().Fix()
@@ -788,17 +791,25 @@ func (expr *IndexExpression) Fix() Expression {
 }
 
 func (expr *IndexExpression) Generate(ob *OpCodeBuf) {
-	expr.array.Generate(ob)
-	expr.index.Generate(ob)
+	expr.X.Generate(ob)
+	expr.Index.Generate(ob)
 
-	code := vm.VM_PUSH_ARRAY
-	ob.generateCode(expr.Position(), code)
+	switch {
+	case expr.X.GetType().IsArray():
+		code := vm.VM_PUSH_ARRAY
+		ob.generateCode(expr.Position(), code)
+	case expr.X.GetType().IsMap():
+		code := vm.VM_PUSH_MAP
+		ob.generateCode(expr.Position(), code)
+	default:
+		panic("TODO")
+	}
 }
 
 func CreateIndexExpression(pos Position, array, index Expression) *IndexExpression {
 	expr := &IndexExpression{
-		array: array,
-		index: index,
+		X:     array,
+		Index: index,
 	}
 	expr.SetPosition(pos)
 

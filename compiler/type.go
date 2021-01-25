@@ -128,6 +128,41 @@ func NewMapType(keyType, valueType *Type) *MapType {
 	}
 }
 
+func (t *MapType) Copy() *MapType {
+	if t == nil {
+		return nil
+	}
+
+	return &MapType{
+		Key:   t.Key.Copy(),
+		Value: t.Value.Copy(),
+	}
+}
+
+func (t *MapType) Equal(t2 *MapType) bool {
+	if t == nil && t2 == nil {
+		return true
+	}
+
+	if t == nil && t2 != nil {
+		return false
+	}
+
+	if t != nil && t2 == nil {
+		return false
+	}
+
+	if !t.Key.Equal(t2.Key) {
+		return false
+	}
+
+	if !t.Value.Equal(t2.Value) {
+		return false
+	}
+
+	return true
+}
+
 type MultipleValueType struct {
 	List []*Type
 }
@@ -433,6 +468,7 @@ func (t *Type) Copy() *Type {
 	newType.arrayType = t.arrayType.Copy()
 	newType.funcType = t.funcType.Copy()
 	newType.multipleValueType = t.multipleValueType.Copy()
+	newType.mapType = t.mapType.Copy()
 
 	return newType
 }

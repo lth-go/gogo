@@ -19,6 +19,8 @@ const (
 	/**********/
 	VM_PUSH_ARRAY
 	VM_POP_ARRAY
+	VM_PUSH_MAP
+	VM_POP_MAP
 	/**********/
 	VM_ADD_INT
 	VM_ADD_FLOAT
@@ -103,8 +105,10 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"push_static", "s", 1},
 	{"pop_static", "s", -1},
 	/**********/
-	{"push_array_object", "", 1},
-	{"pop_array_object", "", -1},
+	{"push_array", "", 1},
+	{"pop_array", "", -1},
+	{"push_map", "", 1},
+	{"pop_map", "", -1},
 	/**********/
 	{"add_int", "", -1},
 	{"add_float", "", -1},

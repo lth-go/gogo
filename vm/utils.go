@@ -42,7 +42,7 @@ func checkNullPointer(obj Object) {
 func GetObjectByType(typ *Type) Object {
 	var value Object
 
-	if typ.IsSliceType() {
+	if typ.IsReferenceType() {
 		value = NilObject
 		return value
 	}

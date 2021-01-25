@@ -180,9 +180,17 @@ func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
 	case *IdentifierExpression:
 		generatePopToIdentifier(e.inner.(*Declaration), expr.Position(), ob)
 	case *IndexExpression:
-		e.array.Generate(ob)
-		e.index.Generate(ob)
-		ob.generateCode(expr.Position(), vm.VM_POP_ARRAY)
+		if e.X.GetType().IsArray() {
+			e.X.Generate(ob)
+			e.Index.Generate(ob)
+			ob.generateCode(expr.Position(), vm.VM_POP_ARRAY)
+		} else if e.X.GetType().IsMap() {
+			e.X.Generate(ob)
+			e.Index.Generate(ob)
+			ob.generateCode(expr.Position(), vm.VM_POP_MAP)
+		} else {
+			panic("TODO")
+		}
 	default:
 		panic("TODO")
 	}

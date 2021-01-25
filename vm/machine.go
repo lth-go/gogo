@@ -228,6 +228,23 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			array.Set(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
+		case VM_PUSH_MAP:
+			map_ := stack.GetMapPlus(-2)
+			index := stack.GetPlus(-1)
+
+			object := map_.Get(index)
+
+			stack.SetPlus(-2, object)
+			vm.stack.stackPointer--
+			pc++
+		case VM_POP_MAP:
+			value := stack.GetPlus(-3)
+			map_ := stack.GetMapPlus(-2)
+			index := stack.GetPlus(-1)
+
+			map_.Set(index, value)
+			vm.stack.stackPointer -= 3
+			pc++
 		case VM_ADD_INT:
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)+stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
@@ -685,8 +702,11 @@ func (vm *VirtualMachine) NewObjectMap(size int) Object {
 	vm.AddObject(obj)
 
 	for i := 0; i < size; i++ {
-		key := vm.stack.GetPlus(-size + i)
-		value := vm.stack.GetPlus((-size + i) * 2)
+		keyIndex := -size + i
+		valueIndex := (-size + i) - size
+
+		key := vm.stack.GetPlus(keyIndex)
+		value := vm.stack.GetPlus(valueIndex)
 		obj.Set(key, value)
 	}
 

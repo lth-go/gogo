@@ -121,6 +121,11 @@ func (s *Stack) GetArrayPlus(incr int) *ObjectArray {
 	return s.Get(index).(*ObjectArray)
 }
 
+func (s *Stack) GetMapPlus(incr int) *ObjectMap {
+	index := s.getIndex(incr)
+	return s.Get(index).(*ObjectMap)
+}
+
 func (s *Stack) SetInt(sp int, value int) {
 	s.Set(sp, NewObjectInt(value))
 }

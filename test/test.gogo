@@ -600,6 +600,22 @@ func testGlobalVariable() {
     };
 };
 
+func testMap() {
+    var localMap map[string]int = map[string]int{"a": 1, "b": 2, "c": 3};
+    print("map a is " + localMap["a"] + "\n");
+    print("map b is " + localMap["b"] + "\n");
+
+    localMap["a"] = 100;
+    localMap["b"] = 200;
+    localMap["c"] = 400;
+    localMap["d"] = 500;
+
+    print("map a is " + localMap["a"] + "\n");
+    print("map b is " + localMap["b"] + "\n");
+    print("map c is " + localMap["c"] + "\n");
+    print("map d is " + localMap["d"] + "\n");
+};
+
 func main() {
     testLex();
     testOperators();
@@ -623,4 +639,5 @@ func main() {
     testNativeFuncItoa();
     testPackageVariable();
     testGlobalVariable();
+    testMap();
 };

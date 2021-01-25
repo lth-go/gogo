@@ -469,10 +469,15 @@ else_if
         }
         ;
 for_statement
-        : FOR LP simple_statement_or_nil SEMICOLON expression_or_nil SEMICOLON simple_statement_or_nil RP block
+        : FOR simple_statement_or_nil SEMICOLON expression_or_nil SEMICOLON simple_statement_or_nil block
         {
-            $$ = NewForStatement($1.Position(), $3, $5, $7, $9)
-            $9.parent = NewStatementBlockInfo($$)
+            $$ = NewForStatement($1.Position(), $2, $4, $6, $7)
+            $7.parent = NewStatementBlockInfo($$)
+        }
+        | FOR expression_or_nil block
+        {
+            $$ = NewForStatement($1.Position(), nil, $2, nil, $3)
+            $3.parent = NewStatementBlockInfo($$)
         }
         ;
 expression_or_nil

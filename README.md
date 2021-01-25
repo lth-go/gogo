@@ -19,7 +19,7 @@ make test
 
 ## TODO
 
-+ 空for处理, for外层无括号
++ for range
 + 常量fix修正
 + 循环导入校验
 + 代码解耦
@@ -31,7 +31,6 @@ make test
 + int 改int64
 + 移除CastExpression
 + 优化包代码
-+ 增加map类型
 + 增加struct类型
 + 增加struct方法
 + 增加指针

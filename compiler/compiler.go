@@ -6,60 +6,6 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-type CompilerManage struct {
-	doingList []*Compiler
-	doneList  []*Compiler
-}
-
-var compilerManage = &CompilerManage{
-	doingList: []*Compiler{},
-	doneList:  []*Compiler{},
-}
-
-func GetCurrentCompiler() *Compiler {
-	length := len(compilerManage.doingList)
-	if length == 0 {
-		return nil
-	}
-
-	return compilerManage.doingList[length-1]
-}
-
-func PushCurrentCompiler(c *Compiler) {
-	compilerManage.doingList = append(compilerManage.doingList, c)
-}
-
-func PopCurrentCompiler() {
-	compilerManage.doingList = compilerManage.doingList[:len(compilerManage.doingList)-1]
-}
-
-func IsCompiling(packageName string) bool {
-	for _, c := range compilerManage.doingList {
-		if c.GetPackageName() == packageName {
-			return true
-		}
-	}
-
-	return false
-}
-
-func AddDoneCompilerList(c *Compiler) {
-	compilerManage.doneList = append(compilerManage.doneList, c)
-}
-
-func GetDoneCompilerList() []*Compiler {
-	return compilerManage.doneList
-}
-
-func SearchGlobalCompiler(packageName string) *Compiler {
-	for _, c := range GetDoneCompilerList() {
-		if c.GetPackageName() == packageName {
-			return c
-		}
-	}
-	return nil
-}
-
 // Compiler 编译器
 type Compiler struct {
 	lexer           *Lexer                // 词法解析器
@@ -80,6 +26,12 @@ func (c *Compiler) SetPackageName(packageName string) {
 	c.packageName = packageName
 }
 
+func (c *Compiler) Parse() {
+	if yyParse(c.lexer) != 0 {
+		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
+	}
+}
+
 func NewCompiler(path string) *Compiler {
 	c := &Compiler{
 		lexer:           NewLexer(path),
@@ -91,62 +43,6 @@ func NewCompiler(path string) *Compiler {
 	}
 
 	return c
-}
-
-func Parse(path string) {
-	c := NewCompiler(path)
-
-	PushCurrentCompiler(c)
-	AddDoneCompilerList(c)
-
-	// 生成语法树
-	c.Parse()
-
-	for _, imp := range c.importList {
-		if IsCompiling(imp.packageName) {
-			panic("TODO")
-		}
-
-		// 判断是否已经被解析过
-		impCompiler := SearchGlobalCompiler(imp.packageName)
-		if impCompiler != nil {
-			continue
-		}
-
-		Parse(imp.GetPath())
-	}
-	PopCurrentCompiler()
-}
-
-func Compile() []*vm.Executable {
-	doneCompilerList := GetDoneCompilerList()
-
-	// 倒序编译,防止依赖问题
-	for i := len(doneCompilerList) - 1; i >= 0; i-- {
-		c := doneCompilerList[i]
-
-		PushCurrentCompiler(c)
-
-		c.FixTree()
-
-		PopCurrentCompiler()
-	}
-
-	exeList := make([]*vm.Executable, 0)
-	for i := len(doneCompilerList) - 1; i >= 0; i-- {
-		c := doneCompilerList[i]
-
-		exe := c.Generate()
-		exeList = append(exeList, exe)
-	}
-
-	return exeList
-}
-
-func (c *Compiler) Parse() {
-	if yyParse(c.lexer) != 0 {
-		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
-	}
 }
 
 //
@@ -187,7 +83,7 @@ func (c *Compiler) FixDeclarationList() {
 	}
 }
 
-// TODO: 添加引用包函数
+// 添加引用包函数
 func (c *Compiler) GetFuncIndex(fd *FunctionDefinition) int {
 	packageName := fd.GetPackageName()
 	name := fd.GetName()
@@ -201,21 +97,6 @@ func (c *Compiler) GetFuncIndex(fd *FunctionDefinition) int {
 	c.funcList = append(c.funcList, fd)
 
 	return len(c.funcList) - 1
-}
-
-//
-// 编译文件
-//
-func CompileFile(path string) *vm.ExecutableList {
-	// 输出yacc错误信息
-	if true {
-		yyErrorVerbose = true
-	}
-
-	Parse(path)
-	exeList := Compile()
-
-	return vm.NewExecutableList(exeList)
 }
 
 func (c *Compiler) AddConstantList(value interface{}) int {
@@ -261,7 +142,7 @@ func (c *Compiler) SearchPackage(packageName string) *Package {
 			continue
 		}
 
-		impCompiler := SearchGlobalCompiler(packageName)
+		impCompiler := GetDoneCompiler(packageName)
 		if impCompiler == nil {
 			panic("TODO")
 		}

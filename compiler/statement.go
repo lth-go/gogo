@@ -259,7 +259,7 @@ type ReturnStatement struct {
 }
 
 func (stmt *ReturnStatement) Fix() {
-	fd := stmt.Block.getCurrentFunction()
+	fd := stmt.Block.GetCurrentFunction()
 
 	resultCount := len(fd.GetType().funcType.Results)
 	valueCount := len(stmt.ValueList)
@@ -386,7 +386,7 @@ type Declaration struct {
 }
 
 func (stmt *Declaration) Fix() {
-	fd := stmt.Block.getCurrentFunction()
+	fd := stmt.Block.GetCurrentFunction()
 	stmt.IsLocal = true
 	stmt.Block.declarationList = append(stmt.Block.declarationList, stmt)
 	fd.AddDeclarationList(stmt)

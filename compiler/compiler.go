@@ -6,24 +6,53 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-var (
-	CompilerList    []*Compiler // 全局compiler列表
-	CurrentCompiler *Compiler   // 全局compiler
-)
-
-func GetCurrentCompiler() *Compiler {
-	return CurrentCompiler
+type CompilerManage struct {
+	doingList []*Compiler
+	doneList  []*Compiler
 }
 
-func PushCurrentCompiler(c *Compiler) *Compiler {
-	old := CurrentCompiler
-	CurrentCompiler = c
+var compilerManage = &CompilerManage{
+	doingList: []*Compiler{},
+	doneList:  []*Compiler{},
+}
 
-	return old
+func GetCurrentCompiler() *Compiler {
+	length := len(compilerManage.doingList)
+	if length == 0 {
+		return nil
+	}
+
+	return compilerManage.doingList[length-1]
+}
+
+func PushCurrentCompiler(c *Compiler) {
+	compilerManage.doingList = append(compilerManage.doingList, c)
+}
+
+func PopCurrentCompiler() {
+	compilerManage.doingList = compilerManage.doingList[:len(compilerManage.doingList)-1]
+}
+
+func IsCompiling(packageName string) bool {
+	for _, c := range compilerManage.doingList {
+		if c.GetPackageName() == packageName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func AddDoneCompilerList(c *Compiler) {
+	compilerManage.doneList = append(compilerManage.doneList, c)
+}
+
+func GetDoneCompilerList() []*Compiler {
+	return compilerManage.doneList
 }
 
 func SearchGlobalCompiler(packageName string) *Compiler {
-	for _, c := range CompilerList {
+	for _, c := range GetDoneCompilerList() {
 		if c.GetPackageName() == packageName {
 			return c
 		}
@@ -53,6 +82,7 @@ func (c *Compiler) SetPackageName(packageName string) {
 
 func NewCompiler(path string) *Compiler {
 	c := &Compiler{
+		lexer:           NewLexer(path),
 		path:            path,
 		importList:      []*Import{},
 		funcList:        []*FunctionDefinition{},
@@ -60,21 +90,23 @@ func NewCompiler(path string) *Compiler {
 		ConstantList:    []interface{}{},
 	}
 
-	c.lexer = NewLexer(path)
 	return c
 }
 
 func Parse(path string) {
 	c := NewCompiler(path)
-	CompilerList = append(CompilerList, c)
-	compilerBackup := PushCurrentCompiler(c)
+
+	PushCurrentCompiler(c)
+	AddDoneCompilerList(c)
 
 	// 生成语法树
-	if yyParse(c.lexer) != 0 {
-		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
-	}
+	c.Parse()
 
 	for _, imp := range c.importList {
+		if IsCompiling(imp.packageName) {
+			panic("TODO")
+		}
+
 		// 判断是否已经被解析过
 		impCompiler := SearchGlobalCompiler(imp.packageName)
 		if impCompiler != nil {
@@ -83,31 +115,38 @@ func Parse(path string) {
 
 		Parse(imp.GetPath())
 	}
-
-	PushCurrentCompiler(compilerBackup)
+	PopCurrentCompiler()
 }
 
 func Compile() []*vm.Executable {
-	// 倒序编译,防止依赖问题
-	for i := len(CompilerList) - 1; i >= 0; i-- {
-		c := CompilerList[i]
+	doneCompilerList := GetDoneCompilerList()
 
-		compilerBackup := PushCurrentCompiler(c)
+	// 倒序编译,防止依赖问题
+	for i := len(doneCompilerList) - 1; i >= 0; i-- {
+		c := doneCompilerList[i]
+
+		PushCurrentCompiler(c)
 
 		c.FixTree()
 
-		PushCurrentCompiler(compilerBackup)
+		PopCurrentCompiler()
 	}
 
 	exeList := make([]*vm.Executable, 0)
-	for i := len(CompilerList) - 1; i >= 0; i-- {
-		c := CompilerList[i]
+	for i := len(doneCompilerList) - 1; i >= 0; i-- {
+		c := doneCompilerList[i]
 
 		exe := c.Generate()
 		exeList = append(exeList, exe)
 	}
 
 	return exeList
+}
+
+func (c *Compiler) Parse() {
+	if yyParse(c.lexer) != 0 {
+		log.Fatalf("\nFileName: %s%s", c.path, c.lexer.e)
+	}
 }
 
 //

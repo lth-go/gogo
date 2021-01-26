@@ -1,7 +1,6 @@
 package compiler
 
-type BlockInfo interface{}
-
+// StatementBlockInfo 语句块
 type StatementBlockInfo struct {
 	statement     Statement
 	continueLabel int
@@ -14,6 +13,7 @@ func NewStatementBlockInfo(statement Statement) *StatementBlockInfo {
 	}
 }
 
+// FunctionBlockInfo 函数块
 type FunctionBlockInfo struct {
 	function *FunctionDefinition
 	endLabel int
@@ -26,14 +26,15 @@ type Block struct {
 	outerBlock      *Block
 	statementList   []Statement
 	declarationList []*Declaration
-	parent          BlockInfo // 块信息，函数块，还是条件语句
+	parent          interface{} // 块信息，函数块，还是条件语句
 }
 
-func (b *Block) getCurrentFunction() *FunctionDefinition {
+// GetCurrentFunction
+func (b *Block) GetCurrentFunction() *FunctionDefinition {
 	for block := b; block != nil; block = block.outerBlock {
-		fdBlockInfo, ok := block.parent.(*FunctionBlockInfo)
+		blockInfo, ok := block.parent.(*FunctionBlockInfo)
 		if ok {
-			return fdBlockInfo.function
+			return blockInfo.function
 		}
 
 	}

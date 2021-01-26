@@ -5,13 +5,13 @@ import (
 )
 
 func (c *Compiler) AddNativeFunctionList() {
-	c.AddNativeFunctionPrint()
 	c.AddNativeFunctionPrintf()
 	c.AddNativeFunctionItoa()
 }
+
 func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType, ellipsis bool) {
-	paramsType := TODOCreateParam(pType)
-	resultsType := TODOCreateParam(rType)
+	paramsType := createNativeFuncParamTypeList(pType)
+	resultsType := createNativeFuncParamTypeList(rType)
 
 	if ellipsis {
 		paramsType[len(paramsType)-1].Ellipsis = true
@@ -27,15 +27,6 @@ func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType, ellip
 	}
 
 	c.funcList = append(c.funcList, fd)
-}
-
-func (c *Compiler) AddNativeFunctionPrint() {
-	c.AddNativeFunc(
-		"print",
-		[]vm.BasicType{vm.BasicTypeString},
-		nil,
-		false,
-	)
 }
 
 func (c *Compiler) AddNativeFunctionPrintf() {
@@ -56,7 +47,7 @@ func (c *Compiler) AddNativeFunctionItoa() {
 	)
 }
 
-func TODOCreateParam(typeList []vm.BasicType) []*Parameter {
+func createNativeFuncParamTypeList(typeList []vm.BasicType) []*Parameter {
 	if len(typeList) == 0 {
 		return nil
 	}

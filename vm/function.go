@@ -23,7 +23,6 @@ type GoGoFunction struct {
 }
 
 func (vm *VirtualMachine) AddNativeFunctions() {
-	vm.addNativeFunction("_sys", "print", nativeFuncPrint, 1, 0)
 	vm.addNativeFunction("_sys", "printf", nativeFuncPrintf, 2, 0)
 	vm.addNativeFunction("_sys", "itoa", nativeFuncItoa, 1, 1)
 }
@@ -46,14 +45,6 @@ func (vm *VirtualMachine) addNativeFunction(
 	}
 
 	vm.static.Append(function)
-}
-
-func nativeFuncPrint(vm *VirtualMachine, argCount int, args []Object) []Object {
-	str := args[0].(*ObjectString).Value
-
-	fmt.Println(str)
-
-	return nil
 }
 
 func nativeFuncItoa(vm *VirtualMachine, argCount int, args []Object) []Object {

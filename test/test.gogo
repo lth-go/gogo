@@ -9,138 +9,138 @@ var globalMap map[string]int = map[string]int{"test": 1};
 var globalInterface interface{} = "cool";
 
 func println(str string) {
-    print(str + "\n");
+    printf("%s\n", str);
 };
 
 //
 // Check lexical analyzer
 //
 func testLex() {
-    print("Hello, World!\n\\n");
-    print("gogo\n"); // comment
+    printf("Hello, World!\n\\n");
+    printf("gogo\n"); // comment
     // chain string
-    print("gogo" + " can run ok\n");
+    printf("%s %s", "gogo", " can run ok\n");
 };
 
 //
 // Check operators
 //
 func testOperators() {
-    print("3 + 5.." + (3 + 5) + "\n");
-    print("3 - 5.." + (3 - 5) + "\n");
-    print("3 + -5.." + (3 + -5) + "\n");
-    print("3 * 5.." + (3 * 5) + "\n");
-    print("3 / 5.." + (3 / 5) + "\n");
-    print("3.0 + 5.0.." + (3.0 + 5.0) + "\n");
-    print("3.0 - 5.0.." + (3.0 - 5.0) + "\n");
-    print("3.0 + -5.0.." + (3.0 + -5.0) + "\n");
-    print("3.0 * 5.0.." + (3.0 * 5.0) + "\n");
-    print("3.0 / 5.0.." + (3.0 / 5.0) + "\n");
-    print("3 + 5.0.." + (3 + 5.0) + "\n");
-    print("3 - 5.0.." + (3 - 5.0) + "\n");
-    print("3 + -5.0.." + (3 + -5.0) + "\n");
-    print("3 * 5.0.." + (3 * 5.0) + "\n");
-    print("3 / 5.0.." + (3 / 5.0) + "\n");
-    print("3.0 + 5.." + (3.0 + 5) + "\n");
-    print("3.0 - 5.." + (3.0 - 5) + "\n");
-    print("3.0 + -5.." + (3.0 + -5) + "\n");
-    print("3.0 * 5.." + (3.0 * 5) + "\n");
-    print("3.0 / 5.." + (3.0 / 5) + "\n");
+    printf("%s%v\n", "3 + 5..", (3 + 5));
+    printf("%s%v\n", "3 - 5..", (3 - 5));
+    printf("%s%v\n", "3 + -5..", (3 + -5));
+    printf("%s%v\n", "3 * 5..", (3 * 5));
+    printf("%s%v\n", "3 / 5..", (3 / 5));
+    printf("%s%v\n", "3.0 + 5.0..", (3.0 + 5.0));
+    printf("%s%v\n", "3.0 - 5.0..", (3.0 - 5.0));
+    printf("%s%v\n", "3.0 + -5.0..", (3.0 + -5.0));
+    printf("%s%v\n", "3.0 * 5.0..", (3.0 * 5.0));
+    printf("%s%v\n", "3.0 / 5.0..", (3.0 / 5.0));
+    printf("%s%v\n", "3 + 5.0..", (3 + 5.0));
+    printf("%s%v\n", "3 - 5.0..", (3 - 5.0));
+    printf("%s%v\n", "3 + -5.0..", (3 + -5.0));
+    printf("%s%v\n", "3 * 5.0..", (3 * 5.0));
+    printf("%s%v\n", "3 / 5.0..", (3 / 5.0));
+    printf("%s%v\n", "3.0 + 5..", (3.0 + 5));
+    printf("%s%v\n", "3.0 - 5..", (3.0 - 5));
+    printf("%s%v\n", "3.0 + -5..", (3.0 + -5));
+    printf("%s%v\n", "3.0 * 5..", (3.0 * 5));
+    printf("%s%v\n", "3.0 / 5..", (3.0 / 5));
 
     var intVal int;
     var floatVal float;
 
     intVal = 3;
 
-    print("3 + 5.." + (intVal + 5) + "\n");
-    print("3 - 5.." + (intVal - 5) + "\n");
-    print("3 + -5.." + (intVal + -5) + "\n");
-    print("3 * 5.." + (intVal * 5) + "\n");
-    print("3 / 5.." + (intVal / 5) + "\n");
+    printf("%s%v\n", "3 + 5..", (intVal + 5));
+    printf("%s%v\n", "3 - 5..", (intVal - 5));
+    printf("%s%v\n", "3 + -5..", (intVal + -5));
+    printf("%s%v\n", "3 * 5..", (intVal * 5));
+    printf("%s%v\n", "3 / 5..", (intVal / 5));
 
     intVal = 10;
     floatVal = 3.0;
 
-    print("3.0 + 5.0.." + (floatVal + 5.0) + "\n");
-    print("3.0 - 5.0.." + (floatVal - 5.0) + "\n");
-    print("3.0 + -5.0.." + (floatVal + -5.0) + "\n");
-    print("3.0 * 5.0.." + (floatVal * 5.0) + "\n");
-    print("3.0 / 5.0.." + (floatVal / 5.0) + "\n");
+    printf("%s%v\n", "3.0 + 5.0..", (floatVal + 5.0));
+    printf("%s%v\n", "3.0 - 5.0..", (floatVal - 5.0));
+    printf("%s%v\n", "3.0 + -5.0..", (floatVal + -5.0));
+    printf("%s%v\n", "3.0 * 5.0..", (floatVal * 5.0));
+    printf("%s%v\n", "3.0 / 5.0..", (floatVal / 5.0));
 
     floatVal = 10;
     intVal = 3;
 
-    print("3 + 5.0.." + (intVal + 5.0) + "\n");
-    print("3 - 5.0.." + (intVal - 5.0) + "\n");
-    print("3 + -5.0.." + (intVal + -5.0) + "\n");
-    print("3 * 5.0.." + (intVal * 5.0) + "\n");
-    print("3 / 5.0.." + (intVal / 5.0) + "\n");
+    printf("%s%v\n", "3 + 5.0..", (intVal + 5.0));
+    printf("%s%v\n", "3 - 5.0..", (intVal - 5.0));
+    printf("%s%v\n", "3 + -5.0..", (intVal + -5.0));
+    printf("%s%v\n", "3 * 5.0..", (intVal * 5.0));
+    printf("%s%v\n", "3 / 5.0..", (intVal / 5.0));
 
     intVal = 10;
     floatVal = 3.0;
 
-    print("3.0 + 5.." + (floatVal + 5) + "\n");
-    print("3.0 - 5.." + (floatVal - 5) + "\n");
-    print("3.0 + -5.." + (floatVal + -5) + "\n");
-    print("3.0 * 5.." + (floatVal * 5) + "\n");
-    print("3.0 / 5.." + (floatVal / 5) + "\n");
+    printf("%s%v\n", "3.0 + 5..", (floatVal + 5));
+    printf("%s%v\n", "3.0 - 5..", (floatVal - 5));
+    printf("%s%v\n", "3.0 + -5..", (floatVal + -5));
+    printf("%s%v\n", "3.0 * 5..", (floatVal * 5));
+    printf("%s%v\n", "3.0 / 5..", (floatVal / 5));
 
     floatVal = 10.0;
 
-    print("1 < 3.." + (1 < 3) + "\n");
-    print("3 < 1.." + (3 < 1) + "\n");
-    print("1 <= 3.." + (1 <= 3) + "\n");
-    print("3 <= 1.." + (3 <= 1) + "\n");
-    print("1 == 1.." + (1 == 1) + "\n");
-    print("1 == 3.." + (1 == 3) + "\n");
-    print("1 != 3.." + (1 != 3) + "\n");
-    print("3 != 3.." + (3 != 3) + "\n");
-    print("1 >= 3.." + (1 >= 3) + "\n");
-    print("3 >= 1.." + (3 >= 1) + "\n");
-    print("3 > 1.." + (3 > 1) + "\n");
-    print("1 > 3.." + (1 > 3) + "\n");
+    printf("%s%v\n", "1 < 3..", (1 < 3));
+    printf("%s%v\n", "3 < 1..", (3 < 1));
+    printf("%s%v\n", "1 <= 3..", (1 <= 3));
+    printf("%s%v\n", "3 <= 1..", (3 <= 1));
+    printf("%s%v\n", "1 == 1..", (1 == 1));
+    printf("%s%v\n", "1 == 3..", (1 == 3));
+    printf("%s%v\n", "1 != 3..", (1 != 3));
+    printf("%s%v\n", "3 != 3..", (3 != 3));
+    printf("%s%v\n", "1 >= 3..", (1 >= 3));
+    printf("%s%v\n", "3 >= 1..", (3 >= 1));
+    printf("%s%v\n", "3 > 1..", (3 > 1));
+    printf("%s%v\n", "1 > 3..", (1 > 3));
 
-    print("1.0 < 3.." + (1.0 < 3) + "\n");
-    print("3 < 1.0.." + (3 < 1.0) + "\n");
-    print("1.0 <= 3.." + (1.0 <= 3) + "\n");
-    print("3 <= 1.0.." + (3 <= 1.0) + "\n");
-    print("1.0 == 1.0.." + (1.0 == 1.0) + "\n");
-    print("1.0 == 3.." + (1.0 == 3) + "\n");
-    print("1 != 3.0.." + (1 != 3.0) + "\n");
-    print("3.0 != 3.0.." + (3.0 != 3.0) + "\n");
-    print("3.0 >= 1.." + (3.0 >= 1) + "\n");
-    print("1 >= 3.0.." + (1 >= 3.0) + "\n");
-    print("3.0 > 1.." + (3.0 > 1) + "\n");
-    print("1 > 3.0.." + (1 > 3.0) + "\n");
+    printf("%s%v\n", "1.0 < 3..", (1.0 < 3));
+    printf("%s%v\n", "3 < 1.0..", (3 < 1.0));
+    printf("%s%v\n", "1.0 <= 3..", (1.0 <= 3));
+    printf("%s%v\n", "3 <= 1.0..", (3 <= 1.0));
+    printf("%s%v\n", "1.0 == 1.0..", (1.0 == 1.0));
+    printf("%s%v\n", "1.0 == 3..", (1.0 == 3));
+    printf("%s%v\n", "1 != 3.0..", (1 != 3.0));
+    printf("%s%v\n", "3.0 != 3.0..", (3.0 != 3.0));
+    printf("%s%v\n", "3.0 >= 1..", (3.0 >= 1));
+    printf("%s%v\n", "1 >= 3.0..", (1 >= 3.0));
+    printf("%s%v\n", "3.0 > 1..", (3.0 > 1));
+    printf("%s%v\n", "1 > 3.0..", (1 > 3.0));
 
     intVal = 1;
 
-    print("1 < 3.." + (intVal < 3) + "\n");
-    print("3 < 1.." + (3 < intVal) + "\n");
-    print("1 <= 3.." + (intVal <= 3) + "\n");
-    print("3 <= 1.." + (3 <= intVal) + "\n");
-    print("1 == 1.." + (intVal == 1) + "\n");
-    print("1 == 3.." + (intVal == 3) + "\n");
-    print("1 != 3.." + (intVal != 3) + "\n");
-    print("3 != 3.." + (3 != (intVal*3)) + "\n");
-    print("1 >= 3.." + (intVal >= 3) + "\n");
-    print("3 >= 1.." + (3 >= intVal) + "\n");
-    print("3 > 1.." + (3 > intVal) + "\n");
-    print("1 > 3.." + (intVal > 3) + "\n");
+    printf("%s%v\n", "1 < 3..", (intVal < 3));
+    printf("%s%v\n", "3 < 1..", (3 < intVal));
+    printf("%s%v\n", "1 <= 3..", (intVal <= 3));
+    printf("%s%v\n", "3 <= 1..", (3 <= intVal));
+    printf("%s%v\n", "1 == 1..", (intVal == 1));
+    printf("%s%v\n", "1 == 3..", (intVal == 3));
+    printf("%s%v\n", "1 != 3..", (intVal != 3));
+    printf("%s%v\n", "3 != 3..", (3 != (intVal*3)));
+    printf("%s%v\n", "1 >= 3..", (intVal >= 3));
+    printf("%s%v\n", "3 >= 1..", (3 >= intVal));
+    printf("%s%v\n", "3 > 1..", (3 > intVal));
+    printf("%s%v\n", "1 > 3..", (intVal > 3));
 
     intVal = 3;
 
-    print("1.0 < 3.." + (1.0 < intVal) + "\n");
-    print("3 < 1.0.." + (intVal < 1.0) + "\n");
-    print("1.0 <= 3.." + (1.0 <= intVal) + "\n");
-    print("3 <= 1.0.." + (intVal <= 1.0) + "\n");
-    print("1.0 == 1.0.." + (1.0 == 1.0) + "\n");
-    print("1.0 == 3.." + (1.0 == intVal) + "\n");
-    print("1.0 != 3.." + (1.0 != intVal) + "\n");
-    print("3 >= 1.0.." + (intVal >= 1.0) + "\n");
-    print("1.0 >= 3.0.." + (1.0 >= intVal) + "\n");
-    print("3 > 1.0.." + (intVal > 1.0) + "\n");
-    print("1.0 > 3.." + (1.0 > intVal) + "\n");
+    printf("%s%v\n", "1.0 < 3..", (1.0 < intVal));
+    printf("%s%v\n", "3 < 1.0..", (intVal < 1.0));
+    printf("%s%v\n", "1.0 <= 3..", (1.0 <= intVal));
+    printf("%s%v\n", "3 <= 1.0..", (intVal <= 1.0));
+    printf("%s%v\n", "1.0 == 1.0..", (1.0 == 1.0));
+    printf("%s%v\n", "1.0 == 3..", (1.0 == intVal));
+    printf("%s%v\n", "1.0 != 3..", (1.0 != intVal));
+    printf("%s%v\n", "3 >= 1.0..", (intVal >= 1.0));
+    printf("%s%v\n", "1.0 >= 3.0..", (1.0 >= intVal));
+    printf("%s%v\n", "3 > 1.0..", (intVal > 1.0));
+    printf("%s%v\n", "1.0 > 3..", (1.0 > intVal));
 };
 
 //
@@ -148,51 +148,51 @@ func testOperators() {
 //
 func testStringComparing() {
     if ("abc" == "abc") {
-        print("== good.\n");
+        printf("== good.\n");
     };
 
     if ("abc" == "cde") {
-        print("== bad.\n");
+        printf("== bad.\n");
     };
 
     if ("abc" != "abc") {
-        print("!= bad.\n");
+        printf("!= bad.\n");
     };
 
     if ("abc" != "cde") {
-        print("!= good.\n");
+        printf("!= good.\n");
     };
 
     if ("abc" < "abd") {
-        print("< good.\n");
+        printf("< good.\n");
     };
 
     if ("abc" < "abb") {
-        print("< bad.\n");
+        printf("< bad.\n");
     };
 
     if ("abc" <= "abc") {
-        print("<= good.\n");
+        printf("<= good.\n");
     };
 
     if ("abc" <= "abd") {
-        print("<= good.\n");
+        printf("<= good.\n");
     };
 
     if ("abc" <= "abb") {
-        print("<= bad.\n");
+        printf("<= bad.\n");
     };
 
     if ("abc" >= "abc") {
-        print(">= good.\n");
+        printf(">= good.\n");
     };
 
     if ("abc" >= "abb") {
-        print(">= good.\n");
+        printf(">= good.\n");
     };
 
     if ("abc" >= "abd") {
-        print(">= bad.\n");
+        printf(">= bad.\n");
     };
 
     var strVal string;
@@ -200,51 +200,51 @@ func testStringComparing() {
     strVal = "abc";
 
     if (strVal == "abc") {
-        print("== good.\n");
+        printf("== good.\n");
     };
 
     if (strVal == "cde") {
-        print("== bad.\n");
+        printf("== bad.\n");
     };
 
     if (strVal != "abc") {
-        print("!= bad.\n");
+        printf("!= bad.\n");
     };
 
     if (strVal != "cde") {
-        print("!= good.\n");
+        printf("!= good.\n");
     };
 
     if (strVal < "abd") {
-        print("< good.\n");
+        printf("< good.\n");
     };
 
     if (strVal < "abb") {
-        print("< bad.\n");
+        printf("< bad.\n");
     };
 
     if (strVal <= "abc") {
-        print("<= good.\n");
+        printf("<= good.\n");
     };
 
     if (strVal <= "abd") {
-        print("<= good.\n");
+        printf("<= good.\n");
     };
 
     if (strVal <= "abb") {
-        print("<= bad.\n");
+        printf("<= bad.\n");
     };
 
     if (strVal >= "abc") {
-        print(">= good.\n");
+        printf(">= good.\n");
     };
 
     if (strVal >= "abb") {
-        print(">= good.\n");
+        printf(">= good.\n");
     };
 
     if (strVal >= "abd") {
-        print(">= bad.\n");
+        printf(">= bad.\n");
     };
 };
 
@@ -253,10 +253,10 @@ func testStringComparing() {
 //
 func testCast() {
     var intVal int = 3.0;
-    print("intVal.." + intVal + "\n");
+    printf("intVal..%v\n", intVal);
 
     var floatVal float = 0.0;
-    print("floatVal.." + floatVal + "\n");
+    printf("floatVal..%v\n", floatVal);
 
 };
 
@@ -264,13 +264,13 @@ func testCast() {
 // Check function
 //
 func testFuncNoArg() {
-    print("no_arg\n");
+    printf("no_arg\n");
 
     return;
 };
 
 func testFunc2Arg(a int, b int) {
-    print("a + b.." + (a + b) + "\n");
+    printf("a + b..%v\n", (a + b));
 };
 
 func testFuncLocalVal(a float) {
@@ -280,7 +280,7 @@ func testFuncLocalVal(a float) {
     b = 3;
     c = 4.0;
 
-    print("a + b + c.." + (a + b + c) + "\n");
+    printf("a + b + c..%v\n", (a + b + c));
 };
 
 func testFuncBool(b bool) bool {
@@ -304,13 +304,13 @@ func recursive(count int) {
     var a int;
     a = count;
 
-    print(" a.." + a);
+    printf(" a..%v\n", a);
     if (count > 0) {
         recursive(count-1);
     } else {
-        print("\n");
+        printf("\n");
     };
-    print(" a.." + a);
+    printf(" a..%v\n", a);
 };
 
 
@@ -322,69 +322,69 @@ func testBoolOperations() {
 
     boolVal = true;
 
-    print("boolVal.." + boolVal + "\n");
-    print("!boolVal.." + !boolVal + "\n");
+    printf("boolVal..%v\n", boolVal);
+    printf("!boolVal..%v\n", !boolVal);
 
     if (boolVal) {
-        print("true\n");
+        printf("true\n");
     } else {
-        print("false\n");
+        printf("false\n");
     };
 
     if (boolVal || false) {
-        print("boolVal || false\n");
+        printf("boolVal || false\n");
     };
     if (boolVal && false) {
-        print("boolVal && false\n");
+        printf("boolVal && false\n");
     };
 
     if (true == true) {
-        print("true == true good\n");
+        printf("true == true good\n");
     };
 
     if (true == false) {
-        print("true == false bad\n");
+        printf("true == false bad\n");
     };
 
     if (true != true) {
-        print("true != true bad\n");
+        printf("true != true bad\n");
     };
 
     if (true != false) {
-        print("true != false good\n");
+        printf("true != false good\n");
     };
 
     if (!true) {
-        print("! operator bad.\n");
+        printf("! operator bad.\n");
     };
 
     if (!false) {
-        print("! operator good.\n");
+        printf("! operator good.\n");
     };
 
     var trueVal bool;
     trueVal = true;
 
     if (trueVal == true) {
-        print("trueVal == true good\n");
+        printf("trueVal == true good\n");
     };
     if (trueVal == false) {
-        print("trueVal == false bad\n");
+        printf("trueVal == false bad\n");
     };
     if (trueVal != true) {
-        print("trueVal != true bad\n");
+        printf("trueVal != true bad\n");
     };
     if (trueVal != false) {
-        print("trueVal != false good\n");
+        printf("trueVal != false good\n");
     };
     if (!trueVal) {
-        print("! operator bad.\n");
+        printf("! operator bad.\n");
     };
     var falseVal bool;
     falseVal = false;
 
     if (!falseVal) {
-        print("! operator good.\n");
+        printf("! operator good.\n");
     };
 };
 
@@ -393,55 +393,55 @@ func testBoolOperations() {
 //
 func testFlowControl() {
     if (true) {
-        print("true\n");
+        printf("true\n");
     };
 
     if (false) {
-        print("false\n");
+        printf("false\n");
     };
 
     if (false) {
-        print("bad\n");
+        printf("bad\n");
     } else {
-        print("good\n");
+        printf("good\n");
     };
 
     if (false) {
-        print("bad\n");
+        printf("bad\n");
     } else if (true) {
-        print("good\n");
+        printf("good\n");
     } else {
-        print("bad\n");
+        printf("bad\n");
     };
 
     if (false) {
-        print("bad\n");
+        printf("bad\n");
     } else if (false) {
-        print("bad\n");
+        printf("bad\n");
     } else {
-        print("good\n");
+        printf("good\n");
     };
 
     var i int;
 
-    print("\n");
+    printf("\n");
     println("********** for statement **********");
 
     i = 0;
     for {
-        print(" i.." + i);
+        printf(" i..%v\n", i);
         if (i > 5) {
             break;
         };
         i = i + 1;
     };
 
-    print("\n");
+    printf("\n");
 
     for i = 0; i < 10; i = i + 1 {
-        print(" i.." + i);
+        printf(" i..%v\n", i);
     };
-    print("\n");
+    printf("\n");
 
     i = 0;
 
@@ -450,34 +450,34 @@ func testFlowControl() {
         if (i < 5) {
             continue;
         };
-        print(" i.." + i);
+        printf(" i..%v\n", i);
     };
     println("\ni.." + i);
 
     var j int;
     for i = 0; i < 5; i = i + 1 {
-        print("*** i.." + i + "***\n");
+        printf("*** i..%v***\n", i);
         if (i == 0) {
-            print("i == 0\n");
+            printf("i == 0\n");
         } else if (i == 1) {
-            print("i == 1\n");
+            printf("i == 1\n");
         } else if (i == 2) {
-            print("i == 2\n");
+            printf("i == 2\n");
         } else {
-            print("i == else\n");
+            printf("i == else\n");
         };
         if (i != 3) {
-            print("i != 3\n");
+            printf("i != 3\n");
         };
         if (i == 2 || i == 3) {
-            print("i == 2 || i == 3\n");
+            printf("i == 2 || i == 3\n");
         } else {
-            print("i != 2 && i != 3\n");
+            printf("i != 2 && i != 3\n");
         };
 
         for j = 0; j < 5; j = j + 1 {
             if (i == 2 && j == 3) {
-                print("i == 2 && j == " + j + "\n");
+                printf("i == 2 && j == %v\n", j);
             };
         };
     };
@@ -494,7 +494,7 @@ func testArray() {
     var array2 []int = []int{1, 2, 3, 4, 5.0};
 
     for i = 0; i < 5; i = i + 1 {
-        print("array2[" + i + "].." + array2[i] + "\n");
+        printf("array2[%v].. %v\n", i, array2[i]);
     };
 };
 
@@ -507,31 +507,31 @@ func testNil() {
     var arrayVal []int = []int{1, 2, 3};
     var array []int;
 
-    print(emptyStr);
-    print("\n");
+    printf(emptyStr);
+    printf("\n");
 
     if (emptyStr == "") {
-        print("OK\n");
+        printf("OK\n");
     } else {
-        print("NG\n");
+        printf("NG\n");
     };
 
     if (strVal != "") {
-        print("OK\n");
+        printf("OK\n");
     } else {
-        print("NG\n");
+        printf("NG\n");
     };
 
     if (array == nil) {
-        print("NG\n");
+        printf("NG\n");
     } else {
-        print("OK\n");
+        printf("OK\n");
     };
 
     if (nil == nil) {
-        print("OK\n");
+        printf("OK\n");
     } else {
-        print("NG\n");
+        printf("NG\n");
     };
 };
 
@@ -540,17 +540,17 @@ func testMultiAssign() {
     var b int;
     var c int;
     a, b, c = 1, 2, 3;
-    print("a is " + a + "\n");
-    print("b is " + b + "\n");
-    print("c is " + c + "\n");
+    printf("a is %v\n", a);
+    printf("b is %v\n", b);
+    printf("c is %v\n", c);
 };
 
 func testFuncMultiResult() {
     var a int;
     var b int;
     a, b = getMulti();
-    print("a is " + a + "\n");
-    print("b is " + b + "\n");
+    printf("a is %v\n", a);
+    printf("b is %v\n", b);
 };
 
 func getMulti() (int, int) {
@@ -567,16 +567,16 @@ func testNativeFuncItoa() {
 
     b = itoa(a);
 
-    print(b);
+    printf(b);
 };
 
 func testPackageVariable() {
-    print("other old is " + utils.other);
+    printf("other old is %v\n", utils.other);
     utils.other = 250;
-    print("other new is " + utils.other);
+    printf("other new is %v\n", utils.other);
 
     utils.setOther(520);
-    print("other change is " + utils.other);
+    printf("other change is %v\n", utils.other);
 
     utils.printOther();
 };
@@ -584,7 +584,7 @@ func testPackageVariable() {
 func testGlobalVariable() {
     var i int;
     for i = 0; i < 4; i = i + 1 {
-        print("globalArray[" + i + "].." + globalArray[i] + "\n");
+        printf("globalArray[%v]..%v\n", i, globalArray[i]);
     };
 
     globalArray[0] = 0;
@@ -593,60 +593,56 @@ func testGlobalVariable() {
     globalArray[3] = 8;
 
     for i = 0; i < 4; i = i + 1 {
-        print("globalArray[" + i + "].." + globalArray[i] + "\n");
+        printf("globalArray[%v]..%v\n", i, globalArray[i]);
     };
 
     for i = 0; i < 4; i = i + 1 {
-        print("utils.globalArray[" + i + "].." + utils.globalArray[i] + "\n");
+        printf("utils.globalArray[%v]..%v\n", i, utils.globalArray[i]);
     };
 };
 
 func testMap() {
     var localMap map[string]int = map[string]int{"a": 1, "b": 2, "c": 3};
-    print("map a is " + localMap["a"] + "\n");
-    print("map b is " + localMap["b"] + "\n");
+    printf("map a is %v\n", localMap["a"]);
+    printf("map b is %v\n", localMap["b"]);
 
     localMap["a"] = 100;
     localMap["b"] = 200;
     localMap["c"] = 400;
     localMap["d"] = 500;
 
-    print("map a is " + localMap["a"] + "\n");
-    print("map b is " + localMap["b"] + "\n");
-    print("map c is " + localMap["c"] + "\n");
-    print("map d is " + localMap["d"] + "\n");
+    printf("map a is %v\n", localMap["a"]);
+    printf("map b is %v\n", localMap["b"]);
+    printf("map c is %v\n", localMap["c"]);
+    printf("map d is %v\n", localMap["d"]);
 };
 
 func testBool() {
     var a bool;
 
     if !a {
-        print("a is false\n");
+        printf("a is false\n");
     };
 
     a = true;
     if a {
-        print("a is true\n");
+        printf("a is true\n");
     };
 
     var boolList []bool = []bool{true, false, true, false};
     var i int;
     for i = 0; i < 4; i = i + 1 {
-        print("boolList " + i + " is " + boolList[i] + "\n");
+        printf("boolList %v is %v\n", i, boolList[i]);
     };
 };
 
 func testPrintf() {
-    printf("test printf %s\n", []interface{}{"test"});
-};
-
-func dotDotDotFunc(format string, args ...string) {
-    printf("test dot dot dot: " + format, args);
+    printf("test printf %s\n", "test");
 };
 
 func testDotDotDot() {
-    dotDotDotFunc("%s\n", "Hello");
-    dotDotDotFunc("%s %s %s\n", "Hello", "World", "!");
+    printf("%s\n", "Hello");
+    printf("%s %s %s\n", "Hello", "World", "!");
 };
 
 func main() {
@@ -657,10 +653,10 @@ func main() {
     testFuncNoArg();
     testFunc2Arg(13, 15);
     testFuncLocalVal(3.0);
-    println("testFuncBool.." + testFuncBool(true));
-    println("testFuncInt.." + testFuncInt(3.0));
-    println("testFuncFloat.." + testFuncFloat(3));
-    println("testFuncString.." + testFuncString("hoge"));
+    printf("%s%v\n", "testFuncBool..", testFuncBool(true));
+    printf("%s%v\n", "testFuncInt..", testFuncInt(3.0));
+    printf("%s%v\n", "testFuncFloat..", testFuncFloat(3));
+    printf("%s%v\n", "testFuncString..", testFuncString("hoge"));
     recursive(10);
     testBoolOperations();
     testFlowControl();

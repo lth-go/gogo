@@ -9,9 +9,13 @@ func (c *Compiler) AddNativeFunctionList() {
 	c.AddNativeFunctionPrintf()
 	c.AddNativeFunctionItoa()
 }
-func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType) {
+func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType, ellipsis bool) {
 	paramsType := TODOCreateParam(pType)
 	resultsType := TODOCreateParam(rType)
+
+	if ellipsis {
+		paramsType[len(paramsType)-1].Ellipsis = true
+	}
 
 	fd := &FunctionDefinition{
 		Type:            CreateFuncType(paramsType, resultsType),
@@ -30,6 +34,7 @@ func (c *Compiler) AddNativeFunctionPrint() {
 		"print",
 		[]vm.BasicType{vm.BasicTypeString},
 		nil,
+		false,
 	)
 }
 
@@ -38,6 +43,7 @@ func (c *Compiler) AddNativeFunctionPrintf() {
 		"printf",
 		[]vm.BasicType{vm.BasicTypeString, vm.BasicTypeArray},
 		nil,
+		true,
 	)
 }
 
@@ -46,6 +52,7 @@ func (c *Compiler) AddNativeFunctionItoa() {
 		"itoa",
 		[]vm.BasicType{vm.BasicTypeInt},
 		[]vm.BasicType{vm.BasicTypeString},
+		false,
 	)
 }
 

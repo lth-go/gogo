@@ -136,6 +136,7 @@ func (c *Compiler) SearchFunction(name string) *FunctionDefinition {
 	return nil
 }
 
+// TODO: remove
 func (c *Compiler) SearchPackage(packageName string) *Package {
 	for _, imp := range c.importList {
 		if packageName != imp.packageName {

@@ -19,6 +19,8 @@ make test
 
 ## TODO
 
++ add import to decl
++ remove SearchPackage
 + for range
 + 常量fix修正
 + 循环导入校验

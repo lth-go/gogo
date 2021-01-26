@@ -636,6 +636,10 @@ func testBool() {
     };
 };
 
+func testPrintf() {
+    printf("test printf %s\n", []interface{}{"test"});
+};
+
 func main() {
     testLex();
     testOperators();
@@ -661,4 +665,5 @@ func main() {
     testGlobalVariable();
     testMap();
     testBool();
+    testPrintf();
 };

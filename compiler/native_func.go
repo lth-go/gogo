@@ -6,6 +6,7 @@ import (
 
 func (c *Compiler) AddNativeFunctionList() {
 	c.AddNativeFunctionPrint()
+	c.AddNativeFunctionPrintf()
 	c.AddNativeFunctionItoa()
 }
 func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType) {
@@ -32,6 +33,14 @@ func (c *Compiler) AddNativeFunctionPrint() {
 	)
 }
 
+func (c *Compiler) AddNativeFunctionPrintf() {
+	c.AddNativeFunc(
+		"printf",
+		[]vm.BasicType{vm.BasicTypeString, vm.BasicTypeArray},
+		nil,
+	)
+}
+
 func (c *Compiler) AddNativeFunctionItoa() {
 	c.AddNativeFunc(
 		"itoa",
@@ -47,9 +56,15 @@ func TODOCreateParam(typeList []vm.BasicType) []*Parameter {
 
 	list := make([]*Parameter, 0)
 	for _, basicType := range typeList {
-		list = append(list, &Parameter{
+		p := &Parameter{
 			Type: NewType(basicType),
-		})
+		}
+
+		if p.Type.IsArray() {
+			p.Type.arrayType = NewArrayType(NewType(vm.BasicTypeInterface))
+		}
+
+		list = append(list, p)
 	}
 
 	return list

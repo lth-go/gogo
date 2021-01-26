@@ -64,6 +64,10 @@ func (t *Type) IsMapType() bool {
 	return t.BasicType == BasicTypeMap
 }
 
+func (t *Type) IsInterfaceType() bool {
+	return t.BasicType == BasicTypeInterface
+}
+
 func (t *Type) IsReferenceType() bool {
-	return t.IsSliceType() || t.IsMapType()
+	return t.IsSliceType() || t.IsMapType() || t.IsInterfaceType()
 }

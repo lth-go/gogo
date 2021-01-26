@@ -196,8 +196,13 @@ func NewObjectMap() *ObjectMap {
 //
 type ObjectInterface struct {
 	ObjectBase
-	// Type
 	Data Object
+}
+
+func NewObjectInterface(data Object) *ObjectInterface {
+	return &ObjectInterface{
+		Data: data,
+	}
 }
 
 //

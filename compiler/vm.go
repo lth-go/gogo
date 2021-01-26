@@ -34,6 +34,10 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 		return vm.NewObjectFloat(value.Value)
 	case *StringExpression:
 		return vm.NewObjectString(value.Value)
+	case *InterfaceExpression:
+		return vm.NewObjectInterface(GetVmVariable(value.Data))
+	case *NilExpression:
+		return vm.NilObject
 	case *ArrayExpression:
 		arrayValue := vm.NewObjectArray(len(value.List))
 		for i, subValue := range value.List {

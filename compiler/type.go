@@ -279,6 +279,10 @@ func (t *Type) SetBasicType(basicType vm.BasicType) {
 }
 
 func (t *Type) Equal(t2 *Type) bool {
+	if t.IsInterface() || t2.IsInterface() {
+		return true
+	}
+
 	if t.GetBasicType() != t2.GetBasicType() {
 		return false
 	}
@@ -397,6 +401,10 @@ func (t *Type) IsMultipleValues() bool {
 
 func (t *Type) IsMap() bool {
 	return t.GetBasicType() == vm.BasicTypeMap
+}
+
+func (t *Type) IsInterface() bool {
+	return t.GetBasicType() == vm.BasicTypeInterface
 }
 
 func (t *Type) GetTypeName() string {

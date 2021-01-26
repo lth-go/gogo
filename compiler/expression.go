@@ -175,7 +175,6 @@ func CreateStringExpression(pos Position, value string) *StringExpression {
 //
 type InterfaceExpression struct {
 	ExpressionBase
-	Type *Type
 	Data Expression
 }
 
@@ -193,7 +192,9 @@ func (expr *InterfaceExpression) Generate(ob *OpCodeBuf) {
 }
 
 func CreateInterfaceExpression(pos Position) *InterfaceExpression {
-	expr := &InterfaceExpression{}
+	expr := &InterfaceExpression{
+		Data: CreateNilExpression(pos),
+	}
 	expr.SetPosition(pos)
 
 	return expr
@@ -230,9 +231,116 @@ func isNilExpression(expr Expression) bool {
 }
 
 //
-// IdentifierExpression
+// ArrayExpression 创建列表时的值, eg:{1,2,3,4}
+//
+type ArrayExpression struct {
+	ExpressionBase
+	List []Expression
+}
+
+func (expr *ArrayExpression) Fix() Expression {
+	elemType := expr.GetType().arrayType.ElementType
+
+	for i := 0; i < len(expr.List); i++ {
+		// TODO: 直接使用value
+		keyValueExpr, ok := expr.List[i].(*KeyValueExpression)
+		if ok {
+			expr.List[i] = keyValueExpr.Value
+		}
+
+		expr.List[i] = expr.List[i].Fix()
+		expr.List[i] = CreateAssignCast(expr.List[i], elemType)
+	}
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *ArrayExpression) Generate(ob *OpCodeBuf) {
+	for _, subExpr := range expr.List {
+		subExpr.Generate(ob)
+	}
+
+	count := len(expr.List)
+	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, count)
+}
+
+func CreateArrayExpression(typ *Type, exprList []Expression) *ArrayExpression {
+	expr := &ArrayExpression{
+		List: exprList,
+	}
+	expr.SetType(typ)
+
+	return expr
+}
+
+// MapExpression
+type MapExpression struct {
+	ExpressionBase
+	KeyList   []Expression
+	ValueList []Expression
+}
+
+func (expr *MapExpression) Fix() Expression {
+	if len(expr.KeyList) != len(expr.ValueList) {
+		panic("TODO")
+	}
+
+	keyType := expr.GetType().mapType.Key
+	valueType := expr.GetType().mapType.Value
+
+	for i := 0; i < len(expr.KeyList); i++ {
+		expr.KeyList[i] = expr.KeyList[i].Fix()
+		expr.KeyList[i] = CreateAssignCast(expr.KeyList[i], keyType)
+	}
+
+	for i := 0; i < len(expr.ValueList); i++ {
+		expr.ValueList[i] = expr.ValueList[i].Fix()
+		expr.ValueList[i] = CreateAssignCast(expr.ValueList[i], valueType)
+	}
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *MapExpression) Generate(ob *OpCodeBuf) {
+	for _, subExpr := range expr.ValueList {
+		subExpr.Generate(ob)
+	}
+
+	for _, subExpr := range expr.KeyList {
+		subExpr.Generate(ob)
+	}
+
+	size := len(expr.KeyList)
+
+	ob.generateCode(expr.Position(), vm.VM_NEW_MAP, size)
+}
+
+func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
+	expr := &MapExpression{
+		KeyList:   make([]Expression, len(valueList)),
+		ValueList: make([]Expression, len(valueList)),
+	}
+	expr.SetType(typ)
+
+	for i, subExpr := range valueList {
+		keyValueExpr, ok := subExpr.(*KeyValueExpression)
+		if !ok {
+			panic("TODO")
+		}
+		expr.KeyList[i] = keyValueExpr.Key
+		expr.ValueList[i] = keyValueExpr.Value
+	}
+
+	return expr
+}
+
 //
 // IdentifierExpression 变量表达式
+//
 type IdentifierExpression struct {
 	ExpressionBase
 	name  string
@@ -676,114 +784,6 @@ func (expr *CastExpression) Generate(ob *OpCodeBuf) {
 	default:
 		panic("TODO")
 	}
-}
-
-//
-// ArrayExpression 创建列表时的值, eg:{1,2,3,4}
-//
-type ArrayExpression struct {
-	ExpressionBase
-	List []Expression
-}
-
-func (expr *ArrayExpression) Fix() Expression {
-	elemType := expr.GetType().arrayType.ElementType
-
-	for i := 0; i < len(expr.List); i++ {
-		// TODO: 直接使用value
-		keyValueExpr, ok := expr.List[i].(*KeyValueExpression)
-		if ok {
-			expr.List[i] = keyValueExpr.Value
-		}
-
-		expr.List[i] = expr.List[i].Fix()
-		expr.List[i] = CreateAssignCast(expr.List[i], elemType)
-	}
-
-	expr.GetType().Fix()
-
-	return expr
-}
-
-func (expr *ArrayExpression) Generate(ob *OpCodeBuf) {
-	for _, subExpr := range expr.List {
-		subExpr.Generate(ob)
-	}
-
-	count := len(expr.List)
-	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, count)
-}
-
-func CreateArrayExpression(typ *Type, exprList []Expression) *ArrayExpression {
-	expr := &ArrayExpression{
-		List: exprList,
-	}
-	expr.SetType(typ)
-
-	return expr
-}
-
-// MapExpression
-type MapExpression struct {
-	ExpressionBase
-	KeyList   []Expression
-	ValueList []Expression
-}
-
-func (expr *MapExpression) Fix() Expression {
-	if len(expr.KeyList) != len(expr.ValueList) {
-		panic("TODO")
-	}
-
-	keyType := expr.GetType().mapType.Key
-	valueType := expr.GetType().mapType.Value
-
-	for i := 0; i < len(expr.KeyList); i++ {
-		expr.KeyList[i] = expr.KeyList[i].Fix()
-		expr.KeyList[i] = CreateAssignCast(expr.KeyList[i], keyType)
-	}
-
-	for i := 0; i < len(expr.ValueList); i++ {
-		expr.ValueList[i] = expr.ValueList[i].Fix()
-		expr.ValueList[i] = CreateAssignCast(expr.ValueList[i], valueType)
-	}
-
-	expr.GetType().Fix()
-
-	return expr
-}
-
-func (expr *MapExpression) Generate(ob *OpCodeBuf) {
-	for _, subExpr := range expr.ValueList {
-		subExpr.Generate(ob)
-	}
-
-	for _, subExpr := range expr.KeyList {
-		subExpr.Generate(ob)
-	}
-
-	size := len(expr.KeyList)
-
-	ob.generateCode(expr.Position(), vm.VM_NEW_MAP, size)
-}
-
-func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
-	expr := &MapExpression{
-		KeyList:   make([]Expression, len(valueList)),
-		ValueList: make([]Expression, len(valueList)),
-	}
-	expr.SetType(typ)
-
-	for i, subExpr := range valueList {
-		keyValueExpr, ok := subExpr.(*KeyValueExpression)
-		if !ok {
-			panic("TODO")
-		}
-		expr.KeyList[i] = keyValueExpr.Key
-		expr.ValueList[i] = keyValueExpr.Value
-	}
-
-	return expr
 }
 
 //

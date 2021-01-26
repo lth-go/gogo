@@ -468,6 +468,14 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(0, objectMap)
 			vm.stack.stackPointer++
 			pc += 3
+		case VM_NEW_INTERFACE:
+			data := stack.GetPlus(-1)
+			ifs := vm.NewObjectInterface(data)
+
+			vm.stack.stackPointer -= 1
+			stack.SetPlus(0, ifs)
+			vm.stack.stackPointer++
+			pc += 3
 		default:
 			panic("TODO")
 		}
@@ -709,6 +717,14 @@ func (vm *VirtualMachine) NewObjectMap(size int) Object {
 		value := vm.stack.GetPlus(valueIndex)
 		obj.Set(key, value)
 	}
+
+	return obj
+}
+
+func (vm *VirtualMachine) NewObjectInterface(data Object) Object {
+	obj := NewObjectInterface(data)
+
+	vm.AddObject(obj)
 
 	return obj
 }

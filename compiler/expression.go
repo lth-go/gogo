@@ -757,36 +757,6 @@ func CreateSelectorExpression(expression Expression, memberName string) *Selecto
 }
 
 //
-// CastExpression
-//
-type CastExpression struct {
-	ExpressionBase
-	castType CastType
-	operand  Expression
-}
-
-func (expr *CastExpression) Fix() Expression { return expr }
-
-func (expr *CastExpression) Generate(ob *OpCodeBuf) {
-	expr.operand.Generate(ob)
-
-	switch expr.castType {
-	case CastTypeIntToFloat:
-		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_FLOAT)
-	case CastTypeFloatToInt:
-		ob.generateCode(expr.Position(), vm.VM_CAST_FLOAT_TO_INT)
-	case CastTypeBoolToString:
-		ob.generateCode(expr.Position(), vm.VM_CAST_BOOLEAN_TO_STRING)
-	case CastTypeIntToString:
-		ob.generateCode(expr.Position(), vm.VM_CAST_INT_TO_STRING)
-	case CastTypeFloatToString:
-		ob.generateCode(expr.Position(), vm.VM_CAST_FLOAT_TO_STRING)
-	default:
-		panic("TODO")
-	}
-}
-
-//
 // IndexExpression
 //
 type IndexExpression struct {

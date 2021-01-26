@@ -1,7 +1,7 @@
 package utils;
 
 func printTest(str string) {
-    print(str + " ========" + "\n");
+    printf("%v\n", str);
 };
 
 var other int = 100;
@@ -11,7 +11,7 @@ func setOther(v int) {
 };
 
 func printOther() {
-    print("printOther " + other);
+    printf("%v %v\n", "printOther ", other);
 };
 
 var globalArray []int = []int{1000, 2000, 3000, 4000};

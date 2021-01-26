@@ -26,14 +26,10 @@ func FixMathBinaryExpression(expr *BinaryExpression) Expression {
 
 	if newBinaryExprLeftType.IsInt() && newBinaryExprRightType.IsInt() {
 		newBinaryExpr.SetType(NewType(vm.BasicTypeInt))
-
 	} else if newBinaryExprLeftType.IsFloat() && newBinaryExprRightType.IsFloat() {
 		newBinaryExpr.SetType(NewType(vm.BasicTypeFloat))
-
-	} else if expr.operator == AddOperator {
-		if newBinaryExprLeftType.IsString() && newBinaryExprRightType.IsString() {
-			newBinaryExpr.SetType(NewType(vm.BasicTypeString))
-		}
+	} else if expr.operator == AddOperator && newBinaryExprLeftType.IsString() && newBinaryExprRightType.IsString() {
+		newBinaryExpr.SetType(NewType(vm.BasicTypeString))
 	} else {
 		compileError(
 			expr.Position(),
@@ -358,4 +354,69 @@ func evalCompareExpressionString(binaryExpr *BinaryExpression, left, right strin
 	newExpr.SetType(NewType(vm.BasicTypeBool))
 
 	return newExpr
+}
+
+// 声明类型转换
+func CreateAssignCast(src Expression, destType *Type) Expression {
+	srcTye := src.GetType()
+
+	if srcTye.Equal(destType) {
+		return src
+	}
+
+	if destType.IsComposite() && srcTye.IsNil() {
+		return src
+	}
+
+	if destType.IsFloat() {
+		expr, ok := src.(*IntExpression)
+		if ok {
+			newExpr := CreateFloatExpression(expr.Position(), float64(expr.Value))
+			newExpr.Fix()
+			return newExpr
+		}
+	}
+
+	if destType.IsInt() {
+		expr, ok := src.(*FloatExpression)
+		if ok {
+			newExpr := CreateIntExpression(expr.Position(), int(expr.Value))
+			newExpr.Fix()
+			return newExpr
+		}
+	}
+
+	castMismatchError(src.Position(), srcTye, destType)
+	return nil
+}
+
+func CastBinaryExpression(binaryExpr *BinaryExpression) *BinaryExpression {
+	leftType := binaryExpr.left.GetType()
+	rightType := binaryExpr.right.GetType()
+
+	if leftType.IsInt() && rightType.IsFloat() {
+		right, ok := binaryExpr.right.(*FloatExpression)
+		if !ok {
+			compileError(binaryExpr.Position(), CAST_MISMATCH_ERR, leftType.GetBasicType(), rightType.GetBasicType())
+		}
+
+		binaryExpr.right = CreateIntExpression(right.Position(), int(right.Value))
+		binaryExpr.right.Fix()
+	} else if leftType.IsFloat() && rightType.IsInt() {
+		right, ok := binaryExpr.right.(*IntExpression)
+		if !ok {
+			compileError(binaryExpr.Position(), CAST_MISMATCH_ERR, leftType.GetBasicType(), rightType.GetBasicType())
+		}
+
+		binaryExpr.right = CreateFloatExpression(right.Position(), float64(right.Value))
+		binaryExpr.right.Fix()
+	}
+
+	return binaryExpr
+}
+
+func castMismatchError(pos Position, src, dest *Type) {
+	srcName := src.GetTypeName()
+	destName := dest.GetTypeName()
+	compileError(pos, CAST_MISMATCH_ERR, srcName, destName)
 }

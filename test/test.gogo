@@ -8,10 +8,6 @@ var emptyMap map[string]int = map[string]int{};
 var globalMap map[string]int = map[string]int{"test": 1};
 var globalInterface interface{} = "cool";
 
-func println(str string) {
-    printf("%s\n", str);
-};
-
 //
 // Check lexical analyzer
 //
@@ -130,17 +126,17 @@ func testOperators() {
 
     intVal = 3;
 
-    printf("%s%v\n", "1.0 < 3..", (1.0 < intVal));
+    printf("%s%v\n", "1.0 < 3..", (1 < intVal));
     printf("%s%v\n", "3 < 1.0..", (intVal < 1.0));
-    printf("%s%v\n", "1.0 <= 3..", (1.0 <= intVal));
+    printf("%s%v\n", "1.0 <= 3..", (1 <= intVal));
     printf("%s%v\n", "3 <= 1.0..", (intVal <= 1.0));
     printf("%s%v\n", "1.0 == 1.0..", (1.0 == 1.0));
-    printf("%s%v\n", "1.0 == 3..", (1.0 == intVal));
-    printf("%s%v\n", "1.0 != 3..", (1.0 != intVal));
+    printf("%s%v\n", "1.0 == 3..", (1 == intVal));
+    printf("%s%v\n", "1.0 != 3..", (1 != intVal));
     printf("%s%v\n", "3 >= 1.0..", (intVal >= 1.0));
-    printf("%s%v\n", "1.0 >= 3.0..", (1.0 >= intVal));
+    printf("%s%v\n", "1.0 >= 3.0..", (1 >= intVal));
     printf("%s%v\n", "3 > 1.0..", (intVal > 1.0));
-    printf("%s%v\n", "1.0 > 3..", (1.0 > intVal));
+    printf("%s%v\n", "1.0 > 3..", (1 > intVal));
 };
 
 //
@@ -274,11 +270,11 @@ func testFunc2Arg(a int, b int) {
 };
 
 func testFuncLocalVal(a float) {
-    var b int;
+    var b float;
     var c float;
 
     b = 3;
-    c = 4.0;
+    c = 4;
 
     printf("a + b + c..%v\n", (a + b + c));
 };
@@ -425,7 +421,7 @@ func testFlowControl() {
     var i int;
 
     printf("\n");
-    println("********** for statement **********");
+    printf("********** for statement **********\n");
 
     i = 0;
     for {
@@ -445,14 +441,14 @@ func testFlowControl() {
 
     i = 0;
 
-    println("********** continue in for **********");
+    printf("********** continue in for **********\n");
     for i = 0; i < 10; i = i + 1 {
         if (i < 5) {
             continue;
         };
         printf(" i..%v\n", i);
     };
-    println("\ni.." + i);
+    printf("\ni..%v\n", i);
 
     var j int;
     for i = 0; i < 5; i = i + 1 {

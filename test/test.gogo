@@ -489,7 +489,7 @@ func testArray() {
 
     var array2 []int = []int{1, 2, 3, 4, 5.0};
 
-    for i = 0; i < 5; i = i + 1 {
+    for i = 0; i < len(array2); i = i + 1 {
         printf("array2[%v].. %v\n", i, array2[i]);
     };
 };
@@ -579,7 +579,7 @@ func testPackageVariable() {
 
 func testGlobalVariable() {
     var i int;
-    for i = 0; i < 4; i = i + 1 {
+    for i = 0; i < len(globalArray); i = i + 1 {
         printf("globalArray[%v]..%v\n", i, globalArray[i]);
     };
 
@@ -588,11 +588,11 @@ func testGlobalVariable() {
     globalArray[2] = 4;
     globalArray[3] = 8;
 
-    for i = 0; i < 4; i = i + 1 {
+    for i = 0; i < len(globalArray); i = i + 1 {
         printf("globalArray[%v]..%v\n", i, globalArray[i]);
     };
 
-    for i = 0; i < 4; i = i + 1 {
+    for i = 0; i < len(globalArray); i = i + 1 {
         printf("utils.globalArray[%v]..%v\n", i, utils.globalArray[i]);
     };
 };
@@ -627,7 +627,7 @@ func testBool() {
 
     var boolList []bool = []bool{true, false, true, false};
     var i int;
-    for i = 0; i < 4; i = i + 1 {
+    for i = 0; i < len(boolList); i = i + 1 {
         printf("boolList %v is %v\n", i, boolList[i]);
     };
 };

@@ -25,6 +25,7 @@ type GoGoFunction struct {
 func (vm *VirtualMachine) AddNativeFunctions() {
 	vm.addNativeFunction("_sys", "printf", nativeFuncPrintf, 2, 0)
 	vm.addNativeFunction("_sys", "itoa", nativeFuncItoa, 1, 1)
+	vm.addNativeFunction("_sys", "len", nativeFuncLen, 1, 1)
 }
 
 func (vm *VirtualMachine) addNativeFunction(
@@ -82,4 +83,21 @@ func nativeFuncPrintf(vm *VirtualMachine, argCount int, args []Object) []Object 
 	fmt.Printf("")
 
 	return nil
+}
+
+func nativeFuncLen(vm *VirtualMachine, argCount int, args []Object) []Object {
+	var length int
+
+	switch obj := args[0].(type) {
+	case *ObjectString:
+		length = len(obj.Value)
+	case *ObjectArray:
+		length = obj.Len()
+	case *ObjectMap:
+		length = len(obj.Map)
+	default:
+		panic("TODO")
+	}
+
+	return []Object{NewObjectInt(length)}
 }

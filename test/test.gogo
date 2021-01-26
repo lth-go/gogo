@@ -640,6 +640,15 @@ func testPrintf() {
     printf("test printf %s\n", []interface{}{"test"});
 };
 
+func dotDotDotFunc(format string, args ...string) {
+    printf("test dot dot dot: " + format, args);
+};
+
+func testDotDotDot() {
+    dotDotDotFunc("%s\n", "Hello");
+    dotDotDotFunc("%s %s %s\n", "Hello", "World", "!");
+};
+
 func main() {
     testLex();
     testOperators();
@@ -666,4 +675,5 @@ func main() {
     testMap();
     testBool();
     testPrintf();
+    testDotDotDot();
 };

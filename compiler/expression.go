@@ -638,7 +638,7 @@ func (expr *FunctionCallExpression) Fix() Expression {
 		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, name)
 	}
 
-	fd.FixArgument(expr.argumentList)
+	expr.argumentList = fd.FixArgument(expr.argumentList)
 
 	// 设置返回值类型
 	resultCount := len(fd.Type.funcType.Results)

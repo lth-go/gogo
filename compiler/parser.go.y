@@ -43,6 +43,7 @@ import (
     PACKAGE IMPORT VAR FUNC
     TYPE STRUCT MAP
     INTERFACE
+    ELLIPSIS
 
 %type <import_spec> import_decl
 %type <import_spec_list> import_decl_list
@@ -64,8 +65,7 @@ import (
     return_statement break_statement continue_statement
     declaration_statement assign_statement
 %type <statement_list> statement_list
-/* TODO: 临时处理 */
-%type <parameter> receiver_or_nil
+%type <parameter> receiver_or_nil parameter_decl
 %type <parameter_list> parameter_list parameters
     result_or_nil result
     type_list_or_nil type_list
@@ -179,17 +179,27 @@ receiver_or_nil
         }
         | LP IDENTIFIER type_specifier RP
         {
-            $$ = NewParameter($3, $2.Lit)
+            $$ = NewParameter($3, $2.Lit, false)
         }
         ;
 parameter_list
+        : parameter_decl
+        {
+            $$ = []*Parameter{$1}
+        }
+        | parameter_list COMMA parameter_decl
+        {
+            $$ = append($1, $3)
+        }
+        ;
+parameter_decl
         : IDENTIFIER type_specifier
         {
-            $$ = []*Parameter{NewParameter($2, $1.Lit)}
+            $$ = NewParameter($2, $1.Lit, false)
         }
-        | parameter_list COMMA IDENTIFIER type_specifier
+        | IDENTIFIER ELLIPSIS type_specifier
         {
-            $$ = append($1, NewParameter($4, $3.Lit))
+            $$ = NewParameter($3, $1.Lit, true)
         }
         ;
 parameters
@@ -228,7 +238,7 @@ result_or_nil
 result
         : type_specifier
         {
-            $$ = []*Parameter{NewParameter($1, "")}
+            $$ = []*Parameter{NewParameter($1, "", false)}
         }
         | LP type_list_or_nil RP
         {
@@ -245,11 +255,11 @@ type_list_or_nil
 type_list
         : type_specifier
         {
-            $$ = []*Parameter{NewParameter($1, "")}
+            $$ = []*Parameter{NewParameter($1, "", false)}
         }
         | type_list COMMA type_specifier
         {
-            $$ = append($1, NewParameter($3, ""))
+            $$ = append($1, NewParameter($3, "", false))
         }
         ;
 statement_list

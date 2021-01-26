@@ -206,7 +206,22 @@ retry:
 				tok = int(ch)
 				lit = string(ch)
 			}
-		case '(', ')', '[', ']', '{', '}', ':', ';', ',', '+', '-', '*', '.':
+		case '.':
+			s.next()
+			if s.peek() == '.' {
+				s.next()
+				if s.peek() == '.' {
+					tok = ELLIPSIS
+				} else {
+					err = fmt.Errorf("syntax error on '%v' at %v:%v", string(ch), pos.Line, pos.Column)
+					return
+				}
+			} else {
+				s.back()
+				tok = opName[string(ch)]
+				lit = string(ch)
+			}
+		case '(', ')', '[', ']', '{', '}', ':', ';', ',', '+', '-', '*':
 			tok = opName[string(ch)]
 			lit = string(ch)
 		default:

@@ -4,14 +4,20 @@ package compiler
 // Parameter 形参
 //
 type Parameter struct {
-	Type *Type
-	Name string
+	Type     *Type
+	Name     string
+	Ellipsis bool
 }
 
-func NewParameter(typ *Type, name string) *Parameter {
+func NewParameter(typ *Type, name string, ellipsis bool) *Parameter {
+	if ellipsis {
+		typ = CreateArrayType(typ, typ.Position())
+	}
+
 	return &Parameter{
-		Type: typ,
-		Name: name,
+		Type:     typ,
+		Name:     name,
+		Ellipsis: ellipsis,
 	}
 }
 
@@ -88,11 +94,25 @@ func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {
 	fd.DeclarationList = append(fd.DeclarationList, decl)
 }
 
-func (fd *FunctionDefinition) FixArgument(argumentList []Expression) {
-	// TODO: 函数返回值算多个
+func (fd *FunctionDefinition) FixArgument(argumentList []Expression) []Expression {
 	parameterList := fd.ParameterList
 
 	paramLen := len(parameterList)
+
+	if paramLen > 0 {
+		lastP := parameterList[paramLen-1]
+		if lastP.Ellipsis {
+			newArgList := make([]Expression, 0)
+			for _, expr := range argumentList[:paramLen-1] {
+				newArgList = append(newArgList, expr)
+			} 
+			lastArg := CreateArrayExpression(lastP.Type, argumentList[paramLen-1:])
+			newArgList = append(newArgList, lastArg)
+
+			argumentList = newArgList
+		}
+	}
+
 	argLen := len(argumentList)
 
 	if argLen != paramLen {
@@ -111,6 +131,8 @@ func (fd *FunctionDefinition) FixArgument(argumentList []Expression) {
 			)
 		}
 	}
+
+	return argumentList
 }
 
 func (fd *FunctionDefinition) GetPackageName() string {

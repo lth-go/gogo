@@ -25,8 +25,6 @@ make test
 + 代码解耦
 + 增加printf函数
 + 增加len,append函数
-+ 增加...
-+ 增加类型interface{}
 + int 改int64
 + 移除CastExpression
 + 优化包代码

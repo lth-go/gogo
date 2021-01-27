@@ -9,6 +9,7 @@ func (c *Compiler) AddNativeFunctionList() {
 	c.AddNativeFunctionItoa()
 	c.AddNativeFunctionLen()
 	c.AddNativeFunctionAppend()
+	c.AddNativeFunctionDelete()
 }
 
 func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType, ellipsis bool) {
@@ -64,6 +65,15 @@ func (c *Compiler) AddNativeFunctionAppend() {
 		[]vm.BasicType{vm.BasicTypeArray, vm.BasicTypeArray},
 		[]vm.BasicType{vm.BasicTypeArray},
 		true,
+	)
+}
+
+func (c *Compiler) AddNativeFunctionDelete() {
+	c.AddNativeFunc(
+		"delete",
+		[]vm.BasicType{vm.BasicTypeMap, vm.BasicTypeInterface},
+		nil,
+		false,
 	)
 }
 

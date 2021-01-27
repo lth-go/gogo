@@ -662,6 +662,11 @@ func testAppend() {
     };
 };
 
+func testDelete() {
+    var dict map[string]int = map[string]int{"a": 1, "b": 2, "c": 3};
+    delete(dict, "a");
+};
+
 func main() {
     testLex();
     testOperators();
@@ -690,4 +695,5 @@ func main() {
     testPrintf();
     testDotDotDot();
     testAppend();
+    testDelete();
 };

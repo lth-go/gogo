@@ -178,11 +178,21 @@ type ObjectMap struct {
 
 func (obj *ObjectMap) Get(key Object) Object {
 	hash := utils.Hash(key)
-	return obj.Map[hash][1]
+	v, ok := obj.Map[hash]
+	if !ok {
+		return nil
+	}
+
+	return v[1]
 }
 
 func (obj *ObjectMap) Set(key Object, value Object) {
 	obj.Map[utils.Hash(key)] = [2]Object{key, value}
+}
+
+func (obj *ObjectMap) Delete(key Object) {
+	hash := utils.Hash(key)
+	delete(obj.Map, hash)
 }
 
 func NewObjectMap() *ObjectMap {

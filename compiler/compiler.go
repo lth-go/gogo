@@ -75,6 +75,16 @@ func (c *Compiler) Generate() *vm.Executable {
 }
 
 func (c *Compiler) FixDeclarationList() {
+	// TODO: 导入放到声明里去
+	for _, imp := range c.importList {
+		for _, doneCompiler := range GetDoneCompilerList() {
+			if imp.packageName == doneCompiler.GetPackageName() {
+				imp.Compiler = doneCompiler
+				break
+			}
+		}
+	}
+
 	for _, decl := range c.declarationList {
 		if decl.Value != nil {
 			decl.Value = decl.Value.Fix()
@@ -84,7 +94,7 @@ func (c *Compiler) FixDeclarationList() {
 }
 
 // 添加引用包函数
-func (c *Compiler) GetFuncIndex(fd *FunctionDefinition) int {
+func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
 	packageName := fd.GetPackageName()
 	name := fd.GetName()
 
@@ -119,38 +129,27 @@ func (c *Compiler) AddDeclarationList(decl *Declaration) int {
 }
 
 func (c *Compiler) SearchDeclaration(name string) *Declaration {
-	for _, declaration := range c.declarationList {
-		if declaration.Name == name {
-			return declaration
+	for _, decl := range c.declarationList {
+		if decl.Name == name {
+			return decl
 		}
 	}
 	return nil
 }
 
 func (c *Compiler) SearchFunction(name string) *FunctionDefinition {
-	for _, func_ := range c.funcList {
-		if func_.Name == name {
-			return func_
+	for _, f := range c.funcList {
+		if f.Name == name {
+			return f
 		}
 	}
 	return nil
 }
 
-// TODO: remove
-func (c *Compiler) SearchPackage(packageName string) *Package {
+func (c *Compiler) SearchPackageCompiler(packageName string) *Compiler {
 	for _, imp := range c.importList {
-		if packageName != imp.packageName {
-			continue
-		}
-
-		impCompiler := GetDoneCompiler(packageName)
-		if impCompiler == nil {
-			panic("TODO")
-		}
-
-		return &Package{
-			compiler: impCompiler,
-			Type:     NewType(vm.BasicTypePackage),
+		if packageName == imp.packageName {
+			return imp.Compiler
 		}
 	}
 

@@ -1,7 +1,9 @@
 package vm
 
 import (
-	"fmt"
+	// "fmt"
+
+	"github.com/lth-go/gogo/utils"
 )
 
 var functionNotFound = -1
@@ -69,7 +71,7 @@ func (vm *VirtualMachine) SetMainEntrypoint() {
 	}
 
 	b := make([]byte, 2)
-	set2ByteInt(b, idx)
+	utils.Set2ByteInt(b, idx)
 	vm.topLevel.CodeList = append(vm.topLevel.CodeList, b...)
 	vm.topLevel.CodeList = append(vm.topLevel.CodeList, VM_INVOKE)
 }
@@ -160,12 +162,12 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			vm.stack.stackPointer++
 			pc += 2
 		case VM_PUSH_INT_2BYTE:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, index)
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_INT:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, exe.ConstantPool.GetInt(index))
 			vm.stack.stackPointer++
 			pc += 3
@@ -178,12 +180,12 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_FLOAT:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetFloatPlus(0, exe.ConstantPool.GetFloat(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_PUSH_STRING:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetStringPlus(0, exe.ConstantPool.GetString(index))
 			vm.stack.stackPointer++
 			pc += 3
@@ -192,22 +194,22 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			vm.stack.stackPointer++
 			pc++
 		case VM_PUSH_STACK:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, stack.Get(base+index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STACK:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.Set(base+index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case VM_PUSH_STATIC:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, static.GetVariableObject(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_POP_STATIC:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			static.SetVariable(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
@@ -290,117 +292,96 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 		case VM_MINUS_FLOAT:
 			stack.SetFloatPlus(-1, -stack.GetFloatPlus(-1))
 			pc++
-		case VM_CAST_INT_TO_FLOAT:
-			stack.SetFloatPlus(-1, float64(stack.GetIntPlus(-1)))
-			pc++
-		case VM_CAST_FLOAT_TO_INT:
-			stack.SetIntPlus(-1, int(stack.GetFloatPlus(-1)))
-			pc++
-		case VM_CAST_BOOLEAN_TO_STRING:
-			if stack.GetIntPlus(-1) != 0 {
-				stack.SetStringPlus(-1, "true")
-			} else {
-				stack.SetStringPlus(-1, "false")
-			}
-			pc++
-		case VM_CAST_INT_TO_STRING:
-			buf := fmt.Sprintf("%d", stack.GetIntPlus(-1))
-			stack.SetStringPlus(-1, buf)
-			pc++
-		case VM_CAST_FLOAT_TO_STRING:
-			buf := fmt.Sprintf("%f", stack.GetFloatPlus(-1))
-			stack.SetStringPlus(-1, buf)
-			pc++
 		case VM_EQ_INT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) == stack.GetIntPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) == stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_FLOAT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) == stack.GetFloatPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) == stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_STRING:
-			stack.SetIntPlus(-2, boolToInt(!(stack.GetStringPlus(-2) == stack.GetStringPlus(-1))))
+			stack.SetIntPlus(-2, utils.BoolToInt(!(stack.GetStringPlus(-2) == stack.GetStringPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_EQ_OBJECT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetPlus(-2) == stack.GetPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetPlus(-2) == stack.GetPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_INT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) > stack.GetIntPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) > stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_FLOAT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) > stack.GetFloatPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) > stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GT_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) > stack.GetStringPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) > stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_INT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) >= stack.GetIntPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) >= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_FLOAT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) >= stack.GetFloatPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) >= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_GE_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) >= stack.GetStringPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) >= stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_INT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) < stack.GetIntPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) < stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_FLOAT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) < stack.GetFloatPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) < stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LT_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) < stack.GetStringPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) < stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_INT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) <= stack.GetIntPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) <= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_FLOAT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) <= stack.GetFloatPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) <= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LE_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) <= stack.GetStringPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) <= stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_INT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetIntPlus(-2) != stack.GetIntPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) != stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_FLOAT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetFloatPlus(-2) != stack.GetFloatPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) != stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_OBJECT:
-			stack.SetIntPlus(-2, boolToInt(stack.GetPlus(-2) != stack.GetPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetPlus(-2) != stack.GetPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_NE_STRING:
-			stack.SetIntPlus(-2, boolToInt(stack.GetStringPlus(-2) != stack.GetStringPlus(-1)))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) != stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_AND:
-			stack.SetIntPlus(-2, boolToInt(intToBool(stack.GetIntPlus(-2)) && intToBool(stack.GetIntPlus(-1))))
+			stack.SetIntPlus(-2, utils.BoolToInt(utils.IntToBool(stack.GetIntPlus(-2)) && utils.IntToBool(stack.GetIntPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_OR:
-			stack.SetIntPlus(-2, boolToInt(intToBool(stack.GetIntPlus(-2)) || intToBool(stack.GetIntPlus(-1))))
+			stack.SetIntPlus(-2, utils.BoolToInt(utils.IntToBool(stack.GetIntPlus(-2)) || utils.IntToBool(stack.GetIntPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
 		case VM_LOGICAL_NOT:
-			stack.SetIntPlus(-1, boolToInt(!intToBool(stack.GetIntPlus(-1))))
+			stack.SetIntPlus(-1, utils.BoolToInt(!utils.IntToBool(stack.GetIntPlus(-1))))
 			pc++
 		case VM_POP:
 			vm.stack.stackPointer--
@@ -410,31 +391,31 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			vm.stack.stackPointer++
 			pc++
 		case VM_DUPLICATE_OFFSET:
-			offset := get2ByteInt(codeList[pc+1:])
+			offset := utils.Get2ByteInt(codeList[pc+1:])
 			stack.Set(vm.stack.stackPointer, stack.Get(vm.stack.stackPointer-1-offset))
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_JUMP:
-			index := get2ByteInt(codeList[pc+1:])
+			index := utils.Get2ByteInt(codeList[pc+1:])
 			pc = index
 		case VM_JUMP_IF_TRUE:
-			if intToBool(stack.GetIntPlus(-1)) {
-				index := get2ByteInt(codeList[pc+1:])
+			if utils.IntToBool(stack.GetIntPlus(-1)) {
+				index := utils.Get2ByteInt(codeList[pc+1:])
 				pc = index
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_JUMP_IF_FALSE:
-			if !intToBool(stack.GetIntPlus(-1)) {
-				index := get2ByteInt(codeList[pc+1:])
+			if !utils.IntToBool(stack.GetIntPlus(-1)) {
+				index := utils.Get2ByteInt(codeList[pc+1:])
 				pc = index
 			} else {
 				pc += 3
 			}
 			vm.stack.stackPointer--
 		case VM_PUSH_FUNCTION:
-			value := get2ByteInt(codeList[pc+1:])
+			value := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, value)
 			vm.stack.stackPointer++
 			pc += 3
@@ -453,7 +434,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 		case VM_RETURN:
 			vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe)
 		case VM_NEW_ARRAY:
-			size := get2ByteInt(codeList[pc+1:])
+			size := utils.Get2ByteInt(codeList[pc+1:])
 			array := vm.NewObjectArray(size)
 
 			vm.stack.stackPointer -= size
@@ -461,7 +442,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			vm.stack.stackPointer++
 			pc += 3
 		case VM_NEW_MAP:
-			size := get2ByteInt(codeList[pc+1:])
+			size := utils.Get2ByteInt(codeList[pc+1:])
 			objectMap := vm.NewObjectMap(size)
 
 			vm.stack.stackPointer -= size * 2
@@ -515,27 +496,27 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 			}
 
 			// 增加返回值的位置
-			srcIdx := get2ByteInt(codeList[i+1:])
+			srcIdx := utils.Get2ByteInt(codeList[i+1:])
 			if srcIdx >= parameterCount {
 				destIdx = srcIdx + 1
 			} else {
 				destIdx = srcIdx
 			}
-			set2ByteInt(codeList[i+1:], destIdx)
+			utils.Set2ByteInt(codeList[i+1:], destIdx)
 		case VM_PUSH_STATIC, VM_POP_STATIC:
 
-			idxInExe := get2ByteInt(codeList[i+1:])
+			idxInExe := utils.Get2ByteInt(codeList[i+1:])
 			packageName := exe.PackageName
 			if exe.VariableList.VariableList[idxInExe].PackageName != "" {
 				packageName = exe.VariableList.VariableList[idxInExe].PackageName
 			}
 			funcIdx := vm.SearchStatic(packageName, exe.VariableList.VariableList[idxInExe].Name)
-			set2ByteInt(codeList[i+1:], funcIdx)
+			utils.Set2ByteInt(codeList[i+1:], funcIdx)
 
 		case VM_PUSH_FUNCTION:
-			idxInExe := get2ByteInt(codeList[i+1:])
+			idxInExe := utils.Get2ByteInt(codeList[i+1:])
 			funcIdx := vm.SearchStatic(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
-			set2ByteInt(codeList[i+1:], funcIdx)
+			utils.Set2ByteInt(codeList[i+1:], funcIdx)
 		}
 
 		info := &OpcodeInfo[code]
@@ -727,4 +708,28 @@ func (vm *VirtualMachine) NewObjectInterface(data Object) Object {
 	vm.AddObject(obj)
 
 	return obj
+}
+
+func GetObjectByType(typ *Type) Object {
+	var value Object
+
+	if typ.IsReferenceType() {
+		value = NilObject
+		return value
+	}
+
+	switch typ.BasicType {
+	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
+		value = NewObjectInt(0)
+	case BasicTypeFloat:
+		value = NewObjectFloat(0.0)
+	case BasicTypeString:
+		value = NewObjectString("")
+	case BasicTypeNil:
+		fallthrough
+	default:
+		panic("TODO")
+	}
+
+	return value
 }

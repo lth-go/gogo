@@ -369,18 +369,17 @@ func (expr *IdentifierExpression) Fix() Expression {
 		expr.SetType(fd.CopyType())
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              GetCurrentCompiler().GetFuncIndex(fd),
+			Index:              GetCurrentCompiler().AddFuncList(fd),
 		}
 		expr.GetType().Fix()
 
 		return expr
 	}
 
-	// TODO 判断是否是包
-	pkg := GetCurrentCompiler().SearchPackage(expr.name)
-	if pkg != nil {
-		expr.SetType(pkg.Type.Copy())
-		expr.inner = pkg
+	compiler := GetCurrentCompiler().SearchPackageCompiler(expr.name)
+	if compiler != nil {
+		expr.SetType(NewType(vm.BasicTypePackage))
+		expr.inner = compiler
 		expr.GetType().Fix()
 		return expr
 	}
@@ -695,7 +694,7 @@ func (expr *SelectorExpression) Fix() Expression {
 
 	switch {
 	case typ.IsPackage():
-		newExpr = fixPackageSelectorExpression(expr, expr.Field)
+		newExpr = FixPackageSelectorExpression(expr, expr.Field)
 	default:
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
 	}
@@ -708,18 +707,18 @@ func (expr *SelectorExpression) Fix() Expression {
 func (expr *SelectorExpression) Generate(ob *OpCodeBuf) {}
 
 // 仅限函数
-func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expression {
+func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expression {
 	innerExpr := expr.expression
 	innerExpr.GetType().Fix()
 
-	p := innerExpr.(*IdentifierExpression).inner.(*Package)
+	compiler := innerExpr.(*IdentifierExpression).inner.(*Compiler)
 
-	fd := p.compiler.SearchFunction(field)
+	fd := compiler.SearchFunction(field)
 	if fd != nil {
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
 		newExpr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              GetCurrentCompiler().GetFuncIndex(fd),
+			Index:              GetCurrentCompiler().AddFuncList(fd),
 		}
 
 		newExpr.SetType(fd.CopyType())
@@ -728,11 +727,11 @@ func fixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 		return newExpr
 	}
 
-	decl := p.compiler.SearchDeclaration(field)
+	decl := compiler.SearchDeclaration(field)
 	if decl != nil {
 		// TODO: 初始值直接给会有问题
 		newDecl := NewDeclaration(decl.Position(), decl.Type.Copy(), decl.Name, nil)
-		newDecl.PackageName = p.compiler.GetPackageName()
+		newDecl.PackageName = compiler.GetPackageName()
 		newDecl.Index = GetCurrentCompiler().AddDeclarationList(newDecl)
 
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
@@ -813,11 +812,6 @@ func CreateIndexExpression(pos Position, array, index Expression) *IndexExpressi
 	expr.SetPosition(pos)
 
 	return expr
-}
-
-type Package struct {
-	Type     *Type
-	compiler *Compiler
 }
 
 type KeyValueExpression struct {

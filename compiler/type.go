@@ -232,7 +232,7 @@ func (t *PackageType) Copy() *PackageType {
 	return &PackageType{}
 }
 
-func (t *Package) Equal(t2 *PackageType) bool {
+func (t *PackageType) Equal(t2 *PackageType) bool {
 	if t == nil && t2 == nil {
 		return true
 	}
@@ -446,7 +446,7 @@ func GetBasicTypeName(typ vm.BasicType) string {
 	case vm.BasicTypeString:
 		return "string"
 	case vm.BasicTypeNil:
-		return "null"
+		return "nil"
 	case vm.BasicTypeFunc:
 		return "func"
 	default:

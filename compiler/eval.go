@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"strconv"
-
 	"github.com/lth-go/gogo/vm"
 )
 
@@ -34,7 +32,9 @@ func FixMathBinaryExpression(expr *BinaryExpression) Expression {
 		compileError(
 			expr.Position(),
 			MATH_TYPE_MISMATCH_ERR,
-			"Left: %d, Right: %d\n", newBinaryExprLeftType.GetBasicType(), newBinaryExprRightType.GetBasicType(),
+			"Left: %d, Right: %d\n",
+			newBinaryExprLeftType.GetBasicType(),
+			newBinaryExprRightType.GetBasicType(),
 		)
 	}
 
@@ -72,7 +72,11 @@ func FixCompareBinaryExpression(expr *BinaryExpression) Expression {
 		return false
 	}()
 	if !ok {
-		compileError(expr.Position(), COMPARE_TYPE_MISMATCH_ERR, newBinaryExprLeftType.GetTypeName(), newBinaryExprRightType.GetTypeName())
+		compileError(expr.Position(),
+			COMPARE_TYPE_MISMATCH_ERR,
+			newBinaryExprLeftType.GetTypeName(),
+			newBinaryExprRightType.GetTypeName(),
+		)
 	}
 
 	newBinaryExpr.SetType(NewType(vm.BasicTypeBool))
@@ -93,7 +97,9 @@ func FixLogicalBinaryExpression(expr *BinaryExpression) Expression {
 	compileError(
 		expr.Position(),
 		LOGICAL_TYPE_MISMATCH_ERR,
-		"Left: %d, Right: %d\n", expr.left.GetType().GetBasicType(), expr.right.GetType().GetBasicType(),
+		"Left: %d, Right: %d\n",
+		expr.left.GetType().GetBasicType(),
+		expr.right.GetType().GetBasicType(),
 	)
 	return nil
 }
@@ -106,22 +112,26 @@ func evalMathExpression(binaryExpr *BinaryExpression) Expression {
 			newExpr := evalMathExpressionInt(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 		case *FloatExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, float64(leftExpr.Value), rightExpr.Value)
+			newExpr := evalMathExpressionInt(binaryExpr, leftExpr.Value, int(rightExpr.Value))
 			return newExpr
 		}
 	case *FloatExpression:
 		switch rightExpr := binaryExpr.right.(type) {
 		case *IntExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.Value, float64(rightExpr.Value))
+			newExpr := evalMathExpressionFloat(binaryExpr, leftExpr.Value, float64(rightExpr.Value))
 			return newExpr
 		case *FloatExpression:
-			newExpr := evalMathExpressionDouble(binaryExpr, leftExpr.Value, rightExpr.Value)
+			newExpr := evalMathExpressionFloat(binaryExpr, leftExpr.Value, rightExpr.Value)
 			return newExpr
 		}
 	case *StringExpression:
-		if binaryExpr.operator == AddOperator {
-			newExpr := chainBinaryExpressionString(binaryExpr)
-			return newExpr
+		switch rightExpr := binaryExpr.right.(type) {
+		case *StringExpression:
+			if binaryExpr.operator == AddOperator {
+				newExpr := &StringExpression{Value: leftExpr.Value + rightExpr.Value}
+				newExpr.Fix()
+				return newExpr
+			}
 		}
 	}
 
@@ -153,7 +163,7 @@ func evalMathExpressionInt(binaryExpr *BinaryExpression, left, right int) Expres
 	return newExpr
 }
 
-func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64) Expression {
+func evalMathExpressionFloat(binaryExpr *BinaryExpression, left, right float64) Expression {
 	var value float64
 
 	switch binaryExpr.operator {
@@ -175,46 +185,6 @@ func evalMathExpressionDouble(binaryExpr *BinaryExpression, left, right float64)
 	newExpr.SetType(NewType(vm.BasicTypeFloat))
 
 	return newExpr
-}
-
-func chainBinaryExpressionString(binaryExpr *BinaryExpression) Expression {
-	rightStr := expressionToString(binaryExpr.right)
-	if rightStr == "" {
-		return binaryExpr
-	}
-
-	leftStringExpr := binaryExpr.left.(*StringExpression)
-
-	newStr := leftStringExpr.Value + rightStr
-
-	newExpr := &StringExpression{Value: newStr}
-	newExpr.SetType(NewType(vm.BasicTypeString))
-
-	return newExpr
-}
-
-// TODO: 只能字符串相加
-func expressionToString(expr Expression) string {
-	var newStr string
-
-	switch e := expr.(type) {
-	case *BoolExpression:
-		if e.Value {
-			newStr = "true"
-		} else {
-			newStr = "false"
-		}
-	case *IntExpression:
-		newStr = strconv.Itoa(e.Value)
-	case *FloatExpression:
-		newStr = strconv.FormatFloat(e.Value, 'f', -1, 64)
-	case *StringExpression:
-		newStr = e.Value
-	default:
-		newStr = ""
-	}
-
-	return newStr
 }
 
 func evalCompareExpression(binaryExpr *BinaryExpression) Expression {

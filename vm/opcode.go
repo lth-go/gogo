@@ -37,11 +37,6 @@ const (
 	VM_MOD_FLOAT
 	VM_MINUS_INT
 	VM_MINUS_FLOAT
-	VM_CAST_INT_TO_FLOAT
-	VM_CAST_FLOAT_TO_INT
-	VM_CAST_BOOLEAN_TO_STRING
-	VM_CAST_INT_TO_STRING
-	VM_CAST_FLOAT_TO_STRING
 	VM_EQ_INT
 	VM_EQ_FLOAT
 	VM_EQ_STRING
@@ -128,11 +123,6 @@ var OpcodeInfo []opcodeInfo = []opcodeInfo{
 	{"mod_float", "", -1},
 	{"minus_int", "", 0},
 	{"minus_float", "", 0},
-	{"cast_int_to_float", "", 0},
-	{"cast_float_to_int", "", 0},
-	{"cast_boolean_to_string", "", 0},
-	{"cast_int_to_string", "", 0},
-	{"cast_float_to_string", "", 0},
 	{"eq_int", "", -1},
 	{"eq_float", "", -1},
 	{"eq_string", "", -1},

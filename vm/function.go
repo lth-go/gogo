@@ -26,6 +26,7 @@ func (vm *VirtualMachine) AddNativeFunctions() {
 	vm.addNativeFunction("_sys", "printf", nativeFuncPrintf, 2, 0)
 	vm.addNativeFunction("_sys", "itoa", nativeFuncItoa, 1, 1)
 	vm.addNativeFunction("_sys", "len", nativeFuncLen, 1, 1)
+	vm.addNativeFunction("_sys", "append", nativeFuncAppend, 2, 1)
 }
 
 func (vm *VirtualMachine) addNativeFunction(
@@ -75,7 +76,6 @@ func nativeFuncPrintf(vm *VirtualMachine, argCount int, args []Object) []Object 
 			}
 		}
 		fmt.Printf(format, list...)
-
 	default:
 		panic("TODO")
 	}
@@ -100,4 +100,13 @@ func nativeFuncLen(vm *VirtualMachine, argCount int, args []Object) []Object {
 	}
 
 	return []Object{NewObjectInt(length)}
+}
+
+func nativeFuncAppend(vm *VirtualMachine, argCount int, args []Object) []Object {
+	obj := args[0].(*ObjectArray)
+	arg := args[1].(*ObjectArray)
+
+	obj.List = append(obj.List, arg.List...)
+
+	return []Object{obj}
 }

@@ -641,6 +641,27 @@ func testDotDotDot() {
     printf("%s %s %s\n", "Hello", "World", "!");
 };
 
+func testAppend() {
+    var array []int = []int{1, 2, 3, 4, 5};
+    var i int;
+
+    for i = 0; i < len(array); i = i + 1 {
+        printf("array[%v] = %v\n", i, array[i]);
+    };
+
+    array = append(array, 6);
+
+    for i = 0; i < len(array); i = i + 1 {
+        printf("array[%v] = %v\n", i, array[i]);
+    };
+
+    array = append(array, 7, 8, 9, 10);
+
+    for i = 0; i < len(array); i = i + 1 {
+        printf("array[%v] = %v\n", i, array[i]);
+    };
+};
+
 func main() {
     testLex();
     testOperators();
@@ -668,4 +689,5 @@ func main() {
     testBool();
     testPrintf();
     testDotDotDot();
+    testAppend();
 };

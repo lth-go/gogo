@@ -23,7 +23,6 @@ make test
 + add import to decl
 + for range
 + 代码解耦
-+ 增加append函数
 + int 改int64
 + 优化包代码, 增加包类型
 + 增加struct类型

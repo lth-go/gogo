@@ -8,6 +8,7 @@ func (c *Compiler) AddNativeFunctionList() {
 	c.AddNativeFunctionPrintf()
 	c.AddNativeFunctionItoa()
 	c.AddNativeFunctionLen()
+	c.AddNativeFunctionAppend()
 }
 
 func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType, ellipsis bool) {
@@ -54,6 +55,15 @@ func (c *Compiler) AddNativeFunctionLen() {
 		[]vm.BasicType{vm.BasicTypeInterface},
 		[]vm.BasicType{vm.BasicTypeInt},
 		false,
+	)
+}
+
+func (c *Compiler) AddNativeFunctionAppend() {
+	c.AddNativeFunc(
+		"append",
+		[]vm.BasicType{vm.BasicTypeArray, vm.BasicTypeArray},
+		[]vm.BasicType{vm.BasicTypeArray},
+		true,
 	)
 }
 

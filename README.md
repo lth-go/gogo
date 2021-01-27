@@ -19,12 +19,11 @@ make test
 
 ## TODO
 
++ 运行时增加类型
 + 类型转换修正
-+ add import to decl
 + for range
 + 代码解耦
-+ int 改int64
-+ 优化包代码, 增加包类型
++ int改int64
 + 增加struct类型
 + 增加struct方法
 + 增加指针

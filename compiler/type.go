@@ -8,6 +8,76 @@ import (
 )
 
 //
+// Type 表达式类型
+//
+type Type struct {
+	PosBase
+	basicType         vm.BasicType
+	arrayType         *ArrayType
+	funcType          *FuncType
+	mapType           *MapType
+	multipleValueType *MultipleValueType // 用于处理函数多返回值
+}
+
+func (t *Type) Fix() {
+	// TODO: 修正引用类型别名
+	// if t.funcType != nil {
+	//     for _, param := range t.funcType.Params {
+	//         param.Type.Fix()
+	//     }
+	// }
+}
+
+func (t *Type) GetBasicType() vm.BasicType {
+	return t.basicType
+}
+
+func (t *Type) SetBasicType(basicType vm.BasicType) {
+	t.basicType = basicType
+}
+
+func (t *Type) Equal(t2 *Type) bool {
+	if t.IsInterface() || t2.IsInterface() {
+		return true
+	}
+
+	if t.GetBasicType() != t2.GetBasicType() {
+		return false
+	}
+
+	if !t.arrayType.Equal(t2.arrayType) {
+		return false
+	}
+
+	if !t.funcType.Equal(t2.funcType) {
+		return false
+	}
+
+	if !t.multipleValueType.Equal(t2.multipleValueType) {
+		return false
+	}
+
+	return true
+}
+
+func (t *Type) GetResultCount() int {
+	// TODO: 无返回值需要返回1
+	if t.IsMultipleValues() {
+		return len(t.multipleValueType.List)
+	} else if t.IsVoid() {
+		return 0
+	} else {
+		return 1
+	}
+}
+
+func NewType(basicType vm.BasicType) *Type {
+	return &Type{
+		basicType: basicType,
+	}
+}
+
+//
 // 复合类型
 //
 type ArrayType struct {
@@ -215,111 +285,6 @@ func (t *MultipleValueType) Equal(t2 *MultipleValueType) bool {
 }
 
 //
-// PackageType
-//
-type PackageType struct {
-}
-
-func NewPackageType() *PackageType {
-	return &PackageType{}
-}
-
-func (t *PackageType) Copy() *PackageType {
-	if t == nil {
-		return nil
-	}
-
-	return &PackageType{}
-}
-
-func (t *PackageType) Equal(t2 *PackageType) bool {
-	if t == nil && t2 == nil {
-		return true
-	}
-
-	if t == nil && t2 != nil {
-		return false
-	}
-
-	if t != nil && t2 == nil {
-		return false
-	}
-
-	return true
-}
-
-//
-// Type 表达式类型
-//
-type Type struct {
-	PosBase
-	basicType         vm.BasicType
-	arrayType         *ArrayType
-	funcType          *FuncType
-	mapType           *MapType
-	multipleValueType *MultipleValueType // TODO: 用于处理函数多返回值
-	packageType       *PackageType
-}
-
-func (t *Type) Fix() {
-	// TODO: 修正引用类型别名
-	// if t.funcType != nil {
-	//     for _, param := range t.funcType.Params {
-	//         param.Type.Fix()
-	//     }
-	// }
-}
-
-func (t *Type) GetBasicType() vm.BasicType {
-	return t.basicType
-}
-
-func (t *Type) SetBasicType(basicType vm.BasicType) {
-	t.basicType = basicType
-}
-
-func (t *Type) Equal(t2 *Type) bool {
-	if t.IsInterface() || t2.IsInterface() {
-		return true
-	}
-
-	if t.GetBasicType() != t2.GetBasicType() {
-		return false
-	}
-
-	if !t.arrayType.Equal(t2.arrayType) {
-		return false
-	}
-
-	if !t.funcType.Equal(t2.funcType) {
-		return false
-	}
-
-	if !t.multipleValueType.Equal(t2.multipleValueType) {
-		return false
-	}
-
-	return true
-}
-
-func (t *Type) GetResultCount() int {
-	// TODO: 无返回值需要返回1
-	if t.IsMultipleValues() {
-		return len(t.multipleValueType.List)
-	} else if t.IsVoid() {
-		return 0
-	} else {
-		return 1
-	}
-}
-
-func NewType(basicType vm.BasicType) *Type {
-	return &Type{
-		basicType: basicType,
-	}
-}
-
-//
 // create
 //
 func CreateType(basicType vm.BasicType, pos Position) *Type {
@@ -460,7 +425,6 @@ func CreateTypeByName(name string, pos Position) *Type {
 
 	// TODO:
 	basicTypeMap := map[string]vm.BasicType{
-		"void":   vm.BasicTypeVoid,
 		"bool":   vm.BasicTypeBool,
 		"int":    vm.BasicTypeInt,
 		"float":  vm.BasicTypeFloat,

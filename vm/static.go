@@ -14,7 +14,9 @@ type StaticBase struct {
 func (f *StaticBase) GetName() string        { return f.Name }
 func (f *StaticBase) GetPackageName() string { return f.PackageName }
 
+//
 // Static
+//
 type Static struct {
 	list []StaticValue
 }

@@ -44,9 +44,9 @@ func (b *Block) GetCurrentFunction() *FunctionDefinition {
 func (b *Block) SearchDeclaration(name string) *Declaration {
 	// 从局部作用域查找
 	for block := b; block != nil; block = block.outerBlock {
-		for _, declaration := range block.declarationList {
-			if declaration.Name == name {
-				return declaration
+		for _, decl := range block.declarationList {
+			if decl.Name == name {
+				return decl
 			}
 		}
 	}

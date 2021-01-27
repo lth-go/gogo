@@ -56,12 +56,24 @@ type ObjectInt struct {
 	Value int
 }
 
+func NewObjectInt(value int) *ObjectInt {
+	return &ObjectInt{
+		Value: value,
+	}
+}
+
 //
 // ObjectFloat
 //
 type ObjectFloat struct {
 	ObjectBase
 	Value float64
+}
+
+func NewObjectFloat(value float64) *ObjectFloat {
+	return &ObjectFloat{
+		Value: value,
+	}
 }
 
 //
@@ -72,12 +84,20 @@ type ObjectString struct {
 	Value string
 }
 
+func NewObjectString(value string) *ObjectString {
+	return &ObjectString{
+		Value: value,
+	}
+}
+
 //
 // ObjectNil
 //
 type ObjectNil struct {
 	ObjectBase
 }
+
+var NilObject = &ObjectNil{}
 
 //
 // ObjectArray
@@ -230,27 +250,8 @@ type ObjectPointer struct {
 	ObjectBase
 }
 
-func NewObjectInt(value int) *ObjectInt {
-	return &ObjectInt{
-		Value: value,
-	}
-}
-
-func NewObjectFloat(value float64) *ObjectFloat {
-	return &ObjectFloat{
-		Value: value,
-	}
-}
-
-func NewObjectString(value string) *ObjectString {
-	return &ObjectString{
-		Value: value,
-	}
-}
-
 //
-// ObjectCallInfo 函数返回体
-// TODO: 临时定义为对象
+// ObjectCallInfo 函数返回体 TODO: 临时定义为对象
 //
 type ObjectCallInfo struct {
 	ObjectBase                  // TODO: 兼容

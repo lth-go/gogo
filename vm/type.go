@@ -20,9 +20,10 @@ const (
 	BasicTypeFunc
 	BasicTypeMultipleValues
 	BasicTypeInterface
+	BasicTypePointer
 )
 
-type SliceType struct {
+type ArrayType struct {
 	Len         int64
 	ElementType *Type
 }
@@ -34,7 +35,7 @@ type FuncType struct {
 
 type Type struct {
 	BasicType BasicType
-	SliceType *SliceType
+	ArrayType *ArrayType
 	FuncType  *FuncType
 }
 
@@ -42,8 +43,8 @@ func (t *Type) GetBasicType() BasicType {
 	return t.BasicType
 }
 
-func (t *Type) SetSliceType(typ *Type, length int64) {
-	t.SliceType = &SliceType{
+func (t *Type) SetArrayType(typ *Type, length int64) {
+	t.ArrayType = &ArrayType{
 		Len:         length,
 		ElementType: typ,
 	}
@@ -56,7 +57,7 @@ func (t *Type) SetFuncType(paramsTypeList []*Type, resultTypeList []*Type) {
 	}
 }
 
-func (t *Type) IsSliceType() bool {
+func (t *Type) IsArrayType() bool {
 	return t.BasicType == BasicTypeArray
 }
 
@@ -69,5 +70,5 @@ func (t *Type) IsInterfaceType() bool {
 }
 
 func (t *Type) IsReferenceType() bool {
-	return t.IsSliceType() || t.IsMapType() || t.IsInterfaceType()
+	return t.IsArrayType() || t.IsMapType() || t.IsInterfaceType()
 }

@@ -50,7 +50,7 @@ func (expr *BoolExpression) Generate(ob *OpCodeBuf) {
 		value = 1
 	}
 
-	ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, value)
+	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_1BYTE, value)
 }
 
 func CreateBooleanExpression(pos Position, value bool) *BoolExpression {
@@ -84,11 +84,11 @@ func (expr *IntExpression) Fix() Expression {
 
 func (expr *IntExpression) Generate(ob *OpCodeBuf) {
 	if expr.Value >= 0 && expr.Value < 256 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_1BYTE, expr.Value)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_1BYTE, expr.Value)
 	} else if expr.Value >= 0 && expr.Value < 65536 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT_2BYTE, expr.Value)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, expr.Value)
 	} else {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_INT, expr.Index)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT, expr.Index)
 	}
 }
 
@@ -122,11 +122,11 @@ func (expr *FloatExpression) Fix() Expression {
 
 func (expr *FloatExpression) Generate(ob *OpCodeBuf) {
 	if expr.Value == 0.0 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_0)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT_0)
 	} else if expr.Value == 1.0 {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT_1)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT_1)
 	} else {
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FLOAT, expr.Index)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT, expr.Index)
 	}
 }
 
@@ -158,7 +158,7 @@ func (expr *StringExpression) Fix() Expression {
 }
 
 func (expr *StringExpression) Generate(ob *OpCodeBuf) {
-	ob.generateCode(expr.Position(), vm.VM_PUSH_STRING, expr.Index)
+	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_STRING, expr.Index)
 }
 
 func CreateStringExpression(pos Position, value string) *StringExpression {
@@ -188,7 +188,7 @@ func (expr *InterfaceExpression) Fix() Expression {
 
 func (expr *InterfaceExpression) Generate(ob *OpCodeBuf) {
 	expr.Data.Generate(ob)
-	ob.generateCode(expr.Position(), vm.VM_NEW_INTERFACE)
+	ob.generateCode(expr.Position(), vm.OP_CODE_NEW_INTERFACE)
 }
 
 func CreateInterfaceExpression(pos Position) *InterfaceExpression {
@@ -215,7 +215,7 @@ func (expr *NilExpression) Fix() Expression {
 }
 
 func (expr *NilExpression) Generate(ob *OpCodeBuf) {
-	ob.generateCode(expr.Position(), vm.VM_PUSH_NIL)
+	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_NIL)
 }
 
 func CreateNilExpression(pos Position) *NilExpression {
@@ -263,7 +263,7 @@ func (expr *ArrayExpression) Generate(ob *OpCodeBuf) {
 	}
 
 	count := len(expr.List)
-	ob.generateCode(expr.Position(), vm.VM_NEW_ARRAY, count)
+	ob.generateCode(expr.Position(), vm.OP_CODE_NEW_ARRAY, count)
 }
 
 func CreateArrayExpression(typ *Type, exprList []Expression) *ArrayExpression {
@@ -316,7 +316,7 @@ func (expr *MapExpression) Generate(ob *OpCodeBuf) {
 
 	size := len(expr.KeyList)
 
-	ob.generateCode(expr.Position(), vm.VM_NEW_MAP, size)
+	ob.generateCode(expr.Position(), vm.OP_CDOE_NEW_MAP, size)
 }
 
 func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
@@ -393,15 +393,15 @@ func (expr *IdentifierExpression) Generate(ob *OpCodeBuf) {
 	switch inner := expr.inner.(type) {
 	// 函数
 	case *FunctionIdentifier:
-		ob.generateCode(expr.Position(), vm.VM_PUSH_FUNCTION, inner.Index)
+		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FUNCTION, inner.Index)
 		// 变量
 	case *Declaration:
 		var code byte
 
 		if inner.IsLocal {
-			code = vm.VM_PUSH_STACK
+			code = vm.OP_CODE_PUSH_STACK
 		} else {
-			code = vm.VM_PUSH_STATIC
+			code = vm.OP_CODE_PUSH_STATIC
 		}
 		ob.generateCode(expr.Position(), code, inner.Index)
 	}
@@ -487,17 +487,17 @@ func (expr *BinaryExpression) Generate(ob *OpCodeBuf) {
 		var jumpCode, logicalCode byte
 
 		if operator == LogicalAndOperator {
-			jumpCode = vm.VM_JUMP_IF_FALSE
-			logicalCode = vm.VM_LOGICAL_AND
+			jumpCode = vm.OP_CODE_JUMP_IF_FALSE
+			logicalCode = vm.OP_CODE_LOGICAL_AND
 		} else {
-			jumpCode = vm.VM_JUMP_IF_TRUE
-			logicalCode = vm.VM_LOGICAL_OR
+			jumpCode = vm.OP_CODE_JUMP_IF_TRUE
+			logicalCode = vm.OP_CODE_LOGICAL_OR
 		}
 
 		label := ob.getLabel()
 
 		expr.left.Generate(ob)
-		ob.generateCode(expr.Position(), vm.VM_DUPLICATE)
+		ob.generateCode(expr.Position(), vm.OP_CODE_DUPLICATE)
 		ob.generateCode(expr.Position(), jumpCode, label)
 
 		expr.right.Generate(ob)
@@ -592,16 +592,16 @@ func (expr *UnaryExpression) FixNot() Expression {
 
 func (expr *UnaryExpression) GenerateMinus(ob *OpCodeBuf) {
 	expr.Value.Generate(ob)
-	code := vm.VM_MINUS_INT
+	code := vm.OP_CODE_MINUS_INT
 	if expr.GetType().IsFloat() {
-		code = vm.VM_MINUS_FLOAT
+		code = vm.OP_CODE_MINUS_FLOAT
 	}
 	ob.generateCode(expr.Position(), code)
 }
 
 func (expr *UnaryExpression) GenerateNot(ob *OpCodeBuf) {
 	expr.Value.Generate(ob)
-	ob.generateCode(expr.Position(), vm.VM_LOGICAL_NOT)
+	ob.generateCode(expr.Position(), vm.OP_CODE_LOGICAL_NOT)
 }
 
 func NewUnaryExpression(pos Position, operator UnaryOperatorKind, value Expression) *UnaryExpression {
@@ -663,7 +663,7 @@ func (expr *FunctionCallExpression) Fix() Expression {
 func (expr *FunctionCallExpression) Generate(ob *OpCodeBuf) {
 	generatePushArgument(expr.argumentList, ob)
 	expr.funcName.Generate(ob)
-	ob.generateCode(expr.Position(), vm.VM_INVOKE)
+	ob.generateCode(expr.Position(), vm.OP_CODE_INVOKE)
 }
 
 func NewFunctionCallExpression(pos Position, function Expression, argumentList []Expression) *FunctionCallExpression {
@@ -794,10 +794,10 @@ func (expr *IndexExpression) Generate(ob *OpCodeBuf) {
 
 	switch {
 	case expr.X.GetType().IsArray():
-		code := vm.VM_PUSH_ARRAY
+		code := vm.OP_CODE_PUSH_ARRAY
 		ob.generateCode(expr.Position(), code)
 	case expr.X.GetType().IsMap():
-		code := vm.VM_PUSH_MAP
+		code := vm.OP_CODE_PUSH_MAP
 		ob.generateCode(expr.Position(), code)
 	default:
 		panic("TODO")

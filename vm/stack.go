@@ -18,7 +18,9 @@ func NewStack() *Stack {
 	return s
 }
 
+//
 // 栈伸缩
+//
 func (s *Stack) Expand(codeList []byte) {
 	needStackSize := getNeedStackSize(codeList)
 
@@ -37,7 +39,7 @@ func getNeedStackSize(codeList []byte) int {
 	stackSize := 0
 
 	for i := 0; i < len(codeList); i++ {
-		info := OpcodeInfo[int(codeList[i])]
+		info := OpcodeInfo[codeList[i]]
 		if info.stackIncrement > 0 {
 			stackSize += info.stackIncrement
 		}

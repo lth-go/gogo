@@ -83,10 +83,10 @@ func (c *Compiler) GetVmFunction(src *FunctionDefinition, inThisExe bool) *vm.Fu
 		dest.IsImplemented = true
 		dest.CodeList = ob.fixOpcodeBuf()
 		dest.LineNumberList = ob.lineNumberList
-		dest.LocalVariableList = copyVmVariableList(src)
+		dest.VariableList = copyVmVariableList(src)
 	} else {
 		dest.IsImplemented = false
-		dest.LocalVariableList = nil
+		dest.VariableList = nil
 	}
 
 	return dest

@@ -3,7 +3,7 @@ package vm
 var HeapThresholdSize = 1024 * 256
 
 //
-// 判断是否下需要gc
+// Check 判断是否下需要gc
 //
 func (vm *VirtualMachine) Check() {
 	if len(vm.heap.objectList) > vm.heap.currentThreshold {
@@ -18,7 +18,7 @@ func (vm *VirtualMachine) GC() {
 }
 
 //
-// 标记
+// Mark 标记
 //
 func (vm *VirtualMachine) Mark() {
 	for _, obj := range vm.heap.objectList {
@@ -45,7 +45,7 @@ func (vm *VirtualMachine) Mark() {
 }
 
 //
-// 清理
+// Sweep 清理
 //
 func (vm *VirtualMachine) Sweep() {
 	newObjectList := []Object{}
@@ -59,11 +59,7 @@ func (vm *VirtualMachine) Sweep() {
 	vm.heap.objectList = newObjectList
 }
 
-//
-// 创建对象
-//
-
-// 添加对象到堆, 用于垃圾回收
+// AddObject 添加对象到堆, 用于垃圾回收
 func (vm *VirtualMachine) AddObject(value Object) {
 	vm.Check()
 	value.ResetMark()

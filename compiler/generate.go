@@ -41,7 +41,7 @@ func (ob *OpCodeBuf) setLabel(label int) {
 //
 func (ob *OpCodeBuf) generateCode(pos Position, code byte, rest ...int) {
 	// 获取参数类型
-	paramList := []byte(vm.OpcodeInfo[int(code)].Parameter)
+	paramList := []byte(vm.OpcodeInfo[code].Parameter)
 
 	startPc := len(ob.codeList)
 	ob.codeList = append(ob.codeList, code)
@@ -99,15 +99,15 @@ func (ob *OpCodeBuf) fixOpcodeBuf() []byte {
 // 修正label, 将正确的跳转地址填入
 func (ob *OpCodeBuf) fixLabels() {
 	for i := 0; i < len(ob.codeList); i++ {
-		if ob.codeList[i] == vm.VM_JUMP ||
-			ob.codeList[i] == vm.VM_JUMP_IF_TRUE ||
-			ob.codeList[i] == vm.VM_JUMP_IF_FALSE {
+		if ob.codeList[i] == vm.OP_CODE_JUMP ||
+			ob.codeList[i] == vm.OP_CODE_JUMP_IF_TRUE ||
+			ob.codeList[i] == vm.OP_CODE_JUMP_IF_FALSE {
 
 			label := get2ByteInt(ob.codeList[i+1:])
 			address := ob.labelTableList[label].labelAddress
 			set2ByteInt(ob.codeList[i+1:], address)
 		}
-		info := &vm.OpcodeInfo[ob.codeList[i]]
+		info := vm.OpcodeInfo[ob.codeList[i]]
 		for _, p := range []byte(info.Parameter) {
 			switch p {
 			case 'b':
@@ -138,7 +138,7 @@ func CopyToVmType(src *Type) *vm.Type {
 		BasicType: src.GetBasicType(),
 	}
 	if src.IsArray() {
-		dest.SetSliceType(CopyToVmType(src.arrayType.ElementType), src.arrayType.Len)
+		dest.SetArrayType(CopyToVmType(src.arrayType.ElementType), src.arrayType.Len)
 	}
 
 	if src.IsFunc() {
@@ -183,11 +183,11 @@ func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
 		if e.X.GetType().IsArray() {
 			e.X.Generate(ob)
 			e.Index.Generate(ob)
-			ob.generateCode(expr.Position(), vm.VM_POP_ARRAY)
+			ob.generateCode(expr.Position(), vm.OP_CODE_POP_ARRAY)
 		} else if e.X.GetType().IsMap() {
 			e.X.Generate(ob)
 			e.Index.Generate(ob)
-			ob.generateCode(expr.Position(), vm.VM_POP_MAP)
+			ob.generateCode(expr.Position(), vm.OP_CODE_POP_MAP)
 		} else {
 			panic("TODO")
 		}
@@ -200,9 +200,9 @@ func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
 	var code byte
 
 	if decl.IsLocal {
-		code = vm.VM_POP_STACK
+		code = vm.OP_CODE_POP_STACK
 	} else {
-		code = vm.VM_POP_STATIC
+		code = vm.OP_CODE_POP_STATIC
 	}
 	ob.generateCode(pos, code, decl.Index)
 }

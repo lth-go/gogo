@@ -25,16 +25,16 @@ const (
 )
 
 var operatorCodeMap = map[BinaryOperatorKind]byte{
-	EqOperator:  vm.VM_EQ_INT,
-	NeOperator:  vm.VM_NE_INT,
-	GtOperator:  vm.VM_GT_INT,
-	GeOperator:  vm.VM_GE_INT,
-	LtOperator:  vm.VM_LT_INT,
-	LeOperator:  vm.VM_LE_INT,
-	AddOperator: vm.VM_ADD_INT,
-	SubOperator: vm.VM_SUB_INT,
-	MulOperator: vm.VM_MUL_INT,
-	DivOperator: vm.VM_DIV_INT,
+	EqOperator:  vm.OP_CODE_EQ_INT,
+	NeOperator:  vm.OP_CODE_NE_INT,
+	GtOperator:  vm.OP_CODE_GT_INT,
+	GeOperator:  vm.OP_CODE_GE_INT,
+	LtOperator:  vm.OP_CODE_LT_INT,
+	LeOperator:  vm.OP_CODE_LE_INT,
+	AddOperator: vm.OP_CODE_ADD_INT,
+	SubOperator: vm.OP_CODE_SUB_INT,
+	MulOperator: vm.OP_CODE_MUL_INT,
+	DivOperator: vm.OP_CODE_DIV_INT,
 }
 
 type UnaryOperatorKind int

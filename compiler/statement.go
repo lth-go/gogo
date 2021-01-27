@@ -33,7 +33,7 @@ func (stmt *ExpressionStatement) Generate(ob *OpCodeBuf) {
 
 	// TODO: 没有返回值也会pop
 	for i := 0; i < expr.GetType().GetResultCount(); i++ {
-		ob.generateCode(expr.Position(), vm.VM_POP)
+		ob.generateCode(expr.Position(), vm.OP_CODE_POP)
 	}
 }
 
@@ -88,7 +88,7 @@ func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 
 	// 获取false跳转地址
 	ifFalseLabel := ob.getLabel()
-	ob.generateCode(stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
+	ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
 
 	if stmt.thenBlock != nil {
 		generateStatementList(stmt.thenBlock.statementList, ob)
@@ -98,7 +98,7 @@ func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 	endLabel := ob.getLabel()
 
 	// 直接跳到最后
-	ob.generateCode(stmt.Position(), vm.VM_JUMP, endLabel)
+	ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
 
 	// 设置false跳转地址,如果false,直接执行这里
 	ob.setLabel(ifFalseLabel)
@@ -108,12 +108,12 @@ func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 
 		// 获取false跳转地址
 		ifFalseLabel = ob.getLabel()
-		ob.generateCode(stmt.Position(), vm.VM_JUMP_IF_FALSE, ifFalseLabel)
+		ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
 
 		generateStatementList(elif.block.statementList, ob)
 
 		// 直接跳到最后
-		ob.generateCode(stmt.Position(), vm.VM_JUMP, endLabel)
+		ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
 
 		// 设置false跳转地址,如果false,直接执行这里
 		ob.setLabel(ifFalseLabel)
@@ -198,7 +198,7 @@ func (stmt *ForStatement) Generate(ob *OpCodeBuf) {
 
 	if stmt.condition != nil {
 		// 如果条件为否,跳转到break, label = parent.breakLabel
-		ob.generateCode(stmt.Position(), vm.VM_JUMP_IF_FALSE, label)
+		ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, label)
 	}
 
 	if stmt.block != nil {
@@ -218,7 +218,7 @@ func (stmt *ForStatement) Generate(ob *OpCodeBuf) {
 	}
 
 	// 跳回到循环开头
-	ob.generateCode(stmt.Position(), vm.VM_JUMP, loopLabel)
+	ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, loopLabel)
 
 	// 设置结束标签, label = parent.breakLabel
 	ob.setLabel(label)
@@ -286,7 +286,7 @@ func (stmt *ReturnStatement) Generate(ob *OpCodeBuf) {
 	for _, value := range stmt.ValueList {
 		value.Generate(ob)
 	}
-	ob.generateCode(stmt.Position(), vm.VM_RETURN)
+	ob.generateCode(stmt.Position(), vm.OP_CODE_RETURN)
 }
 
 func NewReturnStatement(pos Position, valueList []Expression) *ReturnStatement {
@@ -323,7 +323,7 @@ func (stmt *BreakStatement) Generate(ob *OpCodeBuf) {
 	for block := stmt.Block; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
 		case *StatementBlockInfo:
-			ob.generateCode(stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).breakLabel)
+			ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, block.parent.(*StatementBlockInfo).breakLabel)
 			return
 		}
 	}
@@ -353,7 +353,7 @@ func (stmt *ContinueStatement) Generate(ob *OpCodeBuf) {
 	for block := stmt.Block; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
 		case *StatementBlockInfo:
-			ob.generateCode(stmt.Position(), vm.VM_JUMP, block.parent.(*StatementBlockInfo).continueLabel)
+			ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, block.parent.(*StatementBlockInfo).continueLabel)
 			return
 		default:
 			continue
@@ -488,7 +488,7 @@ func (stmt *AssignStatement) Generate(ob *OpCodeBuf) {
 		count := len(stmt.left)
 		for i := 0; i < count; i++ {
 			leftExpr := stmt.left[count-i-1]
-			ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
+			ob.generateCode(stmt.Position(), vm.OP_CODE_DUPLICATE)
 			generatePopToLvalue(leftExpr, ob)
 		}
 	} else {
@@ -498,7 +498,7 @@ func (stmt *AssignStatement) Generate(ob *OpCodeBuf) {
 			rightExpr := stmt.right[i]
 
 			rightExpr.Generate(ob)
-			ob.generateCode(stmt.Position(), vm.VM_DUPLICATE)
+			ob.generateCode(stmt.Position(), vm.OP_CODE_DUPLICATE)
 			generatePopToLvalue(leftExpr, ob)
 		}
 	}

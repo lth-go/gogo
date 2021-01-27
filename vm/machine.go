@@ -6,10 +6,6 @@ import (
 	"github.com/lth-go/gogo/utils"
 )
 
-var functionNotFound = -1
-var callFromNative = -1
-var NilObject = &ObjectNil{}
-
 //
 // 虚拟机
 //
@@ -40,7 +36,7 @@ func NewVirtualMachine(exeList *ExecutableList) *VirtualMachine {
 		vm.AddExecutable(exe)
 	}
 
-	vm.SetTopExe(exeList.GetTopExe())
+	vm.SetTopExe(exeList.Top())
 	vm.SetMainEntrypoint()
 
 	return vm
@@ -63,8 +59,8 @@ func (vm *VirtualMachine) SetTopExe(exe *Executable) {
 	vm.topLevel = exe
 }
 
+// 设置入口为main函数
 func (vm *VirtualMachine) SetMainEntrypoint() {
-	// 设置入口为main函数
 	idx := vm.SearchStatic("main", "main")
 	if idx == -1 {
 		panic("TODO")
@@ -73,7 +69,7 @@ func (vm *VirtualMachine) SetMainEntrypoint() {
 	b := make([]byte, 2)
 	utils.Set2ByteInt(b, idx)
 	vm.topLevel.CodeList = append(vm.topLevel.CodeList, b...)
-	vm.topLevel.CodeList = append(vm.topLevel.CodeList, VM_INVOKE)
+	vm.topLevel.CodeList = append(vm.topLevel.CodeList, OP_CODE_INVOKE)
 }
 
 // 添加单个exe到vm
@@ -94,9 +90,11 @@ func (vm *VirtualMachine) AddExecutable(exe *Executable) {
 // 添加静态区
 func (vm *VirtualMachine) AddStatic(exe *Executable) {
 	// 变量初始化
-	exe.VariableList.Init()
+	for _, value := range exe.VariableList {
+		value.Init()
+	}
 
-	for _, value := range exe.VariableList.VariableList {
+	for _, value := range exe.VariableList {
 		if exe.PackageName != value.PackageName {
 			continue
 		}
@@ -114,7 +112,8 @@ func (vm *VirtualMachine) AddFunctions(exe *Executable) {
 		if !exeFunc.IsImplemented {
 			continue
 		}
-		if vm.SearchStatic(exeFunc.PackageName, exeFunc.Name) != functionNotFound {
+
+		if vm.SearchStatic(exeFunc.PackageName, exeFunc.Name) != -1 {
 			vmError(FUNCTION_MULTIPLE_DEFINE_ERR, exeFunc.PackageName, exeFunc.Name)
 		}
 	}
@@ -147,8 +146,7 @@ func (vm *VirtualMachine) Execute() {
 	vm.execute(nil, vm.topLevel.CodeList)
 }
 
-func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Object {
-	var ret Object
+func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) {
 	var base int
 
 	stack := vm.stack
@@ -157,63 +155,63 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 
 	for pc := vm.pc; pc < len(codeList); {
 		switch codeList[pc] {
-		case VM_PUSH_INT_1BYTE:
+		case OP_CODE_PUSH_INT_1BYTE:
 			stack.SetIntPlus(0, int(codeList[pc+1]))
 			vm.stack.stackPointer++
 			pc += 2
-		case VM_PUSH_INT_2BYTE:
+		case OP_CODE_PUSH_INT_2BYTE:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, index)
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_INT:
+		case OP_CODE_PUSH_INT:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, exe.ConstantPool.GetInt(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_FLOAT_0:
+		case OP_CODE_PUSH_FLOAT_0:
 			stack.SetFloatPlus(0, 0.0)
 			vm.stack.stackPointer++
 			pc++
-		case VM_PUSH_FLOAT_1:
+		case OP_CODE_PUSH_FLOAT_1:
 			stack.SetFloatPlus(0, 1.0)
 			vm.stack.stackPointer++
 			pc++
-		case VM_PUSH_FLOAT:
+		case OP_CODE_PUSH_FLOAT:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetFloatPlus(0, exe.ConstantPool.GetFloat(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_STRING:
+		case OP_CODE_PUSH_STRING:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetStringPlus(0, exe.ConstantPool.GetString(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_PUSH_NIL:
+		case OP_CODE_PUSH_NIL:
 			stack.SetPlus(0, NilObject)
 			vm.stack.stackPointer++
 			pc++
-		case VM_PUSH_STACK:
+		case OP_CODE_PUSH_STACK:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, stack.Get(base+index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_POP_STACK:
+		case OP_CODE_POP_STACK:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.Set(base+index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_STATIC:
+		case OP_CODE_PUSH_STATIC:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetPlus(0, static.GetVariableObject(index))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_POP_STATIC:
+		case OP_CODE_POP_STATIC:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			static.SetVariable(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
-		case VM_PUSH_ARRAY:
+		case OP_CODE_PUSH_ARRAY:
 			array := stack.GetArrayPlus(-2)
 			index := stack.GetIntPlus(-1)
 
@@ -222,7 +220,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(-2, object)
 			vm.stack.stackPointer--
 			pc++
-		case VM_POP_ARRAY:
+		case OP_CODE_POP_ARRAY:
 			value := stack.GetPlus(-3)
 			array := stack.GetArrayPlus(-2)
 			index := stack.GetIntPlus(-1)
@@ -230,7 +228,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			array.Set(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
-		case VM_PUSH_MAP:
+		case OP_CODE_PUSH_MAP:
 			map_ := stack.GetMapPlus(-2)
 			index := stack.GetPlus(-1)
 
@@ -239,7 +237,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(-2, object)
 			vm.stack.stackPointer--
 			pc++
-		case VM_POP_MAP:
+		case OP_CODE_POP_MAP:
 			value := stack.GetPlus(-3)
 			map_ := stack.GetMapPlus(-2)
 			index := stack.GetPlus(-1)
@@ -247,158 +245,158 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			map_.Set(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
-		case VM_ADD_INT:
+		case OP_CODE_ADD_INT:
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)+stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_ADD_FLOAT:
+		case OP_CODE_ADD_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)+stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_ADD_STRING:
+		case OP_CODE_ADD_STRING:
 			stack.SetStringPlus(-2, stack.GetStringPlus(-2)+stack.GetStringPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_SUB_INT:
+		case OP_CODE_SUB_INT:
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)-stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_SUB_FLOAT:
+		case OP_CODE_SUB_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)-stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_MUL_INT:
+		case OP_CODE_MUL_INT:
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)*stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_MUL_FLOAT:
+		case OP_CODE_MUL_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)*stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_DIV_INT:
+		case OP_CODE_DIV_INT:
 			if stack.GetIntPlus(-1) == 0 {
 				vmError(DIVISION_BY_ZERO_ERR)
 			}
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)/stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_DIV_FLOAT:
+		case OP_CODE_DIV_FLOAT:
 			stack.SetFloatPlus(-2, stack.GetFloatPlus(-2)/stack.GetFloatPlus(-1))
 			vm.stack.stackPointer--
 			pc++
-		case VM_MINUS_INT:
+		case OP_CODE_MINUS_INT:
 			stack.SetIntPlus(-1, -stack.GetIntPlus(-1))
 			pc++
-		case VM_MINUS_FLOAT:
+		case OP_CODE_MINUS_FLOAT:
 			stack.SetFloatPlus(-1, -stack.GetFloatPlus(-1))
 			pc++
-		case VM_EQ_INT:
+		case OP_CODE_EQ_INT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) == stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_EQ_FLOAT:
+		case OP_CODE_EQ_FLOAT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) == stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_EQ_STRING:
+		case OP_CODE_EQ_STRING:
 			stack.SetIntPlus(-2, utils.BoolToInt(!(stack.GetStringPlus(-2) == stack.GetStringPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
-		case VM_EQ_OBJECT:
+		case OP_CODE_EQ_OBJECT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetPlus(-2) == stack.GetPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GT_INT:
+		case OP_CODE_GT_INT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) > stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GT_FLOAT:
+		case OP_CODE_GT_FLOAT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) > stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GT_STRING:
+		case OP_CODE_GT_STRING:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) > stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GE_INT:
+		case OP_CODE_GE_INT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) >= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GE_FLOAT:
+		case OP_CODE_GE_FLOAT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) >= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_GE_STRING:
+		case OP_CODE_GE_STRING:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) >= stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LT_INT:
+		case OP_CODE_LT_INT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) < stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LT_FLOAT:
+		case OP_CODE_LT_FLOAT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) < stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LT_STRING:
+		case OP_CODE_LT_STRING:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) < stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LE_INT:
+		case OP_CODE_LE_INT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) <= stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LE_FLOAT:
+		case OP_CODE_LE_FLOAT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) <= stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LE_STRING:
+		case OP_CODE_LE_STRING:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) <= stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_NE_INT:
+		case OP_CODE_NE_INT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetIntPlus(-2) != stack.GetIntPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_NE_FLOAT:
+		case OP_CODE_NE_FLOAT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetFloatPlus(-2) != stack.GetFloatPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_NE_OBJECT:
+		case OP_CODE_NE_OBJECT:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetPlus(-2) != stack.GetPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_NE_STRING:
+		case OP_CODE_NE_STRING:
 			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) != stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LOGICAL_AND:
+		case OP_CODE_LOGICAL_AND:
 			stack.SetIntPlus(-2, utils.BoolToInt(utils.IntToBool(stack.GetIntPlus(-2)) && utils.IntToBool(stack.GetIntPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LOGICAL_OR:
+		case OP_CODE_LOGICAL_OR:
 			stack.SetIntPlus(-2, utils.BoolToInt(utils.IntToBool(stack.GetIntPlus(-2)) || utils.IntToBool(stack.GetIntPlus(-1))))
 			vm.stack.stackPointer--
 			pc++
-		case VM_LOGICAL_NOT:
+		case OP_CODE_LOGICAL_NOT:
 			stack.SetIntPlus(-1, utils.BoolToInt(!utils.IntToBool(stack.GetIntPlus(-1))))
 			pc++
-		case VM_POP:
+		case OP_CODE_POP:
 			vm.stack.stackPointer--
 			pc++
-		case VM_DUPLICATE:
+		case OP_CODE_DUPLICATE:
 			stack.Set(vm.stack.stackPointer, stack.Get(vm.stack.stackPointer-1))
 			vm.stack.stackPointer++
 			pc++
-		case VM_DUPLICATE_OFFSET:
+		case OP_CODE_DUPLICATE_OFFSET:
 			offset := utils.Get2ByteInt(codeList[pc+1:])
 			stack.Set(vm.stack.stackPointer, stack.Get(vm.stack.stackPointer-1-offset))
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_JUMP:
+		case OP_CODE_JUMP:
 			index := utils.Get2ByteInt(codeList[pc+1:])
 			pc = index
-		case VM_JUMP_IF_TRUE:
+		case OP_CODE_JUMP_IF_TRUE:
 			if utils.IntToBool(stack.GetIntPlus(-1)) {
 				index := utils.Get2ByteInt(codeList[pc+1:])
 				pc = index
@@ -406,7 +404,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 				pc += 3
 			}
 			vm.stack.stackPointer--
-		case VM_JUMP_IF_FALSE:
+		case OP_CODE_JUMP_IF_FALSE:
 			if !utils.IntToBool(stack.GetIntPlus(-1)) {
 				index := utils.Get2ByteInt(codeList[pc+1:])
 				pc = index
@@ -414,16 +412,15 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 				pc += 3
 			}
 			vm.stack.stackPointer--
-		case VM_PUSH_FUNCTION:
+		case OP_CODE_PUSH_FUNCTION:
 			value := utils.Get2ByteInt(codeList[pc+1:])
 			stack.SetIntPlus(0, value)
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_INVOKE:
+		case OP_CODE_INVOKE:
 			funcIdx := stack.GetIntPlus(-1)
 			switch f := vm.static.Get(funcIdx).(type) {
 			case *GoGoNativeFunction:
-				vm.restorePc(exe, gogoFunc, pc)
 				vm.InvokeNativeFunction(f, &vm.stack.stackPointer)
 				pc++
 			case *GoGoFunction:
@@ -431,9 +428,9 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			default:
 				panic("TODO")
 			}
-		case VM_RETURN:
-			vm.returnFunction(&gogoFunc, &codeList, &pc, &base, &exe)
-		case VM_NEW_ARRAY:
+		case OP_CODE_RETURN:
+			vm.ReturnFunction(&gogoFunc, &codeList, &pc, &base, &exe)
+		case OP_CODE_NEW_ARRAY:
 			size := utils.Get2ByteInt(codeList[pc+1:])
 			array := vm.NewObjectArray(size)
 
@@ -441,7 +438,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(0, array)
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_NEW_MAP:
+		case OP_CDOE_NEW_MAP:
 			size := utils.Get2ByteInt(codeList[pc+1:])
 			objectMap := vm.NewObjectMap(size)
 
@@ -449,7 +446,7 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			stack.SetPlus(0, objectMap)
 			vm.stack.stackPointer++
 			pc += 3
-		case VM_NEW_INTERFACE:
+		case OP_CODE_NEW_INTERFACE:
 			data := stack.GetPlus(-1)
 			ifs := vm.NewObjectInterface(data)
 
@@ -461,15 +458,14 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) Objec
 			panic("TODO")
 		}
 	}
-	return ret
 }
 
-func (vm *VirtualMachine) initLocalVariables(f *Function, fromSp int) {
+func (vm *VirtualMachine) InitFuncLocalVariables(f *Function, fromSp int) {
 	var i, spIdx int
 
 	spIdx = fromSp
-	for i = 0; i < len(f.LocalVariableList); i++ {
-		vm.stack.Set(spIdx, GetObjectByType(f.LocalVariableList[i].Type))
+	for i = 0; i < len(f.VariableList); i++ {
+		vm.stack.Set(spIdx, GetObjectByType(f.VariableList[i].Type))
 		spIdx++
 	}
 }
@@ -482,7 +478,7 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 		code := codeList[i]
 		switch code {
 		// 函数内的本地声明
-		case VM_PUSH_STACK, VM_POP_STACK:
+		case OP_CODE_PUSH_STACK, OP_CODE_POP_STACK:
 
 			var parameterCount int
 
@@ -503,23 +499,23 @@ func (vm *VirtualMachine) ConvertOpCode(exe *Executable, codeList []byte, f *Fun
 				destIdx = srcIdx
 			}
 			utils.Set2ByteInt(codeList[i+1:], destIdx)
-		case VM_PUSH_STATIC, VM_POP_STATIC:
+		case OP_CODE_PUSH_STATIC, OP_CODE_POP_STATIC:
 
 			idxInExe := utils.Get2ByteInt(codeList[i+1:])
 			packageName := exe.PackageName
-			if exe.VariableList.VariableList[idxInExe].PackageName != "" {
-				packageName = exe.VariableList.VariableList[idxInExe].PackageName
+			if exe.VariableList[idxInExe].PackageName != "" {
+				packageName = exe.VariableList[idxInExe].PackageName
 			}
-			funcIdx := vm.SearchStatic(packageName, exe.VariableList.VariableList[idxInExe].Name)
+			funcIdx := vm.SearchStatic(packageName, exe.VariableList[idxInExe].Name)
 			utils.Set2ByteInt(codeList[i+1:], funcIdx)
 
-		case VM_PUSH_FUNCTION:
+		case OP_CODE_PUSH_FUNCTION:
 			idxInExe := utils.Get2ByteInt(codeList[i+1:])
 			funcIdx := vm.SearchStatic(exe.FunctionList[idxInExe].PackageName, exe.FunctionList[idxInExe].Name)
 			utils.Set2ByteInt(codeList[i+1:], funcIdx)
 		}
 
-		info := &OpcodeInfo[code]
+		info := OpcodeInfo[code]
 		for _, p := range []byte(info.Parameter) {
 			switch p {
 			case 'b':
@@ -539,9 +535,8 @@ func (vm *VirtualMachine) SearchStatic(packageName, name string) int {
 }
 
 //
-// 函数相关
+// 函数相关 执行原生函数
 //
-// 执行原生函数
 func (vm *VirtualMachine) InvokeNativeFunction(f *GoGoNativeFunction, spP *int) {
 	// 5 -- sp
 	// 4 funcName
@@ -604,10 +599,10 @@ func (vm *VirtualMachine) InvokeFunction(
 	*caller = callee
 
 	// 初始化参数
-	vm.initLocalVariables(calleeP, *spP)
+	vm.InitFuncLocalVariables(calleeP, *spP)
 
 	// 设置栈位置
-	*spP += len(calleeP.LocalVariableList)
+	*spP += len(calleeP.VariableList)
 	*pcP = 0
 
 	// 设置字节码为函数的字节码
@@ -615,7 +610,7 @@ func (vm *VirtualMachine) InvokeFunction(
 }
 
 // 保存返回值,并恢复栈
-func (vm *VirtualMachine) returnFunction(
+func (vm *VirtualMachine) ReturnFunction(
 	funcP **GoGoFunction,
 	codeP *[]byte,
 	pcP *int,
@@ -633,7 +628,7 @@ func (vm *VirtualMachine) returnFunction(
 	vm.stack.stackPointer -= resultCount
 
 	// 恢复调用栈
-	doReturn(vm, funcP, codeP, pcP, baseP, exeP)
+	DoReturn(vm, funcP, codeP, pcP, baseP, exeP)
 
 	for i := 0; i < resultCount; i++ {
 		vm.stack.Set(vm.stack.stackPointer, bakObjList[i])
@@ -642,7 +637,7 @@ func (vm *VirtualMachine) returnFunction(
 }
 
 // 恢复到父调用栈
-func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) {
+func DoReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int, baseP *int, exeP **Executable) {
 
 	calleeP := (*exeP).FunctionList[(*funcP).Index]
 	argCount := calleeP.GetParamCount()
@@ -666,11 +661,6 @@ func doReturn(vm *VirtualMachine, funcP **GoGoFunction, codeP *[]byte, pcP *int,
 	vm.stack.stackPointer = *baseP
 	*pcP = callInfo.callerAddress + 1
 	*baseP = callInfo.base
-}
-
-func (vm *VirtualMachine) restorePc(ee *Executable, function *GoGoFunction, pc int) {
-	vm.currentExecutable = ee
-	vm.pc = pc
 }
 
 func (vm *VirtualMachine) NewObjectArray(size int) Object {

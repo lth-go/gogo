@@ -49,6 +49,9 @@ func NewCompiler(path string) *Compiler {
 // 修正树
 //
 func (c *Compiler) FixTree() {
+	// 修正导入
+	c.FixImportList()
+
 	// 修正全局变量
 	c.FixDeclarationList()
 
@@ -67,15 +70,15 @@ func (c *Compiler) FixTree() {
 func (c *Compiler) Generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.GetPackageName()
-	exe.FunctionList = c.GetVmFunctionList()
-	exe.VariableList.SetVariableList(c.GetVmVariableList()) // 添加全局变量声明
 	exe.ConstantPool.SetPool(c.ConstantList)
+	exe.VariableList = c.GetVmVariableList()
+	exe.FunctionList = c.GetVmFunctionList()
 
 	return exe
 }
 
-func (c *Compiler) FixDeclarationList() {
-	// TODO: 导入放到声明里去
+// FixImportList 修正导入
+func (c *Compiler) FixImportList() {
 	for _, imp := range c.importList {
 		for _, doneCompiler := range GetDoneCompilerList() {
 			if imp.packageName == doneCompiler.GetPackageName() {
@@ -84,7 +87,9 @@ func (c *Compiler) FixDeclarationList() {
 			}
 		}
 	}
+}
 
+func (c *Compiler) FixDeclarationList() {
 	for _, decl := range c.declarationList {
 		if decl.Value != nil {
 			decl.Value = decl.Value.Fix()
@@ -152,6 +157,5 @@ func (c *Compiler) SearchPackageCompiler(packageName string) *Compiler {
 			return imp.Compiler
 		}
 	}
-
 	return nil
 }

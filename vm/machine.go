@@ -245,6 +245,23 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) {
 			map_.Set(index, value)
 			vm.stack.stackPointer -= 3
 			pc++
+		case OP_CODE_PUSH_STRUCT:
+			struct_ := stack.GetStructPlus(-2)
+			index := stack.GetIntPlus(-1)
+
+			object := struct_.GetField(index)
+
+			stack.SetPlus(-2, object)
+			vm.stack.stackPointer--
+			pc++
+		case OP_CODE_POP_STRUCT:
+			value := stack.GetPlus(-3)
+			struct_ := stack.GetStructPlus(-2)
+			index := stack.GetIntPlus(-1)
+
+			struct_.SetField(index, value)
+			vm.stack.stackPointer -= 3
+			pc++
 		case OP_CODE_ADD_INT:
 			stack.SetIntPlus(-2, stack.GetIntPlus(-2)+stack.GetIntPlus(-1))
 			vm.stack.stackPointer--
@@ -452,6 +469,14 @@ func (vm *VirtualMachine) execute(gogoFunc *GoGoFunction, codeList []byte) {
 
 			vm.stack.stackPointer -= 1
 			stack.SetPlus(0, ifs)
+			vm.stack.stackPointer++
+			pc += 3
+		case OP_CODE_NEW_STRUCT:
+			size := utils.Get2ByteInt(codeList[pc+1:])
+			struct_ := vm.NewObjectStruct(size)
+
+			vm.stack.stackPointer -= size
+			stack.SetPlus(0, struct_)
 			vm.stack.stackPointer++
 			pc += 3
 		default:
@@ -700,6 +725,19 @@ func (vm *VirtualMachine) NewObjectInterface(data Object) Object {
 	return obj
 }
 
+func (vm *VirtualMachine) NewObjectStruct(size int) Object {
+	obj := NewObjectStruct(size)
+
+	vm.AddObject(obj)
+
+	// TODO: 倒序入栈, 正序出栈
+	for i := 0; i < size; i++ {
+		obj.FieldList[i] = vm.stack.GetPlus(-size + i)
+	}
+
+	return obj
+}
+
 func GetObjectByType(typ *Type) Object {
 	var value Object
 
@@ -715,6 +753,13 @@ func GetObjectByType(typ *Type) Object {
 		value = NewObjectFloat(0.0)
 	case BasicTypeString:
 		value = NewObjectString("")
+	case BasicTypeStruct:
+		structValue := NewObjectStruct(len(typ.StructType.FieldTypeList))
+		for i, fieldType := range typ.StructType.FieldTypeList {
+			structValue.SetField(i, GetObjectByType(fieldType))
+		}
+
+		value = structValue
 	case BasicTypeNil:
 		fallthrough
 	default:

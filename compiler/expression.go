@@ -275,7 +275,9 @@ func CreateArrayExpression(typ *Type, exprList []Expression) *ArrayExpression {
 	return expr
 }
 
+//
 // MapExpression
+//
 type MapExpression struct {
 	ExpressionBase
 	KeyList   []Expression
@@ -339,12 +341,80 @@ func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
 }
 
 //
+// StructExpression
+//
+type StructExpression struct {
+	ExpressionBase
+	FieldList []Expression
+}
+
+func (expr *StructExpression) Fix() Expression {
+	for i, field := range expr.FieldList {
+		fieldType := expr.Type.structType.Fields[i].Type
+
+		if field == nil {
+			// TODO: default value
+			// expr.FieldList[i] = field
+			panic("TODO")
+		}
+		expr.FieldList[i] = expr.FieldList[i].Fix()
+		expr.FieldList[i] = CreateAssignCast(expr.FieldList[i], fieldType)
+	}
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *StructExpression) Generate(ob *OpCodeBuf) {
+	// TODO: 倒序入栈
+	for _, subExpr := range expr.FieldList {
+		subExpr.Generate(ob)
+	}
+
+	count := len(expr.FieldList)
+	ob.generateCode(expr.Position(), vm.OP_CODE_NEW_STRUCT, count)
+}
+
+func CreateStructExpression(typ *Type, valueList []Expression) *StructExpression {
+	fieldCount := len(typ.structType.Fields)
+
+	expr := &StructExpression{
+		FieldList: make([]Expression, fieldCount),
+	}
+	expr.SetType(typ)
+
+	fieldMap := make(map[string]*StructField)
+	for i, field := range typ.structType.Fields {
+		field.Index = i
+		fieldMap[field.Name] = field
+	}
+
+	for _, subExpr := range valueList {
+		keyValueExpr, ok := subExpr.(*KeyValueExpression)
+		if !ok {
+			panic("TODO")
+		}
+
+		fieldName := keyValueExpr.Key.(*IdentifierExpression).name
+		field, ok := fieldMap[fieldName]
+		if !ok {
+			panic("TODO")
+		}
+
+		expr.FieldList[field.Index] = keyValueExpr.Value
+	}
+
+	return expr
+}
+
+//
 // IdentifierExpression 变量表达式
 //
 type IdentifierExpression struct {
 	ExpressionBase
 	name  string
-	inner interface{} // 声明要么是变量，要么是函数, 要么是包(FunctionIdentifier Declaration Package)
+	inner interface{} // 变量,函数,包,自定义类型(FunctionIdentifier Declaration Package)
 	Block *Block
 }
 
@@ -684,6 +754,7 @@ type SelectorExpression struct {
 	ExpressionBase
 	expression Expression // 实例
 	Field      string     // 成员名称
+	Index      int
 }
 
 func (expr *SelectorExpression) Fix() Expression {
@@ -692,9 +763,12 @@ func (expr *SelectorExpression) Fix() Expression {
 	expr.expression = expr.expression.Fix()
 	typ := expr.expression.GetType()
 
+	// TODO: IsType()
 	switch {
 	case typ.IsPackage():
 		newExpr = FixPackageSelectorExpression(expr, expr.Field)
+	case typ.IsStruct():
+		newExpr = FixStructSelectorExpression(expr, expr.Field)
 	default:
 		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
 	}
@@ -704,9 +778,13 @@ func (expr *SelectorExpression) Fix() Expression {
 	return newExpr
 }
 
-func (expr *SelectorExpression) Generate(ob *OpCodeBuf) {}
+func (expr *SelectorExpression) Generate(ob *OpCodeBuf) {
+	expr.expression.Generate(ob)
+	// TODO: 临时用下
+	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, expr.Index)
+	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_STRUCT)
+}
 
-// 仅限函数
 func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expression {
 	innerExpr := expr.expression
 	innerExpr.GetType().Fix()
@@ -743,6 +821,23 @@ func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 	}
 
 	panic(fmt.Sprintf("package filed not found '%s'", field))
+}
+
+func FixStructSelectorExpression(expr *SelectorExpression, fieldName string) Expression {
+	innerExpr := expr.expression
+	innerExpr.GetType().Fix()
+
+	expr.expression = expr.expression.Fix()
+
+	for i, field := range expr.expression.GetType().structType.Fields {
+		if field.Name == fieldName {
+			expr.Index = i
+			expr.SetType(field.Type.Copy())
+			return expr
+		}
+	}
+
+	panic("TODO")
 }
 
 func CreateSelectorExpression(expression Expression, memberName string) *SelectorExpression {
@@ -861,5 +956,10 @@ func CreateCompositeLit(typ *Type, valueList []Expression) Expression {
 	if typ.IsMap() {
 		return CreateMapExpression(typ, valueList)
 	}
+
+	if typ.IsStruct() {
+		return CreateStructExpression(typ, valueList)
+	}
+
 	return nil
 }

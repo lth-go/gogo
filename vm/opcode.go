@@ -21,6 +21,8 @@ const (
 	OP_CODE_POP_ARRAY
 	OP_CODE_PUSH_MAP
 	OP_CODE_POP_MAP
+	OP_CODE_PUSH_STRUCT
+	OP_CODE_POP_STRUCT
 	OP_CODE_PUSH_INTERFACE
 	OP_CODE_POP_INTERFACE
 
@@ -74,6 +76,7 @@ const (
 	OP_CODE_NEW_ARRAY
 	OP_CDOE_NEW_MAP
 	OP_CODE_NEW_INTERFACE
+	OP_CODE_NEW_STRUCT
 )
 
 type opcodeInfo struct {
@@ -107,6 +110,8 @@ var OpcodeInfo map[byte]opcodeInfo = map[byte]opcodeInfo{
 	OP_CODE_POP_ARRAY:      {"pop_array", "", -1},
 	OP_CODE_PUSH_MAP:       {"push_map", "", 1},
 	OP_CODE_POP_MAP:        {"pop_map", "", -1},
+	OP_CODE_PUSH_STRUCT:    {"push_struct", "", 1},
+	OP_CODE_POP_STRUCT:     {"pop_struct", "", -1},
 	OP_CODE_PUSH_INTERFACE: {"push_interface", "", 1},
 	OP_CODE_POP_INTERFACE:  {"pop_interface", "", -1},
 
@@ -160,4 +165,5 @@ var OpcodeInfo map[byte]opcodeInfo = map[byte]opcodeInfo{
 	OP_CODE_NEW_ARRAY:     {"new_array", "s", 1},
 	OP_CDOE_NEW_MAP:       {"new_map", "s", 1},
 	OP_CODE_NEW_INTERFACE: {"new_interface", "s", 1},
+	OP_CODE_NEW_STRUCT:    {"new_struct", "s", 1},
 }

@@ -7,6 +7,13 @@ var emptyArray []int = []int{};
 var emptyMap map[string]int = map[string]int{};
 var globalMap map[string]int = map[string]int{"test": 1};
 var globalInterface interface{} = "cool";
+var globalStruct struct {
+    A int;
+} = struct {
+    A int;
+}{
+    A: 100,
+};
 
 //
 // Check lexical analyzer
@@ -667,6 +674,31 @@ func testDelete() {
     delete(dict, "a");
 };
 
+func testStruct() {
+    var emptyStruct struct {} = struct {}{};
+    var foo struct {
+        A int;
+    } = struct {
+        A int;
+    }{
+        A: 250,
+    };
+
+    printf("foo.A is %v\n", foo.A);
+
+    foo.A = 1000;
+
+    printf("foo.A is %v\n", foo.A);
+};
+
+func testGlobalStruct() {
+    printf("globalStruct.A is %v\n", globalStruct.A);
+
+    globalStruct.A = 1000;
+
+    printf("globalStruct.A is %v\n", globalStruct.A);
+};
+
 func main() {
     testLex();
     testOperators();
@@ -696,4 +728,6 @@ func main() {
     testDotDotDot();
     testAppend();
     testDelete();
+    testStruct();
+    testGlobalStruct();
 };

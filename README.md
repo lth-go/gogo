@@ -24,6 +24,5 @@ make test
 + for range
 + 代码解耦
 + int改int64
-+ 增加struct类型
 + 增加struct方法
 + 增加指针

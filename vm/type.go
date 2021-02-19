@@ -33,10 +33,15 @@ type FuncType struct {
 	ResultTypeList []*Type
 }
 
+type StructType struct {
+	FieldTypeList []*Type
+}
+
 type Type struct {
-	BasicType BasicType
-	ArrayType *ArrayType
-	FuncType  *FuncType
+	BasicType  BasicType
+	ArrayType  *ArrayType
+	FuncType   *FuncType
+	StructType *StructType
 }
 
 func (t *Type) GetBasicType() BasicType {
@@ -47,6 +52,12 @@ func (t *Type) SetArrayType(typ *Type, length int64) {
 	t.ArrayType = &ArrayType{
 		Len:         length,
 		ElementType: typ,
+	}
+}
+
+func (t *Type) SetStructType(fieldTypeList []*Type) {
+	t.StructType = &StructType{
+		FieldTypeList: fieldTypeList,
 	}
 }
 

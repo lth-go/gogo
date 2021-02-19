@@ -51,6 +51,12 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 			mapValue.Set(GetVmVariable(value.KeyList[i]), GetVmVariable(value.ValueList[i]))
 		}
 		return mapValue
+	case *StructExpression:
+		structValue := vm.NewObjectStruct(len(value.FieldList))
+		for i, subValue := range value.FieldList {
+			structValue.FieldList[i] = GetVmVariable(subValue)
+		}
+		return structValue
 	}
 
 	return nil

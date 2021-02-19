@@ -137,8 +137,19 @@ func CopyToVmType(src *Type) *vm.Type {
 	dest := &vm.Type{
 		BasicType: src.GetBasicType(),
 	}
+
 	if src.IsArray() {
 		dest.SetArrayType(CopyToVmType(src.arrayType.ElementType), src.arrayType.Len)
+	}
+
+	if src.IsStruct() {
+		typeList := make([]*vm.Type, 0)
+
+		for _, field := range src.structType.Fields {
+			typeList = append(typeList, CopyToVmType(field.Type))
+		}
+
+		dest.SetStructType(typeList)
 	}
 
 	if src.IsFunc() {
@@ -191,6 +202,15 @@ func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
 		} else {
 			panic("TODO")
 		}
+	case *SelectorExpression:
+		if e.expression.GetType().IsStruct() {
+			e.expression.Generate(ob)
+			ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, e.Index)
+			ob.generateCode(expr.Position(), vm.OP_CODE_POP_STRUCT)
+		} else {
+			panic("TODO")
+		}
+
 	default:
 		panic("TODO")
 	}

@@ -24,7 +24,10 @@ import (
     import_spec          *Import
     import_spec_list     []*Import
 
-    function_decl       *FunctionDefinition
+    function_decl        *FunctionDefinition
+
+    field_decl_list      []*StructField
+    field_decl           *StructField
 
     tok                  Token
 }
@@ -71,7 +74,9 @@ import (
     type_list_or_nil type_list
 %type <block> block block_or_nil
 %type <else_if> else_if
-%type <type_specifier> type_specifier literal_type array_type func_type signature map_type interface_type
+%type <type_specifier> type_specifier literal_type array_type func_type signature map_type interface_type struct_type
+%type <field_decl_list> field_decl_list_or_nil field_decl_list
+%type <field_decl> field_decl
 
 %%
 
@@ -152,6 +157,35 @@ func_type
         {
             $$ = $2
             $$.SetPosition($1.Position())
+        }
+        ;
+struct_type
+        : STRUCT LC field_decl_list_or_nil RC
+        {
+            $$ = CreateStructType($1.Position(), $3)
+        }
+        ;
+field_decl_list_or_nil
+        :
+        {
+            $$ = nil
+        }
+        | field_decl_list
+        ;
+field_decl_list
+        : field_decl SEMICOLON
+        {
+            $$ = []*StructField{$1}
+        }
+        | field_decl_list field_decl SEMICOLON
+        {
+            $$ = append($1, $2)
+        }
+        ;
+field_decl
+        : IDENTIFIER type_specifier
+        {
+            $$ = CreateFieldDecl($1.Lit, $2)
         }
         ;
 type_specifier
@@ -571,6 +605,7 @@ literal_type
         : array_type
         | map_type
         | interface_type
+        | struct_type
         ;
 literal_value
         : LC RC

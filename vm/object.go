@@ -243,6 +243,20 @@ type ObjectStruct struct {
 	FieldList []Object
 }
 
+func (obj *ObjectStruct) GetField(i int) Object {
+	return obj.FieldList[i]
+}
+
+func (obj *ObjectStruct) SetField(i int, value Object) {
+	obj.FieldList[i] = value
+}
+
+func NewObjectStruct(size int) *ObjectStruct {
+	return &ObjectStruct{
+		FieldList: make([]Object, size),
+	}
+}
+
 //
 // ObjectPointer
 //

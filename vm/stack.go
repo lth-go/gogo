@@ -128,6 +128,11 @@ func (s *Stack) GetMapPlus(incr int) *ObjectMap {
 	return s.Get(index).(*ObjectMap)
 }
 
+func (s *Stack) GetStructPlus(incr int) *ObjectStruct {
+	index := s.getIndex(incr)
+	return s.Get(index).(*ObjectStruct)
+}
+
 func (s *Stack) SetInt(sp int, value int) {
 	s.Set(sp, NewObjectInt(value))
 }

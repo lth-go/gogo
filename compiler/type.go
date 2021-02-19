@@ -17,6 +17,7 @@ type Type struct {
 	funcType          *FuncType
 	mapType           *MapType
 	multipleValueType *MultipleValueType // 用于处理函数多返回值
+	structType        *StructType
 }
 
 func (t *Type) Fix() {
@@ -284,6 +285,74 @@ func (t *MultipleValueType) Equal(t2 *MultipleValueType) bool {
 	return true
 }
 
+type StructType struct {
+	Fields []*StructField
+}
+
+type StructField struct {
+	Name  string
+	Type  *Type
+	Index int
+}
+
+func NewStructType(fields []*StructField) *StructType {
+	return &StructType{
+		Fields: fields,
+	}
+}
+
+func (t *StructType) Copy() *StructType {
+	if t == nil {
+		return nil
+	}
+
+	fieldList := make([]*StructField, 0)
+
+	for _, field := range t.Fields {
+		fieldList = append(fieldList, &StructField{
+			Name: field.Name,
+			Type: field.Type.Copy(),
+		})
+	}
+
+	return &StructType{
+		Fields: fieldList,
+	}
+}
+
+func (t *StructType) Equal(t2 *StructType) bool {
+	if t == nil && t2 == nil {
+		return true
+	}
+
+	if t == nil && t2 != nil {
+		return false
+	}
+
+	if t != nil && t2 == nil {
+		return false
+	}
+
+	if len(t.Fields) != len(t2.Fields) {
+		return false
+	}
+
+	for i := 0; i < len(t.Fields); i++ {
+		f1 := t.Fields[i]
+		f2 := t.Fields[i]
+
+		if f1.Name != f2.Name {
+			return false
+		}
+
+		if !f1.Type.Equal(f2.Type) {
+			return false
+		}
+	}
+
+	return true
+}
+
 //
 // create
 //
@@ -314,6 +383,19 @@ func CreateMapType(keyType *Type, valueType *Type, pos Position) *Type {
 func CreateInterfaceType(pos Position) *Type {
 	newType := CreateType(vm.BasicTypeInterface, pos)
 	return newType
+}
+
+func CreateStructType(pos Position, fieldDeclList []*StructField) *Type {
+	newType := CreateType(vm.BasicTypeStruct, pos)
+	newType.structType = NewStructType(fieldDeclList)
+	return newType
+}
+
+func CreateFieldDecl(name string, fieldType *Type) *StructField {
+	return &StructField{
+		Name: name,
+		Type: fieldType,
+	}
 }
 
 func (t *Type) IsArray() bool {
@@ -370,6 +452,10 @@ func (t *Type) IsMap() bool {
 
 func (t *Type) IsInterface() bool {
 	return t.GetBasicType() == vm.BasicTypeInterface
+}
+
+func (t *Type) IsStruct() bool {
+	return t.GetBasicType() == vm.BasicTypeStruct
 }
 
 func (t *Type) GetTypeName() string {
@@ -446,6 +532,7 @@ func (t *Type) Copy() *Type {
 	newType.funcType = t.funcType.Copy()
 	newType.multipleValueType = t.multipleValueType.Copy()
 	newType.mapType = t.mapType.Copy()
+	newType.structType = t.structType.Copy()
 
 	return newType
 }

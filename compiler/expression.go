@@ -76,7 +76,7 @@ func (expr *IntExpression) Fix() Expression {
 	expr.GetType().Fix()
 
 	if expr.Value > 65535 || expr.Value < 0 {
-		expr.Index = GetCurrentCompiler().AddConstantList(expr.Value)
+		expr.Index = compilerManager.AddConstantList(expr.Value)
 	}
 
 	return expr
@@ -115,7 +115,7 @@ func (expr *FloatExpression) Fix() Expression {
 	expr.GetType().Fix()
 
 	if expr.Value != 0.0 && expr.Value != 1.0 {
-		expr.Index = GetCurrentCompiler().AddConstantList(expr.Value)
+		expr.Index = compilerManager.AddConstantList(expr.Value)
 	}
 	return expr
 }
@@ -133,7 +133,6 @@ func (expr *FloatExpression) Generate(ob *OpCodeBuf) {
 func CreateFloatExpression(pos Position, value float64) *FloatExpression {
 	expr := &FloatExpression{
 		Value: value,
-		Index: -1,
 	}
 	expr.SetPosition(pos)
 
@@ -153,7 +152,7 @@ func (expr *StringExpression) Fix() Expression {
 	expr.SetType(NewType(vm.BasicTypeString))
 	expr.GetType().Fix()
 
-	expr.Index = GetCurrentCompiler().AddConstantList(expr.Value)
+	expr.Index = compilerManager.AddConstantList(expr.Value)
 	return expr
 }
 
@@ -810,7 +809,14 @@ func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 		// TODO: 初始值直接给会有问题
 		newDecl := NewDeclaration(decl.Position(), decl.Type.Copy(), decl.Name, nil)
 		newDecl.PackageName = compiler.GetPackageName()
-		newDecl.Index = GetCurrentCompiler().AddDeclarationList(newDecl)
+		GetCurrentCompiler().AddDeclarationList(newDecl)
+
+		for i, declTmp := range compilerManager.DeclarationList {
+			if newDecl.PackageName == declTmp.PackageName && newDecl.Name == declTmp.Name {
+				newDecl.Index = i
+				break
+			}
+		}
 
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
 		newExpr.SetType(newDecl.Type.Copy())

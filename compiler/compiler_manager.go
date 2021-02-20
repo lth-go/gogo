@@ -7,11 +7,42 @@ import (
 type CompilerManager struct {
 	doingList []*Compiler
 	doneList  []*Compiler
+
+	funcList        []*FunctionDefinition // 函数列表
+	DeclarationList []*Declaration        // 声明列表
+	ConstantList    []interface{}         // 常量定义
+}
+
+func (cm *CompilerManager) AddConstantList(value interface{}) int {
+	for i, v := range cm.ConstantList {
+		if value == v {
+			return i
+		}
+	}
+
+	cm.ConstantList = append(cm.ConstantList, value)
+	return len(cm.ConstantList) - 1
+}
+
+func (cm *CompilerManager) GetVmVariableList() []*vm.Variable {
+	variableList := make([]*vm.Variable, 0)
+
+	for _, decl := range cm.DeclarationList {
+		newValue := vm.NewVmVariable(decl.PackageName, decl.Name, CopyToVmType(decl.Type))
+		newValue.Value = GetVmVariable(decl.Value)
+		variableList = append(variableList, newValue)
+	}
+
+	return variableList
 }
 
 var compilerManager = &CompilerManager{
 	doingList: []*Compiler{},
 	doneList:  []*Compiler{},
+}
+
+func GetCurrentCompilerManage() *CompilerManager {
+	return compilerManager
 }
 
 // GetCurrentCompiler
@@ -84,6 +115,16 @@ func (cm *CompilerManager) Parse(path string) {
 }
 
 func (cm *CompilerManager) Compile() []*vm.Executable {
+	for i := len(cm.doneList) - 1; i >= 0; i-- {
+		c := cm.doneList[i]
+
+		cm.DeclarationList = append(cm.DeclarationList, c.declarationList...)
+		for index, decl := range cm.DeclarationList {
+			decl.Index = index
+		}
+		cm.funcList = append(cm.funcList, c.funcList...)
+	}
+
 	doneCompilerList := GetDoneCompilerList()
 
 	// 倒序编译,防止依赖问题

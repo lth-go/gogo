@@ -21,6 +21,8 @@ func main() {
 
 	exeList := compiler.CompileFile(filename)
 
-	VM := vm.NewVirtualMachine(exeList)
+	cm := compiler.GetCurrentCompilerManage()
+
+	VM := vm.NewVirtualMachine(exeList, cm.ConstantList, cm.GetVmVariableList())
 	VM.Execute()
 }

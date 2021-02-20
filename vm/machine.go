@@ -19,7 +19,7 @@ type VirtualMachine struct {
 	codeList []byte
 }
 
-func NewVirtualMachine(exeList []*Executable) *VirtualMachine {
+func NewVirtualMachine(exeList []*Executable, constant []interface{}, variableList []*Variable) *VirtualMachine {
 	vm := &VirtualMachine{
 		stack:    NewStack(),
 		heap:     NewHeap(),
@@ -29,6 +29,15 @@ func NewVirtualMachine(exeList []*Executable) *VirtualMachine {
 
 	// 添加原生函数
 	vm.AddNativeFunctions()
+
+	vm.constant = constant
+
+	// TODO:
+	for _, value := range variableList {
+		value.Init()
+		vm.static.Append(NewStaticVariable(value.PackageName, value.Name, value.Value))
+	}
+
 
 	for _, exe := range exeList {
 		vm.AddExecutable(exe)
@@ -58,8 +67,6 @@ func (vm *VirtualMachine) SetMainEntrypoint() {
 
 // 添加单个exe到vm
 func (vm *VirtualMachine) AddExecutable(exe *Executable) {
-	vm.AddStatic(exe.PackageName, exe.VariableList)
-	vm.AddConstant(exe.Constant)
 	vm.AddFunctions(exe.FunctionList)
 }
 
@@ -73,7 +80,7 @@ func (vm *VirtualMachine) FixFuncCodeList(exe *Executable) {
 
 		caller := vm.funcList[vm.SearchFunction(exeFunc.PackageName, exeFunc.Name)].(*GoGoFunction)
 
-		vm.ConvertOpCode(exe.PackageName, exe.VariableList, exe.Constant, exe.FunctionList, caller)
+		vm.ConvertOpCode(exe.PackageName, exe.VariableList, exe.FunctionList, caller)
 	}
 }
 
@@ -492,7 +499,6 @@ func (vm *VirtualMachine) InitFuncLocalVariables(f *GoGoFunction, spIdx int) {
 func (vm *VirtualMachine) ConvertOpCode(
 	packageName string,
 	variableList []*Variable,
-	constant []interface{},
 	functionList []*Function,
 	caller *GoGoFunction,
 ) {
@@ -513,23 +519,10 @@ func (vm *VirtualMachine) ConvertOpCode(
 				utils.Set2ByteInt(codeList[i+1:], idx+1)
 			}
 
-		case OP_CODE_PUSH_STATIC, OP_CODE_POP_STATIC:
-			idxInExe := utils.Get2ByteInt(codeList[i+1:])
-			if variableList[idxInExe].PackageName != "" {
-				packageName = variableList[idxInExe].PackageName
-			}
-			funcIdx := vm.SearchStatic(packageName, variableList[idxInExe].Name)
-			utils.Set2ByteInt(codeList[i+1:], funcIdx)
-
 		case OP_CODE_PUSH_FUNCTION:
 			idxInExe := utils.Get2ByteInt(codeList[i+1:])
 			funcIdx := vm.SearchFunction(functionList[idxInExe].PackageName, functionList[idxInExe].Name)
 			utils.Set2ByteInt(codeList[i+1:], funcIdx)
-
-		case OP_CODE_PUSH_INT, OP_CODE_PUSH_FLOAT, OP_CODE_PUSH_STRING:
-			idx := utils.Get2ByteInt(codeList[i+1:])
-			fixIdx := vm.SearchConstant(constant[idx])
-			utils.Set2ByteInt(codeList[i+1:], fixIdx)
 		}
 
 		for _, p := range []byte(OpcodeInfo[code].Parameter) {

@@ -28,7 +28,6 @@ type FunctionDefinition struct {
 	Type            *Type
 	PackageName     string
 	Name            string
-	Receiver        *Parameter
 	ParameterList   []*Parameter
 	Block           *Block
 	DeclarationList []*Declaration

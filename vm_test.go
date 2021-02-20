@@ -15,7 +15,8 @@ func TestVmMachine(t *testing.T) {
 
 	exeList := compiler.CompileFile(testFile)
 
-	// 创建虚拟机
-	VM := vm.NewVirtualMachine(exeList)
+	cm := compiler.GetCurrentCompilerManage()
+
+	VM := vm.NewVirtualMachine(exeList, cm.ConstantList, cm.GetVmVariableList())
 	VM.Execute()
 }

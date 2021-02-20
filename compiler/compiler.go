@@ -126,11 +126,8 @@ func (c *Compiler) AddConstantList(value interface{}) int {
 }
 
 // 添加声明
-func (c *Compiler) AddDeclarationList(decl *Declaration) int {
+func (c *Compiler) AddDeclarationList(decl *Declaration) {
 	c.declarationList = append(c.declarationList, decl)
-	decl.Index = len(c.declarationList) - 1
-
-	return decl.Index
 }
 
 func (c *Compiler) SearchDeclaration(name string) *Declaration {

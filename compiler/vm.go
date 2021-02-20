@@ -79,8 +79,8 @@ func (c *Compiler) GetVmFunction(src *FunctionDefinition, inThisExe bool) *vm.Fu
 	dest := &vm.Function{
 		PackageName: src.GetPackageName(),
 		Name:        src.Name,
-		Type:        CopyToVmType(src.GetType().Copy()),
-		IsMethod:    false,
+		ArgCount:    len(src.GetType().funcType.Params),
+		ResultCount: len(src.GetType().funcType.Results),
 	}
 
 	if src.Block != nil && inThisExe {
@@ -90,9 +90,6 @@ func (c *Compiler) GetVmFunction(src *FunctionDefinition, inThisExe bool) *vm.Fu
 		dest.CodeList = ob.fixOpcodeBuf()
 		dest.LineNumberList = ob.lineNumberList
 		dest.VariableList = copyVmVariableList(src)
-	} else {
-		dest.IsImplemented = false
-		dest.VariableList = nil
 	}
 
 	return dest

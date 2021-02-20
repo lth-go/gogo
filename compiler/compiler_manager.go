@@ -117,7 +117,7 @@ func Compile() []*vm.Executable {
 //
 // 编译文件
 //
-func CompileFile(path string) *vm.ExecutableList {
+func CompileFile(path string) []*vm.Executable {
 	// 输出yacc错误信息
 	if true {
 		yyErrorVerbose = true
@@ -126,5 +126,5 @@ func CompileFile(path string) *vm.ExecutableList {
 	Parse(path)
 	exeList := Compile()
 
-	return vm.NewExecutableList(exeList)
+	return exeList
 }

@@ -49,20 +49,20 @@ func vmError(errorNumber int, a ...interface{}) {
 	//fmt.Printf(errMessageMap[errorNumber], a...)
 }
 
-func getLineNumberByPc(exe *Executable, function *GoGoFunction, pc int) int {
-	var lineNumber []*LineNumber
-	var ret int
+// func getLineNumberByPc(exe *Executable, function *GoGoFunction, pc int) int {
+//     var lineNumber []*LineNumber
+//     var ret int
 
-	// TODO: function == nil
-	if function != nil {
-		lineNumber = exe.FunctionList[function.Index].LineNumberList
-	}
+//     // TODO: function == nil
+//     if function != nil {
+//         lineNumber = exe.FunctionList[function.Index].LineNumberList
+//     }
 
-	for _, line := range lineNumber {
-		if pc >= line.StartPc && pc < (line.StartPc+line.PcCount) {
-			ret = line.LineNumber
-		}
-	}
+//     for _, line := range lineNumber {
+//         if pc >= line.StartPc && pc < (line.StartPc+line.PcCount) {
+//             ret = line.LineNumber
+//         }
+//     }
 
-	return ret
-}
+//     return ret
+// }

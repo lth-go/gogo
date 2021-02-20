@@ -5,22 +5,50 @@ import (
 	"strconv"
 )
 
+type Func interface {
+	GetName() string
+	GetPackageName() string
+}
+
+//
 // 原生函数
+//
 type GoGoNativeFunction struct {
-	StaticBase
-	proc        NativeFunctionProc // 函数指针
-	argCount    int                // 参数数量
-	resultCount int                // 返回值数量, TODO: 暂时用不上
+	PackageName string
+	Name        string
+	ArgCount    int                // 参数数量
+	ResultCount int                // 返回值数量
+	Proc        NativeFunctionProc // 函数指针
+}
+
+func (f *GoGoNativeFunction) GetName() string {
+	return f.Name
+}
+func (f *GoGoNativeFunction) GetPackageName() string {
+	return f.PackageName
+}
+
+//
+// 用户函数,保存调用函数的索引
+//
+type GoGoFunction struct {
+	PackageName  string
+	Name         string
+	ArgCount     int
+	ResultCount  int
+	VariableList []Object
+	CodeList     []byte
+}
+
+func (f *GoGoFunction) GetName() string {
+	return f.Name
+}
+
+func (f *GoGoFunction) GetPackageName() string {
+	return f.PackageName
 }
 
 type NativeFunctionProc func(vm *VirtualMachine, argCount int, args []Object) []Object
-
-// 保存调用函数的索引
-type GoGoFunction struct {
-	StaticBase
-	Executable *Executable
-	Index      int
-}
 
 func (vm *VirtualMachine) AddNativeFunctions() {
 	vm.addNativeFunction("_sys", "printf", nativeFuncPrintf, 2, 0)
@@ -38,16 +66,14 @@ func (vm *VirtualMachine) addNativeFunction(
 	resultCount int,
 ) {
 	function := &GoGoNativeFunction{
-		StaticBase: StaticBase{
-			PackageName: packageName,
-			Name:        funcName,
-		},
-		proc:        proc,
-		argCount:    argCount,
-		resultCount: resultCount,
+		PackageName: packageName,
+		Name:        funcName,
+		Proc:        proc,
+		ArgCount:    argCount,
+		ResultCount: resultCount,
 	}
 
-	vm.static.Append(function)
+	vm.funcList = append(vm.funcList, function)
 }
 
 func nativeFuncItoa(vm *VirtualMachine, argCount int, args []Object) []Object {

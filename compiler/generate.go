@@ -169,18 +169,14 @@ func CopyToVmType(src *Type) *vm.Type {
 	return dest
 }
 
-func copyVmVariableList(fd *FunctionDefinition) []*vm.Variable {
+func copyVmVariableList(fd *FunctionDefinition) []vm.Object {
 	// TODO 形参占用位置
-	var dest = []*vm.Variable{}
+	var dest = []vm.Object{}
 
 	localVariableCount := len(fd.DeclarationList) - len(fd.ParameterList)
 
 	for _, v := range fd.DeclarationList[0:localVariableCount] {
-		vmV := &vm.Variable{
-			Name: v.Name,
-			Type: CopyToVmType(v.Type),
-		}
-		dest = append(dest, vmV)
+		dest = append(dest, vm.GetObjectByType(CopyToVmType(v.Type)))
 	}
 
 	return dest

@@ -70,7 +70,7 @@ func (c *Compiler) FixTree() {
 func (c *Compiler) Generate() *vm.Executable {
 	exe := vm.NewExecutable()
 	exe.PackageName = c.GetPackageName()
-	exe.ConstantPool.SetPool(c.ConstantList)
+	exe.Constant = c.ConstantList
 	exe.VariableList = c.GetVmVariableList()
 	exe.FunctionList = c.GetVmFunctionList()
 

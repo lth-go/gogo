@@ -2,11 +2,8 @@ package compiler
 
 import (
 	"log"
-
-	"github.com/lth-go/gogo/vm"
 )
 
-// Compiler 编译器
 type Compiler struct {
 	lexer           *Lexer                // 词法解析器
 	path            string                // 源文件路径
@@ -14,7 +11,6 @@ type Compiler struct {
 	importList      []*Import             // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
-	ConstantList    []interface{}         // 常量定义
 	currentBlock    *Block                // 当前块
 }
 
@@ -39,90 +35,9 @@ func NewCompiler(path string) *Compiler {
 		importList:      []*Import{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*Declaration{},
-		ConstantList:    []interface{}{},
 	}
 
 	return c
-}
-
-//
-// 修正树
-//
-func (c *Compiler) FixTree() {
-	// 修正导入
-	c.FixImportList()
-
-	// 修正全局变量
-	c.FixDeclarationList()
-
-	// 添加原生函数
-	c.AddNativeFunctionList()
-
-	// 修正函数
-	for _, fd := range c.funcList {
-		fd.Fix()
-	}
-}
-
-//
-// 生成字节码
-//
-func (c *Compiler) Generate() *vm.Executable {
-	exe := vm.NewExecutable()
-	exe.PackageName = c.GetPackageName()
-	exe.Constant = c.ConstantList
-	exe.VariableList = c.GetVmVariableList()
-	exe.FunctionList = c.GetVmFunctionList()
-
-	return exe
-}
-
-// FixImportList 修正导入
-func (c *Compiler) FixImportList() {
-	for _, imp := range c.importList {
-		for _, doneCompiler := range GetDoneCompilerList() {
-			if imp.packageName == doneCompiler.GetPackageName() {
-				imp.Compiler = doneCompiler
-				break
-			}
-		}
-	}
-}
-
-func (c *Compiler) FixDeclarationList() {
-	for _, decl := range c.declarationList {
-		if decl.Value != nil {
-			decl.Value = decl.Value.Fix()
-			decl.Value = CreateAssignCast(decl.Value, decl.Type)
-		}
-	}
-}
-
-// 添加引用包函数
-func (c *Compiler) AddFuncList(fd *FunctionDefinition) int {
-	packageName := fd.GetPackageName()
-	name := fd.GetName()
-
-	for i, f := range c.funcList {
-		if packageName == f.GetPackageName() && name == f.GetName() {
-			return i
-		}
-	}
-
-	c.funcList = append(c.funcList, fd)
-
-	return len(c.funcList) - 1
-}
-
-func (c *Compiler) AddConstantList(value interface{}) int {
-	for i, v := range c.ConstantList {
-		if value == v {
-			return i
-		}
-	}
-
-	c.ConstantList = append(c.ConstantList, value)
-	return len(c.ConstantList) - 1
 }
 
 // 添加声明
@@ -134,24 +49,6 @@ func (c *Compiler) SearchDeclaration(name string) *Declaration {
 	for _, decl := range c.declarationList {
 		if decl.Name == name {
 			return decl
-		}
-	}
-	return nil
-}
-
-func (c *Compiler) SearchFunction(name string) *FunctionDefinition {
-	for _, f := range c.funcList {
-		if f.Name == name {
-			return f
-		}
-	}
-	return nil
-}
-
-func (c *Compiler) SearchPackageCompiler(packageName string) *Compiler {
-	for _, imp := range c.importList {
-		if packageName == imp.packageName {
-			return imp.Compiler
 		}
 	}
 	return nil

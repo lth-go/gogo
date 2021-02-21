@@ -1,83 +1,6 @@
 package compiler
 
-import (
-	"github.com/lth-go/gogo/vm"
-)
-
-func (c *Compiler) AddNativeFunctionList() {
-	c.AddNativeFunctionPrintf()
-	c.AddNativeFunctionItoa()
-	c.AddNativeFunctionLen()
-	c.AddNativeFunctionAppend()
-	c.AddNativeFunctionDelete()
-}
-
-func (c *Compiler) AddNativeFunc(name string, pType, rType []vm.BasicType, ellipsis bool) {
-	paramsType := createNativeFuncParamTypeList(pType)
-	resultsType := createNativeFuncParamTypeList(rType)
-
-	if ellipsis {
-		paramsType[len(paramsType)-1].Ellipsis = true
-	}
-
-	fd := &FunctionDefinition{
-		Type:            CreateFuncType(paramsType, resultsType),
-		Name:            name,
-		PackageName:     "_sys",
-		ParameterList:   paramsType,
-		Block:           nil,
-		DeclarationList: nil,
-	}
-
-	c.funcList = append(c.funcList, fd)
-}
-
-func (c *Compiler) AddNativeFunctionPrintf() {
-	c.AddNativeFunc(
-		"printf",
-		[]vm.BasicType{vm.BasicTypeString, vm.BasicTypeArray},
-		nil,
-		true,
-	)
-}
-
-func (c *Compiler) AddNativeFunctionItoa() {
-	c.AddNativeFunc(
-		"itoa",
-		[]vm.BasicType{vm.BasicTypeInt},
-		[]vm.BasicType{vm.BasicTypeString},
-		false,
-	)
-}
-
-func (c *Compiler) AddNativeFunctionLen() {
-	c.AddNativeFunc(
-		"len",
-		[]vm.BasicType{vm.BasicTypeInterface},
-		[]vm.BasicType{vm.BasicTypeInt},
-		false,
-	)
-}
-
-func (c *Compiler) AddNativeFunctionAppend() {
-	c.AddNativeFunc(
-		"append",
-		[]vm.BasicType{vm.BasicTypeArray, vm.BasicTypeArray},
-		[]vm.BasicType{vm.BasicTypeArray},
-		true,
-	)
-}
-
-func (c *Compiler) AddNativeFunctionDelete() {
-	c.AddNativeFunc(
-		"delete",
-		[]vm.BasicType{vm.BasicTypeMap, vm.BasicTypeInterface},
-		nil,
-		false,
-	)
-}
-
-func createNativeFuncParamTypeList(typeList []vm.BasicType) []*Parameter {
+func createNativeFuncParamTypeList(typeList []BasicType) []*Parameter {
 	if len(typeList) == 0 {
 		return nil
 	}
@@ -89,11 +12,83 @@ func createNativeFuncParamTypeList(typeList []vm.BasicType) []*Parameter {
 		}
 
 		if p.Type.IsArray() {
-			p.Type.arrayType = NewArrayType(NewType(vm.BasicTypeInterface))
+			p.Type.arrayType = NewArrayType(NewType(BasicTypeInterface))
 		}
 
 		list = append(list, p)
 	}
 
 	return list
+}
+
+func (c *CompilerManager) AddNativeFunctionList() {
+	c.AddNativeFunctionPrintf()
+	c.AddNativeFunctionLen()
+	c.AddNativeFunctionAppend()
+	c.AddNativeFunctionDelete()
+}
+
+func (c *CompilerManager) AddNativeFunc(name string, pType, rType []BasicType, ellipsis bool) {
+	paramsType := createNativeFuncParamTypeList(pType)
+	resultsType := createNativeFuncParamTypeList(rType)
+
+	if ellipsis {
+		paramsType[len(paramsType)-1].Ellipsis = true
+	}
+
+	fd := &FunctionDefinition{
+		Type:            CreateFuncType(paramsType, resultsType),
+		Name:            name,
+		PackageName:     "_sys",
+		ParamList:   paramsType,
+		Block:           nil,
+		DeclarationList: nil,
+	}
+
+	c.funcList = append(c.funcList, fd)
+}
+
+func (c *CompilerManager) AddNativeFunctionPrintf() {
+	c.AddNativeFunc(
+		"printf",
+		[]BasicType{BasicTypeString, BasicTypeArray},
+		nil,
+		true,
+	)
+}
+
+func (c *CompilerManager) AddNativeFunctionItoa() {
+	c.AddNativeFunc(
+		"itoa",
+		[]BasicType{BasicTypeInt},
+		[]BasicType{BasicTypeString},
+		false,
+	)
+}
+
+func (c *CompilerManager) AddNativeFunctionLen() {
+	c.AddNativeFunc(
+		"len",
+		[]BasicType{BasicTypeInterface},
+		[]BasicType{BasicTypeInt},
+		false,
+	)
+}
+
+func (c *CompilerManager) AddNativeFunctionAppend() {
+	c.AddNativeFunc(
+		"append",
+		[]BasicType{BasicTypeArray, BasicTypeArray},
+		[]BasicType{BasicTypeArray},
+		true,
+	)
+}
+
+func (c *CompilerManager) AddNativeFunctionDelete() {
+	c.AddNativeFunc(
+		"delete",
+		[]BasicType{BasicTypeMap, BasicTypeInterface},
+		nil,
+		false,
+	)
 }

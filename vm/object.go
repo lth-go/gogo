@@ -6,12 +6,12 @@ import (
 
 // 虚拟机对象接口
 type Object interface {
-	isMarked() bool // 是否设置标记位
+	IsMarked() bool // 是否设置标记位
 	Mark()          // 设置标记位
 	ResetMark()     // 重置标记位
 	Sweep()         // 垃圾回收
 	Len() int       // 计算堆阈值
-	Hash() int
+	Hash() int      // 哈希
 }
 
 //
@@ -21,7 +21,7 @@ type ObjectBase struct {
 	marked bool
 }
 
-func (obj *ObjectBase) isMarked() bool {
+func (obj *ObjectBase) IsMarked() bool {
 	return obj.marked
 }
 
@@ -104,8 +104,6 @@ var NilObject = &ObjectNil{}
 //
 type ObjectArray struct {
 	ObjectBase
-	// Length int
-	// ValueType int
 	List []Object
 }
 
@@ -113,6 +111,7 @@ func (obj *ObjectArray) Mark() {
 	if obj == nil {
 		return
 	}
+
 	obj.ObjectBase.Mark()
 
 	for _, subObj := range obj.List {
@@ -175,6 +174,7 @@ func (obj *ObjectArray) Check(index int) {
 		vmError(NULL_POINTER_ERR)
 		return
 	}
+
 	length := obj.Len()
 	if length < 0 || index >= length {
 		vmError(INDEX_OUT_OF_BOUNDS_ERR, index, length)
@@ -271,5 +271,5 @@ type ObjectCallInfo struct {
 	ObjectBase                  // TODO: 兼容
 	caller        *GoGoFunction // 调用的函数
 	callerAddress int           // 保存执行函数前的pc
-	base          int
+	bp            int           // 栈基
 }

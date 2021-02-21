@@ -19,10 +19,15 @@ func main() {
 		log.Fatalf("文件不存在\n")
 	}
 
-	exeList := compiler.CompileFile(filename)
+	cm := compiler.NewCompilerManager()
 
-	cm := compiler.GetCurrentCompilerManage()
+	cm.CompileFile(filename)
 
-	VM := vm.NewVirtualMachine(exeList, cm.ConstantList, cm.GetVmVariableList())
+	VM := vm.NewVirtualMachine(
+		cm.ConstantList,
+		cm.GetVmVariableList(),
+		cm.GetVmFunctionList(),
+		cm.CodeList,
+	)
 	VM.Execute()
 }

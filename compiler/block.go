@@ -23,10 +23,10 @@ type FunctionBlockInfo struct {
 // Block
 //
 type Block struct {
-	outerBlock      *Block
-	statementList   []Statement
-	declarationList []*Declaration
 	parent          interface{} // 块信息，函数块，还是条件语句
+	outerBlock      *Block
+	declarationList []*Declaration
+	statementList   []Statement
 }
 
 // GetCurrentFunction

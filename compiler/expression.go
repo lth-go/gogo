@@ -39,7 +39,7 @@ type BoolExpression struct {
 }
 
 func (expr *BoolExpression) Fix() Expression {
-	expr.SetType(NewType(vm.BasicTypeBool))
+	expr.SetType(NewType(BasicTypeBool))
 	expr.GetType().Fix()
 	return expr
 }
@@ -72,11 +72,11 @@ type IntExpression struct {
 }
 
 func (expr *IntExpression) Fix() Expression {
-	expr.SetType(NewType(vm.BasicTypeInt))
+	expr.SetType(NewType(BasicTypeInt))
 	expr.GetType().Fix()
 
 	if expr.Value > 65535 || expr.Value < 0 {
-		expr.Index = compilerManager.AddConstantList(expr.Value)
+		expr.Index = GetCurrentCompilerManage().AddConstantList(expr.Value)
 	}
 
 	return expr
@@ -111,11 +111,11 @@ type FloatExpression struct {
 }
 
 func (expr *FloatExpression) Fix() Expression {
-	expr.SetType(NewType(vm.BasicTypeFloat))
+	expr.SetType(NewType(BasicTypeFloat))
 	expr.GetType().Fix()
 
 	if expr.Value != 0.0 && expr.Value != 1.0 {
-		expr.Index = compilerManager.AddConstantList(expr.Value)
+		expr.Index = GetCurrentCompilerManage().AddConstantList(expr.Value)
 	}
 	return expr
 }
@@ -149,10 +149,10 @@ type StringExpression struct {
 }
 
 func (expr *StringExpression) Fix() Expression {
-	expr.SetType(NewType(vm.BasicTypeString))
+	expr.SetType(NewType(BasicTypeString))
 	expr.GetType().Fix()
 
-	expr.Index = compilerManager.AddConstantList(expr.Value)
+	expr.Index = GetCurrentCompilerManage().AddConstantList(expr.Value)
 	return expr
 }
 
@@ -178,7 +178,7 @@ type InterfaceExpression struct {
 }
 
 func (expr *InterfaceExpression) Fix() Expression {
-	expr.SetType(NewType(vm.BasicTypeInterface))
+	expr.SetType(NewType(BasicTypeInterface))
 	expr.Data.Fix()
 	expr.GetType().Fix()
 
@@ -207,7 +207,7 @@ type NilExpression struct {
 }
 
 func (expr *NilExpression) Fix() Expression {
-	expr.SetType(NewType(vm.BasicTypeNil))
+	expr.SetType(NewType(BasicTypeNil))
 	expr.GetType().Fix()
 
 	return expr
@@ -366,9 +366,8 @@ func (expr *StructExpression) Fix() Expression {
 }
 
 func (expr *StructExpression) Generate(ob *OpCodeBuf) {
-	// TODO: 倒序入栈
-	for _, subExpr := range expr.FieldList {
-		subExpr.Generate(ob)
+	for i := len(expr.FieldList) - 1; i >= 0; i-- {
+		expr.FieldList[i].Generate(ob)
 	}
 
 	count := len(expr.FieldList)
@@ -433,24 +432,31 @@ func (expr *IdentifierExpression) Fix() Expression {
 	}
 
 	// 判断是否是函数
-	fd := GetCurrentCompiler().SearchFunction(expr.name)
+	fd := GetCurrentCompilerManage().SearchFunction(GetCurrentCompiler().packageName, expr.name)
 	if fd != nil {
 		expr.SetType(fd.CopyType())
 		expr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              GetCurrentCompiler().AddFuncList(fd),
+			Index:              GetCurrentCompilerManage().AddFuncList(fd),
 		}
 		expr.GetType().Fix()
 
 		return expr
 	}
 
-	compiler := GetCurrentCompiler().SearchPackageCompiler(expr.name)
-	if compiler != nil {
-		expr.SetType(NewType(vm.BasicTypePackage))
-		expr.inner = compiler
-		expr.GetType().Fix()
-		return expr
+	for _, compiler := range GetCurrentCompilerManage().doneList {
+		if compiler.GetPackageName() == CurrentPackageName {
+			for _, imp := range compiler.importList {
+				if imp.packageName == expr.name {
+					if compiler != nil {
+						expr.SetType(NewType(BasicTypePackage))
+						expr.inner = imp.packageName
+						expr.GetType().Fix()
+						return expr
+					}
+				}
+			}
+		}
 	}
 
 	// 都不是,报错
@@ -712,7 +718,7 @@ func (expr *FunctionCallExpression) Fix() Expression {
 	resultCount := len(fd.Type.funcType.Results)
 
 	if resultCount == 0 {
-		expr.GetType().SetBasicType(vm.BasicTypeVoid)
+		expr.GetType().SetBasicType(BasicTypeVoid)
 	} else if resultCount == 1 {
 		expr.GetType().SetBasicType(fd.Type.funcType.Results[0].Type.GetBasicType())
 	} else {
@@ -720,7 +726,7 @@ func (expr *FunctionCallExpression) Fix() Expression {
 		for i, resultType := range fd.Type.funcType.Results {
 			typeList[i] = resultType.Type.Copy()
 		}
-		expr.GetType().SetBasicType(vm.BasicTypeMultipleValues)
+		expr.GetType().SetBasicType(BasicTypeMultipleValues)
 		expr.GetType().multipleValueType = NewMultipleValueType(typeList)
 	}
 
@@ -740,7 +746,7 @@ func NewFunctionCallExpression(pos Position, function Expression, argumentList [
 		funcName:     function,
 		argumentList: argumentList,
 	}
-	expr.SetType(NewType(vm.BasicTypeVoid))
+	expr.SetType(NewType(BasicTypeVoid))
 	expr.SetPosition(pos)
 
 	return expr
@@ -788,14 +794,14 @@ func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 	innerExpr := expr.expression
 	innerExpr.GetType().Fix()
 
-	compiler := innerExpr.(*IdentifierExpression).inner.(*Compiler)
+	packageName := innerExpr.(*IdentifierExpression).inner.(string)
 
-	fd := compiler.SearchFunction(field)
+	fd := GetCurrentCompilerManage().SearchFunction(packageName, field)
 	if fd != nil {
 		newExpr := CreateIdentifierExpression(expr.Position(), field)
 		newExpr.inner = &FunctionIdentifier{
 			functionDefinition: fd,
-			Index:              GetCurrentCompiler().AddFuncList(fd),
+			Index:              GetCurrentCompilerManage().AddFuncList(fd),
 		}
 
 		newExpr.SetType(fd.CopyType())
@@ -804,14 +810,13 @@ func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expres
 		return newExpr
 	}
 
-	decl := compiler.SearchDeclaration(field)
+	decl := GetCurrentCompilerManage().SearchDeclaration(packageName, field)
 	if decl != nil {
 		// TODO: 初始值直接给会有问题
 		newDecl := NewDeclaration(decl.Position(), decl.Type.Copy(), decl.Name, nil)
-		newDecl.PackageName = compiler.GetPackageName()
-		GetCurrentCompiler().AddDeclarationList(newDecl)
+		newDecl.PackageName = packageName
 
-		for i, declTmp := range compilerManager.DeclarationList {
+		for i, declTmp := range GetCurrentCompilerManage().DeclarationList {
 			if newDecl.PackageName == declTmp.PackageName && newDecl.Name == declTmp.Name {
 				newDecl.Index = i
 				break

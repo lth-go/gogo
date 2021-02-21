@@ -1,8 +1,6 @@
 package vm
 
 import (
-	// "fmt"
-
 	"github.com/lth-go/gogo/utils"
 )
 
@@ -15,124 +13,37 @@ type VirtualMachine struct {
 	heap     *Heap         // 堆
 	static   *Static       // 静态区
 	constant []interface{} // 常量池
-	funcList []Func        // 函数引用列表
-	codeList []byte
+	funcList []Function    // 函数引用列表
+	codeList []byte        // 字节码
 }
 
-func NewVirtualMachine(exeList []*Executable, constant []interface{}, variableList []*Variable) *VirtualMachine {
+func NewVirtualMachine(
+	constant []interface{},
+	variableList []Object,
+	functionList []*GoGoFunction,
+	codeList []byte,
+) *VirtualMachine {
 	vm := &VirtualMachine{
 		stack:    NewStack(),
 		heap:     NewHeap(),
 		static:   NewStatic(),
-		funcList: make([]Func, 0),
+		constant: constant,
+		funcList: make([]Function, 0),
+		codeList: codeList,
+	}
+
+	for _, value := range variableList {
+		vm.static.Append(value)
 	}
 
 	// 添加原生函数
 	vm.AddNativeFunctions()
 
-	vm.constant = constant
-
-	// TODO:
-	for _, value := range variableList {
-		value.Init()
-		vm.static.Append(NewStaticVariable(value.PackageName, value.Name, value.Value))
+	for _, f := range functionList {
+		vm.funcList = append(vm.funcList, f)
 	}
-
-
-	for _, exe := range exeList {
-		vm.AddExecutable(exe)
-	}
-
-	for _, exe := range exeList {
-		vm.FixFuncCodeList(exe)
-	}
-
-	vm.SetMainEntrypoint()
 
 	return vm
-}
-
-// 设置入口为main函数
-func (vm *VirtualMachine) SetMainEntrypoint() {
-	idx := vm.SearchFunction("main", "main")
-	if idx == -1 {
-		panic("TODO")
-	}
-
-	b := make([]byte, 2)
-	utils.Set2ByteInt(b, idx)
-	vm.codeList = append(vm.codeList, b...)
-	vm.codeList = append(vm.codeList, OP_CODE_INVOKE)
-}
-
-// 添加单个exe到vm
-func (vm *VirtualMachine) AddExecutable(exe *Executable) {
-	vm.AddFunctions(exe.FunctionList)
-}
-
-// TODO: 去除exe依赖
-func (vm *VirtualMachine) FixFuncCodeList(exe *Executable) {
-	for _, exeFunc := range exe.FunctionList {
-		// 只修正本包函数,防止重复修正
-		if exeFunc.PackageName != exe.PackageName || !exeFunc.IsImplemented {
-			continue
-		}
-
-		caller := vm.funcList[vm.SearchFunction(exeFunc.PackageName, exeFunc.Name)].(*GoGoFunction)
-
-		vm.ConvertOpCode(exe.PackageName, exe.VariableList, exe.FunctionList, caller)
-	}
-}
-
-// 添加静态区
-func (vm *VirtualMachine) AddStatic(packageName string, variableList []*Variable) {
-	// 变量初始化
-	for _, value := range variableList {
-		value.Init()
-	}
-
-	for _, value := range variableList {
-		if packageName != value.PackageName {
-			continue
-		}
-
-		if vm.static.Index(value.PackageName, value.Name) == -1 {
-			vm.static.Append(NewStaticVariable(value.PackageName, value.Name, value.Value))
-		}
-	}
-}
-
-// 添加常量
-func (vm *VirtualMachine) AddConstant(constant []interface{}) {
-	for _, value := range constant {
-		vm.constant = append(vm.constant, value)
-	}
-}
-
-// 添加exe函数到虚拟机
-func (vm *VirtualMachine) AddFunctions(functionList []*Function) {
-	// 检查函数是否重复定义
-	for _, exeFunc := range functionList {
-		// 跳过原生,其他包函数
-		if !exeFunc.IsImplemented {
-			continue
-		}
-
-		if vm.SearchFunction(exeFunc.PackageName, exeFunc.Name) != -1 {
-			vmError(FUNCTION_MULTIPLE_DEFINE_ERR, exeFunc.PackageName, exeFunc.Name)
-		}
-
-		vmFunc := &GoGoFunction{
-			PackageName:  exeFunc.PackageName,
-			Name:         exeFunc.Name,
-			ArgCount:     exeFunc.ArgCount,
-			ResultCount:  exeFunc.ResultCount,
-			VariableList: exeFunc.VariableList,
-			CodeList:     exeFunc.CodeList,
-		}
-
-		vm.funcList = append(vm.funcList, vmFunc)
-	}
 }
 
 //
@@ -204,12 +115,12 @@ func (vm *VirtualMachine) execute(caller *GoGoFunction, codeList []byte) {
 			pc += 3
 		case OP_CODE_PUSH_STATIC:
 			index := utils.Get2ByteInt(codeList[pc+1:])
-			stack.SetPlus(0, static.GetVariableObject(index))
+			stack.SetPlus(0, static.Get(index))
 			vm.stack.stackPointer++
 			pc += 3
 		case OP_CODE_POP_STATIC:
 			index := utils.Get2ByteInt(codeList[pc+1:])
-			static.SetVariable(index, stack.GetPlus(-1))
+			static.Set(index, stack.GetPlus(-1))
 			vm.stack.stackPointer--
 			pc += 3
 		case OP_CODE_PUSH_ARRAY:
@@ -486,83 +397,6 @@ func (vm *VirtualMachine) execute(caller *GoGoFunction, codeList []byte) {
 	}
 }
 
-func (vm *VirtualMachine) InitFuncLocalVariables(f *GoGoFunction, spIdx int) {
-	for i := 0; i < len(f.VariableList); i++ {
-		vm.stack.Set(spIdx, f.VariableList[i])
-		spIdx++
-	}
-}
-
-// 修正字节码
-// 方法调用修正
-// 函数下标修正
-func (vm *VirtualMachine) ConvertOpCode(
-	packageName string,
-	variableList []*Variable,
-	functionList []*Function,
-	caller *GoGoFunction,
-) {
-	codeList := caller.CodeList
-
-	for i := 0; i < len(codeList); i++ {
-		code := codeList[i]
-		switch code {
-		// 函数内的本地声明
-		case OP_CODE_PUSH_STACK, OP_CODE_POP_STACK:
-			// 形参
-			// 返回值(新增)
-			// 声明
-
-			// 增加返回值的位置
-			idx := utils.Get2ByteInt(codeList[i+1:])
-			if idx >= caller.ArgCount {
-				utils.Set2ByteInt(codeList[i+1:], idx+1)
-			}
-
-		case OP_CODE_PUSH_FUNCTION:
-			idxInExe := utils.Get2ByteInt(codeList[i+1:])
-			funcIdx := vm.SearchFunction(functionList[idxInExe].PackageName, functionList[idxInExe].Name)
-			utils.Set2ByteInt(codeList[i+1:], funcIdx)
-		}
-
-		for _, p := range []byte(OpcodeInfo[code].Parameter) {
-			switch p {
-			case 'b':
-				i++
-			case 's', 'p':
-				i += 2
-			default:
-				panic("TODO")
-			}
-		}
-	}
-}
-
-// 查找函数
-func (vm *VirtualMachine) SearchFunction(packageName, name string) int {
-	for i, v := range vm.funcList {
-		if v.GetPackageName() == packageName && v.GetName() == name {
-			return i
-		}
-	}
-
-	return -1
-}
-
-func (vm *VirtualMachine) SearchStatic(packageName, name string) int {
-	return vm.static.Index(packageName, name)
-}
-
-func (vm *VirtualMachine) SearchConstant(value interface{}) int {
-	for i, v := range vm.constant {
-		if v == value {
-			return i
-		}
-	}
-
-	return -1
-}
-
 //
 // 函数相关 执行原生函数
 //
@@ -576,15 +410,15 @@ func (vm *VirtualMachine) InvokeNativeFunction(f *GoGoNativeFunction, spP *int) 
 
 	sp := *spP
 
-	resultList := f.Proc(vm, f.ArgCount, vm.stack.objectList[sp-f.ArgCount-1:])
+	resultList := f.Proc(vm, f.ParamCount, vm.stack.list[sp-f.ParamCount-1:])
 
 	resultLen := len(resultList)
 
 	for i, value := range resultList {
-		vm.stack.Set(sp-f.ArgCount-1+resultLen-i-1, value)
+		vm.stack.Set(sp-f.ParamCount-1+resultLen-i-1, value)
 	}
 
-	*spP = sp - f.ArgCount - 1 + resultLen
+	*spP = sp - f.ParamCount - 1 + resultLen
 }
 
 // 函数执行
@@ -598,7 +432,7 @@ func (vm *VirtualMachine) InvokeFunction(
 	codeListP *[]byte,
 	pcP *int,
 	spP *int,
-	baseP *int,
+	bpP *int,
 ) {
 	//
 	// 保存环境
@@ -611,7 +445,7 @@ func (vm *VirtualMachine) InvokeFunction(
 	callInfo := &ObjectCallInfo{
 		caller:        *caller,
 		callerAddress: *pcP,
-		base:          *baseP,
+		bp:            *bpP,
 	}
 
 	// 栈上保存返回信息
@@ -624,11 +458,13 @@ func (vm *VirtualMachine) InvokeFunction(
 	*caller = callee
 	*codeListP = callee.CodeList
 	*pcP = 0
-	*baseP = *spP - callee.ArgCount - 1
+	*bpP = *spP - callee.ParamCount - 1
 
-	// 初始化参数
-	vm.InitFuncLocalVariables(callee, *spP)
-	*spP += len(callee.VariableList)
+	// 初始化局部变量
+	for _, v := range callee.VariableList {
+		vm.stack.Set(*spP, v)
+		*spP += 1
+	}
 }
 
 // 返回值入栈,恢复调用栈
@@ -636,7 +472,7 @@ func (vm *VirtualMachine) ReturnFunction(
 	caller **GoGoFunction,
 	codeP *[]byte,
 	pcP *int,
-	baseP *int,
+	bpP *int,
 ) {
 	resultCount := (*caller).ResultCount
 
@@ -648,7 +484,7 @@ func (vm *VirtualMachine) ReturnFunction(
 	vm.stack.stackPointer -= resultCount
 
 	// 恢复调用栈
-	RestoreCaller(vm, caller, codeP, pcP, baseP)
+	RestoreCaller(vm, caller, codeP, pcP, bpP)
 
 	for i := 0; i < resultCount; i++ {
 		vm.stack.Set(vm.stack.stackPointer, objList[i])
@@ -657,8 +493,8 @@ func (vm *VirtualMachine) ReturnFunction(
 }
 
 // 恢复调用栈
-func RestoreCaller(vm *VirtualMachine, caller **GoGoFunction, codeListP *[]byte, pcP *int, baseP *int) {
-	callInfo := vm.stack.Get(*baseP + (*caller).ArgCount).(*ObjectCallInfo)
+func RestoreCaller(vm *VirtualMachine, caller **GoGoFunction, codeListP *[]byte, pcP *int, bpP *int) {
+	callInfo := vm.stack.Get(*bpP + (*caller).ParamCount).(*ObjectCallInfo)
 
 	if callInfo.caller != nil {
 		*codeListP = callInfo.caller.CodeList
@@ -667,10 +503,14 @@ func RestoreCaller(vm *VirtualMachine, caller **GoGoFunction, codeListP *[]byte,
 	}
 
 	*caller = callInfo.caller
-	vm.stack.stackPointer = *baseP
+	vm.stack.stackPointer = *bpP
 	*pcP = callInfo.callerAddress + 1
-	*baseP = callInfo.base
+	*bpP = callInfo.bp
 }
+
+//
+// New
+//
 
 func (vm *VirtualMachine) NewObjectArray(size int) Object {
 	obj := NewObjectArray(size)
@@ -714,41 +554,9 @@ func (vm *VirtualMachine) NewObjectStruct(size int) Object {
 
 	vm.AddObject(obj)
 
-	// TODO: 倒序入栈, 正序出栈
 	for i := 0; i < size; i++ {
-		obj.FieldList[i] = vm.stack.GetPlus(-size + i)
+		obj.FieldList[i] = vm.stack.GetPlus(-i)
 	}
 
 	return obj
-}
-
-func GetObjectByType(typ *Type) Object {
-	var value Object
-
-	if typ.IsReferenceType() {
-		value = NilObject
-		return value
-	}
-
-	switch typ.BasicType {
-	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
-		value = NewObjectInt(0)
-	case BasicTypeFloat:
-		value = NewObjectFloat(0.0)
-	case BasicTypeString:
-		value = NewObjectString("")
-	case BasicTypeStruct:
-		structValue := NewObjectStruct(len(typ.StructType.FieldTypeList))
-		for i, fieldType := range typ.StructType.FieldTypeList {
-			structValue.SetField(i, GetObjectByType(fieldType))
-		}
-
-		value = structValue
-	case BasicTypeNil:
-		fallthrough
-	default:
-		panic("TODO")
-	}
-
-	return value
 }

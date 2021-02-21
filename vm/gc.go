@@ -6,7 +6,7 @@ var HeapThresholdSize = 1024 * 256
 // Check 判断是否下需要gc
 //
 func (vm *VirtualMachine) Check() {
-	if len(vm.heap.objectList) > vm.heap.currentThreshold {
+	if len(vm.heap.list) > vm.heap.currentThreshold {
 		vm.GC()
 		vm.heap.currentThreshold += HeapThresholdSize
 	}
@@ -21,18 +21,14 @@ func (vm *VirtualMachine) GC() {
 // Mark 标记
 //
 func (vm *VirtualMachine) Mark() {
-	for _, obj := range vm.heap.objectList {
+	for _, obj := range vm.heap.list {
 		obj.ResetMark()
 	}
 
 	// 静态区
-	for _, v := range vm.static.list {
-		staticValue, ok := v.(*StaticVariable)
-		if ok {
-			obj, ok := staticValue.Value.(Object)
-			if ok && obj != nil {
-				obj.Mark()
-			}
+	for _, obj := range vm.static.list {
+		if obj != nil {
+			obj.Mark()
 		}
 	}
 
@@ -49,14 +45,14 @@ func (vm *VirtualMachine) Mark() {
 //
 func (vm *VirtualMachine) Sweep() {
 	newObjectList := []Object{}
-	for _, obj := range vm.heap.objectList {
-		if !obj.isMarked() {
+	for _, obj := range vm.heap.list {
+		if !obj.IsMarked() {
 			obj.Sweep()
 		} else {
 			newObjectList = append(newObjectList, obj)
 		}
 	}
-	vm.heap.objectList = newObjectList
+	vm.heap.list = newObjectList
 }
 
 // AddObject 添加对象到堆, 用于垃圾回收

@@ -36,33 +36,7 @@ var errMessageMap map[int]string = map[int]string{
 }
 
 func vmError(errorNumber int, a ...interface{}) {
-	//vm := getVirtualMachine()
-
-	//exe := vm.currentExecutable.executable
-	//functionList := vm.currentFunction
-	//pc := vm.pc
-
 	fmt.Println("运行错误")
-	//fmt.Printf("Line: %d\n", getLineNumberByPc(exe, functionList, pc))
 	errMsg := fmt.Sprintf(errMessageMap[errorNumber], a...)
 	log.Fatalf("%d\n%s", errorNumber, errMsg)
-	//fmt.Printf(errMessageMap[errorNumber], a...)
 }
-
-// func getLineNumberByPc(exe *Executable, function *GoGoFunction, pc int) int {
-//     var lineNumber []*LineNumber
-//     var ret int
-
-//     // TODO: function == nil
-//     if function != nil {
-//         lineNumber = exe.FunctionList[function.Index].LineNumberList
-//     }
-
-//     for _, line := range lineNumber {
-//         if pc >= line.StartPc && pc < (line.StartPc+line.PcCount) {
-//             ret = line.LineNumber
-//         }
-//     }
-
-//     return ret
-// }

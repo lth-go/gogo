@@ -167,3 +167,15 @@ var OpcodeInfo map[byte]opcodeInfo = map[byte]opcodeInfo{
 	OP_CODE_NEW_INTERFACE: {"new_interface", "s", 1},
 	OP_CODE_NEW_STRUCT:    {"new_struct", "s", 1},
 }
+
+//
+// 行号对应表
+//
+type LineNumber struct {
+	// 源代码行号
+	LineNumber int
+	// 字节码开始的位置
+	StartPc int
+	// 接下来有多少字节码对应相同的行号
+	PcCount int
+}

@@ -3,8 +3,26 @@ package compiler
 import (
 	"fmt"
 	"strings"
+)
 
-	"github.com/lth-go/gogo/vm"
+type BasicType int
+
+const (
+	BasicTypeNoType BasicType = iota - 1
+	BasicTypeBool
+	BasicTypeInt
+	BasicTypeFloat
+	BasicTypeString
+	BasicTypeNil
+	BasicTypeVoid
+	BasicTypePackage
+	BasicTypeArray
+	BasicTypeMap
+	BasicTypeStruct
+	BasicTypeFunc
+	BasicTypeMultipleValues
+	BasicTypeInterface
+	BasicTypePointer
 )
 
 //
@@ -12,7 +30,7 @@ import (
 //
 type Type struct {
 	PosBase
-	basicType         vm.BasicType
+	basicType         BasicType
 	arrayType         *ArrayType
 	funcType          *FuncType
 	mapType           *MapType
@@ -29,11 +47,11 @@ func (t *Type) Fix() {
 	// }
 }
 
-func (t *Type) GetBasicType() vm.BasicType {
+func (t *Type) GetBasicType() BasicType {
 	return t.basicType
 }
 
-func (t *Type) SetBasicType(basicType vm.BasicType) {
+func (t *Type) SetBasicType(basicType BasicType) {
 	t.basicType = basicType
 }
 
@@ -72,7 +90,7 @@ func (t *Type) GetResultCount() int {
 	}
 }
 
-func NewType(basicType vm.BasicType) *Type {
+func NewType(basicType BasicType) *Type {
 	return &Type{
 		basicType: basicType,
 	}
@@ -356,37 +374,37 @@ func (t *StructType) Equal(t2 *StructType) bool {
 //
 // create
 //
-func CreateType(basicType vm.BasicType, pos Position) *Type {
+func CreateType(basicType BasicType, pos Position) *Type {
 	typ := NewType(basicType)
 	typ.SetPosition(pos)
 	return typ
 }
 
 func CreateArrayType(typ *Type, pos Position) *Type {
-	newType := CreateType(vm.BasicTypeArray, pos)
+	newType := CreateType(BasicTypeArray, pos)
 	newType.arrayType = NewArrayType(typ)
 	return newType
 }
 
 func CreateFuncType(params []*Parameter, results []*Parameter) *Type {
-	newType := NewType(vm.BasicTypeFunc)
+	newType := NewType(BasicTypeFunc)
 	newType.funcType = NewFuncType(params, results)
 	return newType
 }
 
 func CreateMapType(keyType *Type, valueType *Type, pos Position) *Type {
-	newType := CreateType(vm.BasicTypeMap, pos)
+	newType := CreateType(BasicTypeMap, pos)
 	newType.mapType = NewMapType(keyType, valueType)
 	return newType
 }
 
 func CreateInterfaceType(pos Position) *Type {
-	newType := CreateType(vm.BasicTypeInterface, pos)
+	newType := CreateType(BasicTypeInterface, pos)
 	return newType
 }
 
 func CreateStructType(pos Position, fieldDeclList []*StructField) *Type {
-	newType := CreateType(vm.BasicTypeStruct, pos)
+	newType := CreateType(BasicTypeStruct, pos)
 	newType.structType = NewStructType(fieldDeclList)
 	return newType
 }
@@ -399,11 +417,11 @@ func CreateFieldDecl(name string, fieldType *Type) *StructField {
 }
 
 func (t *Type) IsArray() bool {
-	return t.GetBasicType() == vm.BasicTypeArray
+	return t.GetBasicType() == BasicTypeArray
 }
 
 func (t *Type) IsFunc() bool {
-	return t.GetBasicType() == vm.BasicTypeFunc
+	return t.GetBasicType() == BasicTypeFunc
 }
 
 func (t *Type) IsComposite() bool {
@@ -411,27 +429,27 @@ func (t *Type) IsComposite() bool {
 }
 
 func (t *Type) IsVoid() bool {
-	return t.GetBasicType() == vm.BasicTypeVoid
+	return t.GetBasicType() == BasicTypeVoid
 }
 
 func (t *Type) IsBool() bool {
-	return t.GetBasicType() == vm.BasicTypeBool
+	return t.GetBasicType() == BasicTypeBool
 }
 
 func (t *Type) IsInt() bool {
-	return t.GetBasicType() == vm.BasicTypeInt
+	return t.GetBasicType() == BasicTypeInt
 }
 
 func (t *Type) IsFloat() bool {
-	return t.GetBasicType() == vm.BasicTypeFloat
+	return t.GetBasicType() == BasicTypeFloat
 }
 
 func (t *Type) IsString() bool {
-	return t.GetBasicType() == vm.BasicTypeString
+	return t.GetBasicType() == BasicTypeString
 }
 
 func (t *Type) IsPackage() bool {
-	return t.GetBasicType() == vm.BasicTypePackage
+	return t.GetBasicType() == BasicTypePackage
 }
 
 func (t *Type) IsObject() bool {
@@ -439,23 +457,23 @@ func (t *Type) IsObject() bool {
 }
 
 func (t *Type) IsNil() bool {
-	return t.GetBasicType() == vm.BasicTypeNil
+	return t.GetBasicType() == BasicTypeNil
 }
 
 func (t *Type) IsMultipleValues() bool {
-	return t.GetBasicType() == vm.BasicTypeMultipleValues
+	return t.GetBasicType() == BasicTypeMultipleValues
 }
 
 func (t *Type) IsMap() bool {
-	return t.GetBasicType() == vm.BasicTypeMap
+	return t.GetBasicType() == BasicTypeMap
 }
 
 func (t *Type) IsInterface() bool {
-	return t.GetBasicType() == vm.BasicTypeInterface
+	return t.GetBasicType() == BasicTypeInterface
 }
 
 func (t *Type) IsStruct() bool {
-	return t.GetBasicType() == vm.BasicTypeStruct
+	return t.GetBasicType() == BasicTypeStruct
 }
 
 func (t *Type) GetTypeName() string {
@@ -486,19 +504,19 @@ func (t *Type) GetTypeName() string {
 	return typeName
 }
 
-func GetBasicTypeName(typ vm.BasicType) string {
+func GetBasicTypeName(typ BasicType) string {
 	switch typ {
-	case vm.BasicTypeBool:
+	case BasicTypeBool:
 		return "bool"
-	case vm.BasicTypeInt:
+	case BasicTypeInt:
 		return "int"
-	case vm.BasicTypeFloat:
+	case BasicTypeFloat:
 		return "float"
-	case vm.BasicTypeString:
+	case BasicTypeString:
 		return "string"
-	case vm.BasicTypeNil:
+	case BasicTypeNil:
 		return "nil"
-	case vm.BasicTypeFunc:
+	case BasicTypeFunc:
 		return "func"
 	default:
 		panic(fmt.Sprintf("bad case. type..%d\n", typ))
@@ -507,14 +525,14 @@ func GetBasicTypeName(typ vm.BasicType) string {
 
 // 根据字面量创建基本类型
 func CreateTypeByName(name string, pos Position) *Type {
-	basicType := vm.BasicTypeNoType
+	basicType := BasicTypeNoType
 
 	// TODO:
-	basicTypeMap := map[string]vm.BasicType{
-		"bool":   vm.BasicTypeBool,
-		"int":    vm.BasicTypeInt,
-		"float":  vm.BasicTypeFloat,
-		"string": vm.BasicTypeString,
+	basicTypeMap := map[string]BasicType{
+		"bool":   BasicTypeBool,
+		"int":    BasicTypeInt,
+		"float":  BasicTypeFloat,
+		"string": BasicTypeString,
 	}
 
 	_, ok := basicTypeMap[name]

@@ -12,7 +12,6 @@ const (
 type Import struct {
 	PosBase
 	packageName string
-	Compiler    *Compiler
 }
 
 // 获取导入文件的相对路径

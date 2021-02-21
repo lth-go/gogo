@@ -13,10 +13,15 @@ var testFile = "test/test.gogo"
 func TestVmMachine(t *testing.T) {
 	os.Setenv("IMPORT_SEARCH_PATH", "./test")
 
-	exeList := compiler.CompileFile(testFile)
+	cm := compiler.NewCompilerManager()
 
-	cm := compiler.GetCurrentCompilerManage()
+	cm.CompileFile(testFile)
 
-	VM := vm.NewVirtualMachine(exeList, cm.ConstantList, cm.GetVmVariableList())
+	VM := vm.NewVirtualMachine(
+		cm.ConstantList,
+		cm.GetVmVariableList(),
+		cm.GetVmFunctionList(),
+		cm.CodeList,
+	)
 	VM.Execute()
 }

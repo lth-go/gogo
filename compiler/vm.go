@@ -4,16 +4,34 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-func (c *Compiler) GetVmVariableList() []*vm.Variable {
-	variableList := make([]*vm.Variable, 0)
+func (cm *CompilerManager) GetVmVariableList() []vm.Object {
+	variableList := make([]vm.Object, 0)
 
-	for _, decl := range c.declarationList {
-		newValue := vm.NewVmVariable(decl.PackageName, decl.Name, CopyToVmType(decl.Type))
-		newValue.Value = GetVmVariable(decl.Value)
-		variableList = append(variableList, newValue)
+	for _, decl := range cm.DeclarationList {
+		variableList = append(variableList, GetVmVariable(decl.Value))
 	}
 
 	return variableList
+}
+
+func (cm *CompilerManager) GetVmFunctionList() []*vm.GoGoFunction {
+	vmFuncList := make([]*vm.GoGoFunction, 0)
+
+	for _, fd := range cm.funcList {
+		// TODO: 过滤掉_sys, 由虚拟机自己添加
+		if fd.PackageName == "_sys" {
+			continue
+		}
+
+		vmFuncList = append(vmFuncList, &vm.GoGoFunction{
+			ParamCount:   len(fd.GetType().funcType.Params),
+			ResultCount:  len(fd.GetType().funcType.Results),
+			VariableList: copyVmVariableList(fd),
+			CodeList:     fd.CodeList,
+		})
+	}
+
+	return vmFuncList
 }
 
 func GetVmVariable(valueIFS Expression) vm.Object {
@@ -60,37 +78,4 @@ func GetVmVariable(valueIFS Expression) vm.Object {
 	}
 
 	return nil
-}
-
-func (c *Compiler) GetVmFunctionList() []*vm.Function {
-	vmFuncList := make([]*vm.Function, 0)
-
-	for _, fd := range c.funcList {
-		vmFunc := c.GetVmFunction(fd, fd.GetPackageName() == c.GetPackageName())
-		vmFuncList = append(vmFuncList, vmFunc)
-	}
-
-	return vmFuncList
-}
-
-func (c *Compiler) GetVmFunction(src *FunctionDefinition, inThisExe bool) *vm.Function {
-	ob := NewOpCodeBuf()
-
-	dest := &vm.Function{
-		PackageName: src.GetPackageName(),
-		Name:        src.Name,
-		ArgCount:    len(src.GetType().funcType.Params),
-		ResultCount: len(src.GetType().funcType.Results),
-	}
-
-	if src.Block != nil && inThisExe {
-		generateStatementList(src.Block.statementList, ob)
-
-		dest.IsImplemented = true
-		dest.CodeList = ob.fixOpcodeBuf()
-		dest.LineNumberList = ob.lineNumberList
-		dest.VariableList = copyVmVariableList(src)
-	}
-
-	return dest
 }

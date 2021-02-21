@@ -10,7 +10,7 @@ func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 		Type:            typ,
 		Name:            identifier,
 		PackageName:     c.GetPackageName(),
-		ParameterList:   typ.funcType.Params,
+		ParamList:   typ.funcType.Params,
 		Block:           block,
 		DeclarationList: nil,
 	}

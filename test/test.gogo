@@ -564,15 +564,6 @@ func testPackageCall() {
     utils.printTest("TODO");
 };
 
-func testNativeFuncItoa() {
-    var a int = 250;
-    var b string;
-
-    b = itoa(a);
-
-    printf(b);
-};
-
 func testPackageVariable() {
     printf("other old is %v\n", utils.other);
     utils.other = 250;
@@ -719,7 +710,6 @@ func main() {
     testMultiAssign();
     testFuncMultiResult();
     testPackageCall();
-    testNativeFuncItoa();
     testPackageVariable();
     testGlobalVariable();
     testMap();

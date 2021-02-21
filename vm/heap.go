@@ -6,19 +6,19 @@ const (
 
 // 虚拟机堆
 type Heap struct {
+	list             []Object
 	currentThreshold int
-	objectList       []Object
 }
 
 func NewHeap() *Heap {
 	h := &Heap{
+		list:             make([]Object, 0),
 		currentThreshold: heapThresholdSize,
-		objectList:       make([]Object, 0),
 	}
 	return h
 }
 
 func (h *Heap) Append(value Object) {
-	h.objectList = append(h.objectList, value)
+	h.list = append(h.list, value)
 	h.currentThreshold += value.Len()
 }

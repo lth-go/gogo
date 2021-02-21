@@ -6,14 +6,14 @@ const (
 
 // 虚拟机栈
 type Stack struct {
+	list         []Object // 对象栈
 	stackPointer int      // 栈偏移量, 指向当前最大空栈
-	objectList   []Object // 对象栈
 }
 
 func NewStack() *Stack {
 	s := &Stack{
+		list:         make([]Object, stackAllocSize, (stackAllocSize+1)*2),
 		stackPointer: 0,
-		objectList:   make([]Object, stackAllocSize, (stackAllocSize+1)*2),
 	}
 	return s
 }
@@ -30,8 +30,8 @@ func (s *Stack) Expand(codeList []byte) {
 		size := s.Len() + needStackSize - rest
 
 		newObjectList := make([]Object, size, (size+1)*2)
-		copy(newObjectList, s.objectList)
-		s.objectList = newObjectList
+		copy(newObjectList, s.list)
+		s.list = newObjectList
 	}
 }
 
@@ -59,7 +59,7 @@ func getNeedStackSize(codeList []byte) int {
 }
 
 func (s *Stack) Len() int {
-	return len(s.objectList)
+	return len(s.list)
 }
 
 // 根据incr以及stackPointer返回栈的位置
@@ -73,7 +73,7 @@ func (s *Stack) getIndex(incr int) int {
 
 // 直据sp返回栈中元素
 func (s *Stack) Get(sp int) Object {
-	return s.objectList[sp]
+	return s.list[sp]
 }
 
 // 根据incr以及stackPointer向栈中写入元素
@@ -83,7 +83,7 @@ func (s *Stack) GetPlus(incr int) Object {
 }
 
 func (s *Stack) Set(sp int, v Object) {
-	s.objectList[sp] = v
+	s.list[sp] = v
 }
 
 func (s *Stack) SetPlus(incr int, value Object) {

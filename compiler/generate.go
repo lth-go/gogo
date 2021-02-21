@@ -88,8 +88,7 @@ func (ob *OpCodeBuf) addLineNumber(lineNumber int, startPc int) {
 //
 // FIX
 //
-func (ob *OpCodeBuf) fixOpcodeBuf() []byte {
-
+func (ob *OpCodeBuf) FixLabel() []byte {
 	ob.fixLabels()
 	ob.labelTableList = nil
 
@@ -130,56 +129,48 @@ func generateStatementList(statementList []Statement, ob *OpCodeBuf) {
 	}
 }
 
-//
-// COPY
-//
-func CopyToVmType(src *Type) *vm.Type {
-	dest := &vm.Type{
-		BasicType: src.GetBasicType(),
-	}
+func copyVmVariableList(fd *FunctionDefinition) []vm.Object {
+	var dest = []vm.Object{}
 
-	if src.IsArray() {
-		dest.SetArrayType(CopyToVmType(src.arrayType.ElementType), src.arrayType.Len)
-	}
+	localVariableCount := len(fd.DeclarationList) - len(fd.ParamList)
 
-	if src.IsStruct() {
-		typeList := make([]*vm.Type, 0)
-
-		for _, field := range src.structType.Fields {
-			typeList = append(typeList, CopyToVmType(field.Type))
-		}
-
-		dest.SetStructType(typeList)
-	}
-
-	if src.IsFunc() {
-		paramTypeList := []*vm.Type{}
-		resultTypeList := []*vm.Type{}
-		for _, t := range src.funcType.Params {
-			paramTypeList = append(paramTypeList, CopyToVmType(t.Type))
-		}
-
-		for _, t := range src.funcType.Results {
-			resultTypeList = append(resultTypeList, CopyToVmType(t.Type))
-		}
-
-		dest.SetFuncType(paramTypeList, resultTypeList)
+	for _, v := range fd.DeclarationList[0:localVariableCount] {
+		dest = append(dest, GetObjectByType(v.Type))
 	}
 
 	return dest
 }
 
-func copyVmVariableList(fd *FunctionDefinition) []vm.Object {
-	// TODO 形参占用位置
-	var dest = []vm.Object{}
+// 根据类型获取默认零值
+func GetObjectByType(typ *Type) vm.Object {
+	var value vm.Object
 
-	localVariableCount := len(fd.DeclarationList) - len(fd.ParameterList)
-
-	for _, v := range fd.DeclarationList[0:localVariableCount] {
-		dest = append(dest, vm.GetObjectByType(CopyToVmType(v.Type)))
+	if typ.IsArray() || typ.IsMap() || typ.IsInterface() {
+		value = vm.NilObject
+		return value
 	}
 
-	return dest
+	switch typ.GetBasicType() {
+	case BasicTypeVoid, BasicTypeBool, BasicTypeInt:
+		value = vm.NewObjectInt(0)
+	case BasicTypeFloat:
+		value = vm.NewObjectFloat(0.0)
+	case BasicTypeString:
+		value = vm.NewObjectString("")
+	case BasicTypeStruct:
+		structValue := vm.NewObjectStruct(len(typ.structType.Fields))
+		for i, field := range typ.structType.Fields {
+			structValue.SetField(i, GetObjectByType(field.Type))
+		}
+
+		value = structValue
+	case BasicTypeNil:
+		fallthrough
+	default:
+		panic("TODO")
+	}
+
+	return value
 }
 
 func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {

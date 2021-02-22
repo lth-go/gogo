@@ -4,7 +4,7 @@ import (
 	"github.com/lth-go/gogo/vm"
 )
 
-func (cm *CompilerManager) GetVmVariableList() []vm.Object {
+func (cm *Compiler) GetVmVariableList() []vm.Object {
 	variableList := make([]vm.Object, 0)
 
 	for _, decl := range cm.DeclarationList {
@@ -14,19 +14,25 @@ func (cm *CompilerManager) GetVmVariableList() []vm.Object {
 	return variableList
 }
 
-func (cm *CompilerManager) GetVmFunctionList() []*vm.GoGoFunction {
+func (cm *Compiler) GetVmFunctionList() []*vm.GoGoFunction {
 	vmFuncList := make([]*vm.GoGoFunction, 0)
 
-	for _, fd := range cm.funcList {
+	for _, fd := range cm.FuncList {
 		// TODO: 过滤掉_sys, 由虚拟机自己添加
 		if fd.PackageName == "_sys" {
 			continue
 		}
 
+		variableList := make([]vm.Object, 0)
+
+		for _, variable := range fd.DeclarationList {
+			variableList = append(variableList, GetVmVariable(variable.Value))
+		}
+
 		vmFuncList = append(vmFuncList, &vm.GoGoFunction{
 			ParamCount:   len(fd.GetType().funcType.Params),
 			ResultCount:  len(fd.GetType().funcType.Results),
-			VariableList: copyVmVariableList(fd),
+			VariableList: variableList,
 			CodeList:     fd.CodeList,
 		})
 	}

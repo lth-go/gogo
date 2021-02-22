@@ -4,49 +4,62 @@ package compiler
 // 函数定义
 //
 func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, typ *Type, block *Block) {
-	c := GetCurrentCompiler()
+	c := GetCurrentPackage()
 
 	fd := &FunctionDefinition{
 		Type:            typ,
 		Name:            identifier,
 		PackageName:     c.GetPackageName(),
-		ParamList:   typ.funcType.Params,
 		Block:           block,
 		DeclarationList: nil,
 	}
 
 	if block != nil {
-		block.parent = &FunctionBlockInfo{function: fd}
+		block.parent = &FunctionBlockInfo{Function: fd}
 	}
 
 	c.funcList = append(c.funcList, fd)
 }
 
-func AddDeclList(decl *Declaration) {
-	c := GetCurrentCompiler()
+func CreateDeclaration(pos Position, typ *Type, name string, value Expression) *Declaration {
+	decl := NewDeclaration(pos, typ, name, value)
+
+	decl.Block = GetCurrentPackage().currentBlock
+	if decl.Block != nil {
+		decl.IsLocal = true
+	}
+
+	return decl
+}
+
+func AddDeclList(stmt Statement) {
+	decl := stmt.(*Declaration)
+
+	c := GetCurrentPackage()
 	decl.PackageName = c.GetPackageName()
-	c.AddDeclarationList(decl)
+
+	c.declarationList = append(c.declarationList, decl)
 }
 
 func SetPackageName(packageName string) {
-	c := GetCurrentCompiler()
+	c := GetCurrentPackage()
 	c.SetPackageName(packageName)
 }
 
 func SetImportList(importList []*Import) {
-	c := GetCurrentCompiler()
+	c := GetCurrentPackage()
 	c.importList = importList
 }
 
 func PushCurrentBlock() *Block {
-	c := GetCurrentCompiler()
+	c := GetCurrentPackage()
 	c.currentBlock = &Block{outerBlock: c.currentBlock}
 
 	return c.currentBlock
 }
 
 func PopCurrentBlock() *Block {
-	c := GetCurrentCompiler()
+	c := GetCurrentPackage()
 	b := c.currentBlock
 	c.currentBlock = c.currentBlock.outerBlock
 

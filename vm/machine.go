@@ -358,7 +358,7 @@ func (vm *VirtualMachine) execute(caller *GoGoFunction, codeList []byte) {
 				panic("TODO")
 			}
 		case OP_CODE_RETURN:
-			vm.ReturnFunction(&caller, &codeList, &pc, &base)
+			vm.ReturnFunction(&caller, &codeList, &pc, &vm.stack.stackPointer, &base)
 		case OP_CODE_NEW_ARRAY:
 			size := utils.Get2ByteInt(codeList[pc+1:])
 			array := vm.NewObjectArray(size)
@@ -401,31 +401,20 @@ func (vm *VirtualMachine) execute(caller *GoGoFunction, codeList []byte) {
 // 函数相关 执行原生函数
 //
 func (vm *VirtualMachine) InvokeNativeFunction(f *GoGoNativeFunction, spP *int) {
-	// 5 -- sp
-	// 4 funcName
-	// 3 arg3
-	// 2 arg2
-	// 1 arg1
-	// 0 base
+	resultList := f.Proc(vm, f.ParamCount, vm.stack.list[*spP-f.ParamCount-1:])
 
-	sp := *spP
+	*spP = *spP - f.ParamCount - f.ResultCount - 1
 
-	resultList := f.Proc(vm, f.ParamCount, vm.stack.list[sp-f.ParamCount-1:])
-
-	resultLen := len(resultList)
-
-	for i, value := range resultList {
-		vm.stack.Set(sp-f.ParamCount-1+resultLen-i-1, value)
+	for _, value := range resultList {
+		vm.stack.Set(*spP, value)
+		*spP++
 	}
-
-	*spP = sp - f.ParamCount - 1 + resultLen
 }
 
 // 函数执行
 // caller 调用者, 当前所属的函数调用域
 // callee 调用函数
 // codeListP 字节码指针,用于设置新的字节码
-//
 func (vm *VirtualMachine) InvokeFunction(
 	caller **GoGoFunction,
 	callee *GoGoFunction,
@@ -434,10 +423,6 @@ func (vm *VirtualMachine) InvokeFunction(
 	spP *int,
 	bpP *int,
 ) {
-	//
-	// 保存环境
-	//
-
 	// 拓展栈大小
 	vm.stack.Expand(callee.CodeList)
 
@@ -454,47 +439,38 @@ func (vm *VirtualMachine) InvokeFunction(
 	//
 	// 设置新环境
 	//
-
 	*caller = callee
 	*codeListP = callee.CodeList
 	*pcP = 0
-	*bpP = *spP - callee.ParamCount - 1
+	*bpP = *spP - 1
 
 	// 初始化局部变量
 	for _, v := range callee.VariableList {
 		vm.stack.Set(*spP, v)
-		*spP += 1
+		*spP++
 	}
 }
 
 // 返回值入栈,恢复调用栈
 func (vm *VirtualMachine) ReturnFunction(
-	caller **GoGoFunction,
-	codeP *[]byte,
+	callerP **GoGoFunction,
+	codeListP *[]byte,
 	pcP *int,
+	spP *int,
 	bpP *int,
 ) {
-	resultCount := (*caller).ResultCount
+	caller := *callerP
 
-	objList := make([]Object, resultCount)
+	paramCount := caller.ParamCount
+	resultCount := caller.ResultCount
 
 	for i := 0; i < resultCount; i++ {
-		objList[i] = vm.stack.Get(vm.stack.stackPointer - resultCount + i)
+		vm.stack.Set(*bpP-paramCount-resultCount+i, vm.stack.Get(*spP-resultCount+i))
+		*spP++
 	}
-	vm.stack.stackPointer -= resultCount
 
 	// 恢复调用栈
-	RestoreCaller(vm, caller, codeP, pcP, bpP)
-
-	for i := 0; i < resultCount; i++ {
-		vm.stack.Set(vm.stack.stackPointer, objList[i])
-		vm.stack.stackPointer++
-	}
-}
-
-// 恢复调用栈
-func RestoreCaller(vm *VirtualMachine, caller **GoGoFunction, codeListP *[]byte, pcP *int, bpP *int) {
-	callInfo := vm.stack.Get(*bpP + (*caller).ParamCount).(*ObjectCallInfo)
+	callInfo := vm.stack.Get(*bpP).(*ObjectCallInfo)
 
 	if callInfo.caller != nil {
 		*codeListP = callInfo.caller.CodeList
@@ -502,8 +478,8 @@ func RestoreCaller(vm *VirtualMachine, caller **GoGoFunction, codeListP *[]byte,
 		*codeListP = vm.codeList
 	}
 
-	*caller = callInfo.caller
-	vm.stack.stackPointer = *bpP
+	*callerP = callInfo.caller
+	*spP = *bpP - paramCount
 	*pcP = callInfo.callerAddress + 1
 	*bpP = callInfo.bp
 }
@@ -518,7 +494,7 @@ func (vm *VirtualMachine) NewObjectArray(size int) Object {
 	vm.AddObject(obj)
 
 	for i := 0; i < size; i++ {
-		obj.Set(i, vm.stack.GetPlus(-size+i))
+		obj.Set(i, vm.stack.GetPlus(-i-1))
 	}
 
 	return obj
@@ -555,7 +531,7 @@ func (vm *VirtualMachine) NewObjectStruct(size int) Object {
 	vm.AddObject(obj)
 
 	for i := 0; i < size; i++ {
-		obj.FieldList[i] = vm.stack.GetPlus(-i)
+		obj.FieldList[i] = vm.stack.GetPlus(-i - 1)
 	}
 
 	return obj

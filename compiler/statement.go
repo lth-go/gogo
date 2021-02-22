@@ -20,26 +20,25 @@ type StatementBase struct {
 //
 type ExpressionStatement struct {
 	StatementBase
-	expression Expression
+	Expression Expression
 }
 
 func (stmt *ExpressionStatement) Fix() {
-	stmt.expression = stmt.expression.Fix()
+	stmt.Expression = stmt.Expression.Fix()
 }
 
 func (stmt *ExpressionStatement) Generate(ob *OpCodeBuf) {
-	expr := stmt.expression
+	expr := stmt.Expression
 	expr.Generate(ob)
 
-	// TODO: 没有返回值也会pop
 	for i := 0; i < expr.GetType().GetResultCount(); i++ {
-		ob.generateCode(expr.Position(), vm.OP_CODE_POP)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_POP)
 	}
 }
 
 func NewExpressionStatement(pos Position, expr Expression) *ExpressionStatement {
 	stmt := &ExpressionStatement{
-		expression: expr,
+		Expression: expr,
 	}
 	stmt.SetPosition(pos)
 
@@ -47,84 +46,82 @@ func NewExpressionStatement(pos Position, expr Expression) *ExpressionStatement 
 }
 
 //
-// IfStatement
-//
 // IfStatement if表达式
+//
 type IfStatement struct {
 	StatementBase
-	condition Expression
-	thenBlock *Block
-	elifList  []*ElseIf
-	elseBlock *Block
+	Condition  Expression
+	ThenBlock  *Block
+	ElseIfList []*ElseIf
+	ElseBlock  *Block
 }
 
 func (stmt *IfStatement) Fix() {
-	stmt.condition = stmt.condition.Fix()
+	stmt.Condition = stmt.Condition.Fix()
 
-	if !stmt.condition.GetType().IsBool() {
-		compileError(stmt.condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
+	if !stmt.Condition.GetType().IsBool() {
+		compileError(stmt.Condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
 	}
 
-	if stmt.thenBlock != nil {
-		stmt.thenBlock.Fix()
+	if stmt.ThenBlock != nil {
+		stmt.ThenBlock.Fix()
 	}
 
-	for _, elif := range stmt.elifList {
-		elif.condition = elif.condition.Fix()
+	for _, elseIf := range stmt.ElseIfList {
+		elseIf.Condition = elseIf.Condition.Fix()
 
-		if elif.block != nil {
-			elif.block.Fix()
+		if elseIf.Block != nil {
+			elseIf.Block.Fix()
 		}
 	}
 
-	if stmt.elseBlock != nil {
-		stmt.elseBlock.Fix()
+	if stmt.ElseBlock != nil {
+		stmt.ElseBlock.Fix()
 	}
 }
 
 func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
-
-	stmt.condition.Generate(ob)
+	stmt.Condition.Generate(ob)
 
 	// 获取false跳转地址
-	ifFalseLabel := ob.getLabel()
-	ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
+	ifFalseLabel := ob.GetLabel()
+	ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
 
-	if stmt.thenBlock != nil {
-		generateStatementList(stmt.thenBlock.statementList, ob)
+	if stmt.ThenBlock != nil {
+		generateStatementList(stmt.ThenBlock.statementList, ob)
 	}
 
 	// 获取结束跳转地址
-	endLabel := ob.getLabel()
+	endLabel := ob.GetLabel()
 
 	// 直接跳到最后
-	ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
+	ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
 
 	// 设置false跳转地址,如果false,直接执行这里
-	ob.setLabel(ifFalseLabel)
+	ob.SetLabel(ifFalseLabel)
 
-	for _, elif := range stmt.elifList {
-		elif.condition.Generate(ob)
+	for _, elif := range stmt.ElseIfList {
+		elif.Condition.Generate(ob)
 
 		// 获取false跳转地址
-		ifFalseLabel = ob.getLabel()
-		ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
+		ifFalseLabel = ob.GetLabel()
+		ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
 
-		generateStatementList(elif.block.statementList, ob)
+		generateStatementList(elif.Block.statementList, ob)
 
 		// 直接跳到最后
-		ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
+		ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
 
 		// 设置false跳转地址,如果false,直接执行这里
-		ob.setLabel(ifFalseLabel)
+		ob.SetLabel(ifFalseLabel)
 	}
 
-	if stmt.elseBlock != nil {
-		generateStatementList(stmt.elseBlock.statementList, ob)
+	if stmt.ElseBlock != nil {
+		generateStatementList(stmt.ElseBlock.statementList, ob)
 	}
 
 	// 设置结束地址
-	ob.setLabel(endLabel)
+	ob.SetLabel(endLabel)
 }
 
 func NewIfStatement(
@@ -135,101 +132,10 @@ func NewIfStatement(
 	elseBlock *Block,
 ) *IfStatement {
 	stmt := &IfStatement{
-		condition: condition,
-		thenBlock: thenBlock,
-		elifList:  elifList,
-		elseBlock: elseBlock,
-	}
-
-	stmt.SetPosition(pos)
-
-	return stmt
-}
-
-//
-// ForStatement
-//
-type ForStatement struct {
-	StatementBase
-	init      Statement
-	condition Expression
-	post      Statement
-	block     *Block
-}
-
-func (stmt *ForStatement) Fix() {
-	if stmt.init != nil {
-		stmt.init.Fix()
-	}
-
-	if stmt.condition != nil {
-		stmt.condition = stmt.condition.Fix()
-
-		if !stmt.condition.GetType().IsBool() {
-			compileError(stmt.condition.Position(), FOR_CONDITION_NOT_BOOLEAN_ERR)
-		}
-	}
-
-	if stmt.post != nil {
-		stmt.post.Fix()
-	}
-
-	if stmt.block != nil {
-		stmt.block.Fix()
-	}
-}
-
-func (stmt *ForStatement) Generate(ob *OpCodeBuf) {
-	if stmt.init != nil {
-		stmt.init.Generate(ob)
-	}
-
-	// 获取循环地址
-	loopLabel := ob.getLabel()
-
-	// 设置循环地址
-	ob.setLabel(loopLabel)
-
-	if stmt.condition != nil {
-		stmt.condition.Generate(ob)
-	}
-
-	label := ob.getLabel()
-
-	if stmt.condition != nil {
-		// 如果条件为否,跳转到break, label = parent.breakLabel
-		ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, label)
-	}
-
-	if stmt.block != nil {
-		parent := stmt.block.parent.(*StatementBlockInfo)
-		// 获取break,continue地址
-		parent.breakLabel = label
-		parent.continueLabel = label
-
-		generateStatementList(stmt.block.statementList, ob)
-	}
-
-	// 如果有continue,直接跳过block,从这里执行, label = parent.continueLabel
-	ob.setLabel(label)
-
-	if stmt.post != nil {
-		stmt.post.Generate(ob)
-	}
-
-	// 跳回到循环开头
-	ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, loopLabel)
-
-	// 设置结束标签, label = parent.breakLabel
-	ob.setLabel(label)
-}
-
-func NewForStatement(pos Position, init Statement, condition Expression, post Statement, block *Block) *ForStatement {
-	stmt := &ForStatement{
-		init:      init,
-		condition: condition,
-		post:      post,
-		block:     block,
+		Condition:  condition,
+		ThenBlock:  thenBlock,
+		ElseIfList: elifList,
+		ElseBlock:  elseBlock,
 	}
 
 	stmt.SetPosition(pos)
@@ -238,15 +144,106 @@ func NewForStatement(pos Position, init Statement, condition Expression, post St
 }
 
 type ElseIf struct {
-	condition Expression
-	block     *Block
+	Condition Expression
+	Block     *Block
 }
 
 func NewElseIf(condition Expression, block *Block) *ElseIf {
 	return &ElseIf{
-		condition: condition,
-		block:     block,
+		Condition: condition,
+		Block:     block,
 	}
+}
+
+//
+// ForStatement
+//
+type ForStatement struct {
+	StatementBase
+	Init      Statement
+	Condition Expression
+	Post      Statement
+	Block     *Block
+}
+
+func (stmt *ForStatement) Fix() {
+	if stmt.Init != nil {
+		stmt.Init.Fix()
+	}
+
+	if stmt.Condition != nil {
+		stmt.Condition = stmt.Condition.Fix()
+
+		if !stmt.Condition.GetType().IsBool() {
+			compileError(stmt.Condition.Position(), FOR_CONDITION_NOT_BOOLEAN_ERR)
+		}
+	}
+
+	if stmt.Post != nil {
+		stmt.Post.Fix()
+	}
+
+	if stmt.Block != nil {
+		stmt.Block.Fix()
+	}
+}
+
+func (stmt *ForStatement) Generate(ob *OpCodeBuf) {
+	if stmt.Init != nil {
+		stmt.Init.Generate(ob)
+	}
+
+	// 获取循环地址
+	loopLabel := ob.GetLabel()
+
+	// 设置循环地址
+	ob.SetLabel(loopLabel)
+
+	if stmt.Condition != nil {
+		stmt.Condition.Generate(ob)
+	}
+
+	label := ob.GetLabel()
+
+	if stmt.Condition != nil {
+		// 如果条件为否,跳转到break, label = parent.breakLabel
+		ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, label)
+	}
+
+	if stmt.Block != nil {
+		parent := stmt.Block.parent.(*StatementBlockInfo)
+		// 获取break,continue地址
+		parent.BreakLabel = label
+		parent.ContinueLabel = label
+
+		generateStatementList(stmt.Block.statementList, ob)
+	}
+
+	// 如果有continue,直接跳过block,从这里执行, label = parent.continueLabel
+	ob.SetLabel(label)
+
+	if stmt.Post != nil {
+		stmt.Post.Generate(ob)
+	}
+
+	// 跳回到循环开头
+	ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP, loopLabel)
+
+	// 设置结束标签, label = parent.breakLabel
+	ob.SetLabel(label)
+}
+
+func NewForStatement(pos Position, init Statement, condition Expression, post Statement, block *Block) *ForStatement {
+	stmt := &ForStatement{
+		Init:      init,
+		Condition: condition,
+		Post:      post,
+		Block:     block,
+	}
+
+	stmt.SetPosition(pos)
+
+	return stmt
 }
 
 //
@@ -286,7 +283,7 @@ func (stmt *ReturnStatement) Generate(ob *OpCodeBuf) {
 	for _, value := range stmt.ValueList {
 		value.Generate(ob)
 	}
-	ob.generateCode(stmt.Position(), vm.OP_CODE_RETURN)
+	ob.GenerateCode(stmt.Position(), vm.OP_CODE_RETURN)
 }
 
 func NewReturnStatement(pos Position, valueList []Expression) *ReturnStatement {
@@ -295,7 +292,7 @@ func NewReturnStatement(pos Position, valueList []Expression) *ReturnStatement {
 	}
 	stmt.SetPosition(pos)
 
-	stmt.Block = GetCurrentCompiler().currentBlock
+	stmt.Block = GetCurrentPackage().currentBlock
 
 	return stmt
 }
@@ -323,7 +320,7 @@ func (stmt *BreakStatement) Generate(ob *OpCodeBuf) {
 	for block := stmt.Block; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
 		case *StatementBlockInfo:
-			ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, block.parent.(*StatementBlockInfo).breakLabel)
+			ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP, block.parent.(*StatementBlockInfo).BreakLabel)
 			return
 		}
 	}
@@ -333,7 +330,7 @@ func (stmt *BreakStatement) Generate(ob *OpCodeBuf) {
 func NewBreakStatement(pos Position) *BreakStatement {
 	stmt := &BreakStatement{}
 	stmt.SetPosition(pos)
-	stmt.Block = GetCurrentCompiler().currentBlock
+	stmt.Block = GetCurrentPackage().currentBlock
 
 	return stmt
 }
@@ -353,7 +350,7 @@ func (stmt *ContinueStatement) Generate(ob *OpCodeBuf) {
 	for block := stmt.Block; block != nil; block = block.outerBlock {
 		switch block.parent.(type) {
 		case *StatementBlockInfo:
-			ob.generateCode(stmt.Position(), vm.OP_CODE_JUMP, block.parent.(*StatementBlockInfo).continueLabel)
+			ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP, block.parent.(*StatementBlockInfo).ContinueLabel)
 			return
 		default:
 			continue
@@ -366,7 +363,7 @@ func (stmt *ContinueStatement) Generate(ob *OpCodeBuf) {
 func NewContinueStatement(pos Position) *ContinueStatement {
 	stmt := &ContinueStatement{}
 	stmt.SetPosition(pos)
-	stmt.Block = GetCurrentCompiler().currentBlock
+	stmt.Block = GetCurrentPackage().currentBlock
 
 	return stmt
 }
@@ -380,31 +377,37 @@ type Declaration struct {
 	PackageName string
 	Name        string
 	Value       Expression
-	Index       int
-	IsLocal     bool
-	Block       *Block
+	Index       int    // 下标
+	IsLocal     bool   // 是否本地声明
+	Block       *Block // 所属块
 }
 
 func (stmt *Declaration) Fix() {
-	fd := stmt.Block.GetCurrentFunction()
-	stmt.IsLocal = true
-	stmt.Block.declarationList = append(stmt.Block.declarationList, stmt)
-	fd.AddDeclarationList(stmt)
+	//
+	// 向父块添加
+	//
+	block := stmt.Block
+	block.declarationList = append(block.declarationList, stmt)
+	
+	// 向父函数添加
+	fd := block.GetCurrentFunction()
+	stmt.Index = len(fd.DeclarationList)
+	fd.DeclarationList = append(fd.DeclarationList, stmt)
 
 	stmt.Type.Fix()
 
-	// 类型转换
-	if stmt.Value != nil {
-		stmt.Value = stmt.Value.Fix()
-		stmt.Value = CreateAssignCast(stmt.Value, stmt.Type)
+	//
+	// 设置类型默认值
+	//
+	if stmt.Value == nil {
+		stmt.Value = GetTypeDefaultValue(stmt.Type, stmt.Position())
 	}
+
+	stmt.Value = stmt.Value.Fix()
+	stmt.Value = CreateAssignCast(stmt.Value, stmt.Type)
 }
 
 func (stmt *Declaration) Generate(ob *OpCodeBuf) {
-	if stmt.Value == nil {
-		return
-	}
-
 	stmt.Value.Generate(ob)
 	generatePopToIdentifier(stmt, stmt.Position(), ob)
 }
@@ -416,11 +419,35 @@ func NewDeclaration(pos Position, typ *Type, name string, value Expression) *Dec
 		Name:        name,
 		Value:       value,
 		Index:       -1,
-		Block:       GetCurrentCompiler().currentBlock,
 	}
 	decl.SetPosition(pos)
 
 	return decl
+}
+
+func GetTypeDefaultValue(typ *Type, pos Position) Expression {
+	if typ.IsArray() || typ.IsMap() || typ.IsInterface() {
+		return CreateNilExpression(pos)
+	}
+
+	switch typ.GetBasicType() {
+	case BasicTypeBool:
+		return CreateBooleanExpression(pos, false)
+	case BasicTypeInt:
+		return CreateIntExpression(pos, 0)
+	case BasicTypeFloat:
+		return CreateFloatExpression(pos, 0.0)
+	case BasicTypeString:
+		return CreateStringExpression(pos, "")
+	case BasicTypeStruct:
+		// TODO: 结构体默认值
+		// value := CreateStructExpression(typ, nil)
+
+		// return value
+		fallthrough
+	default:
+		panic("TODO")
+	}
 }
 
 //
@@ -428,13 +455,15 @@ func NewDeclaration(pos Position, typ *Type, name string, value Expression) *Dec
 //
 type AssignStatement struct {
 	StatementBase
-	left  []Expression
-	right []Expression
+	Left  []Expression
+	Right []Expression
 }
 
 func (stmt *AssignStatement) Fix() {
+	//
 	// 检查左值类型
-	for _, expr := range stmt.left {
+	//
+	for _, expr := range stmt.Left {
 		switch expr.(type) {
 		case *IdentifierExpression, *IndexExpression, *SelectorExpression:
 		default:
@@ -444,35 +473,35 @@ func (stmt *AssignStatement) Fix() {
 
 	// 校验右边是否有函数调用,如果有取函数返回值为长度
 	if stmt.isFuncCall() {
-		leftLen := len(stmt.left)
-		rightLen := len(stmt.right)
+		leftLen := len(stmt.Left)
+		rightLen := len(stmt.Right)
 
 		if rightLen != 1 {
 			panic("TODO")
 		}
 
-		stmt.right[0] = stmt.right[0].Fix()
-		rightLen = stmt.right[0].GetType().GetResultCount()
+		stmt.Right[0] = stmt.Right[0].Fix()
+		rightLen = stmt.Right[0].GetType().GetResultCount()
 
 		if leftLen != rightLen {
 			panic("TODO")
 		}
 
-		for i := 0; i < len(stmt.left); i++ {
-			stmt.left[i] = stmt.left[i].Fix()
+		for i := 0; i < len(stmt.Left); i++ {
+			stmt.Left[i] = stmt.Left[i].Fix()
 		}
 	} else {
-		leftLen := len(stmt.left)
-		rightLen := len(stmt.right)
+		leftLen := len(stmt.Left)
+		rightLen := len(stmt.Right)
 
 		if leftLen != rightLen {
 			panic("TODO")
 		}
 
-		for i := 0; i < len(stmt.left); i++ {
-			stmt.left[i] = stmt.left[i].Fix()
-			stmt.right[i] = stmt.right[i].Fix()
-			stmt.right[i] = CreateAssignCast(stmt.right[i], stmt.left[i].GetType())
+		for i := 0; i < len(stmt.Left); i++ {
+			stmt.Left[i] = stmt.Left[i].Fix()
+			stmt.Right[i] = stmt.Right[i].Fix()
+			stmt.Right[i] = CreateAssignCast(stmt.Right[i], stmt.Left[i].GetType())
 		}
 	}
 }
@@ -481,32 +510,32 @@ func (stmt *AssignStatement) Generate(ob *OpCodeBuf) {
 	isCall := stmt.isFuncCall()
 
 	if isCall {
-		for _, expr := range stmt.right {
+		for _, expr := range stmt.Right {
 			expr.Generate(ob)
 		}
 
-		count := len(stmt.left)
+		count := len(stmt.Left)
 		for i := 0; i < count; i++ {
-			leftExpr := stmt.left[count-i-1]
-			ob.generateCode(stmt.Position(), vm.OP_CODE_DUPLICATE)
+			leftExpr := stmt.Left[count-i-1]
+			ob.GenerateCode(stmt.Position(), vm.OP_CODE_DUPLICATE)
 			generatePopToLvalue(leftExpr, ob)
 		}
 	} else {
-		count := len(stmt.left)
+		count := len(stmt.Left)
 		for i := 0; i < count; i++ {
-			leftExpr := stmt.left[i]
-			rightExpr := stmt.right[i]
+			leftExpr := stmt.Left[i]
+			rightExpr := stmt.Right[i]
 
 			rightExpr.Generate(ob)
-			ob.generateCode(stmt.Position(), vm.OP_CODE_DUPLICATE)
+			ob.GenerateCode(stmt.Position(), vm.OP_CODE_DUPLICATE)
 			generatePopToLvalue(leftExpr, ob)
 		}
 	}
 }
 
 func (stmt *AssignStatement) isFuncCall() bool {
-	for _, expr := range stmt.right {
-		_, ok := expr.(*FunctionCallExpression)
+	for _, expr := range stmt.Right {
+		_, ok := expr.(*CallExpression)
 		if ok {
 			return true
 		}
@@ -516,10 +545,59 @@ func (stmt *AssignStatement) isFuncCall() bool {
 
 func NewAssignStatement(pos Position, left []Expression, right []Expression) *AssignStatement {
 	stmt := &AssignStatement{
-		left:  left,
-		right: right,
+		Left:  left,
+		Right: right,
 	}
+
 	stmt.SetPosition(pos)
 
 	return stmt
+}
+
+func generateStatementList(statementList []Statement, ob *OpCodeBuf) {
+	for _, stmt := range statementList {
+		stmt.Generate(ob)
+	}
+}
+
+func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {
+	switch e := expr.(type) {
+	case *IdentifierExpression:
+		generatePopToIdentifier(e.Obj.(*Declaration), expr.Position(), ob)
+	case *IndexExpression:
+		if e.X.GetType().IsArray() {
+			e.X.Generate(ob)
+			e.Index.Generate(ob)
+			ob.GenerateCode(expr.Position(), vm.OP_CODE_POP_ARRAY)
+		} else if e.X.GetType().IsMap() {
+			e.X.Generate(ob)
+			e.Index.Generate(ob)
+			ob.GenerateCode(expr.Position(), vm.OP_CODE_POP_MAP)
+		} else {
+			panic("TODO")
+		}
+	case *SelectorExpression:
+		if e.X.GetType().IsStruct() {
+			e.X.Generate(ob)
+			ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, e.Index)
+			ob.GenerateCode(expr.Position(), vm.OP_CODE_POP_STRUCT)
+		} else {
+			panic("TODO")
+		}
+
+	default:
+		panic("TODO")
+	}
+}
+
+func generatePopToIdentifier(decl *Declaration, pos Position, ob *OpCodeBuf) {
+	var code byte
+
+	if decl.IsLocal {
+		code = vm.OP_CODE_POP_STACK
+	} else {
+		code = vm.OP_CODE_POP_STATIC
+	}
+
+	ob.GenerateCode(pos, code, decl.Index)
 }

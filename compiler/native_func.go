@@ -21,14 +21,14 @@ func createNativeFuncParamTypeList(typeList []BasicType) []*Parameter {
 	return list
 }
 
-func (c *CompilerManager) AddNativeFunctionList() {
+func (c *Compiler) AddNativeFunctionList() {
 	c.AddNativeFunctionPrintf()
 	c.AddNativeFunctionLen()
 	c.AddNativeFunctionAppend()
 	c.AddNativeFunctionDelete()
 }
 
-func (c *CompilerManager) AddNativeFunc(name string, pType, rType []BasicType, ellipsis bool) {
+func (c *Compiler) AddNativeFunc(name string, pType, rType []BasicType, ellipsis bool) {
 	paramsType := createNativeFuncParamTypeList(pType)
 	resultsType := createNativeFuncParamTypeList(rType)
 
@@ -40,15 +40,14 @@ func (c *CompilerManager) AddNativeFunc(name string, pType, rType []BasicType, e
 		Type:            CreateFuncType(paramsType, resultsType),
 		Name:            name,
 		PackageName:     "_sys",
-		ParamList:   paramsType,
 		Block:           nil,
 		DeclarationList: nil,
 	}
 
-	c.funcList = append(c.funcList, fd)
+	c.FuncList = append(c.FuncList, fd)
 }
 
-func (c *CompilerManager) AddNativeFunctionPrintf() {
+func (c *Compiler) AddNativeFunctionPrintf() {
 	c.AddNativeFunc(
 		"printf",
 		[]BasicType{BasicTypeString, BasicTypeArray},
@@ -57,7 +56,7 @@ func (c *CompilerManager) AddNativeFunctionPrintf() {
 	)
 }
 
-func (c *CompilerManager) AddNativeFunctionItoa() {
+func (c *Compiler) AddNativeFunctionItoa() {
 	c.AddNativeFunc(
 		"itoa",
 		[]BasicType{BasicTypeInt},
@@ -66,7 +65,7 @@ func (c *CompilerManager) AddNativeFunctionItoa() {
 	)
 }
 
-func (c *CompilerManager) AddNativeFunctionLen() {
+func (c *Compiler) AddNativeFunctionLen() {
 	c.AddNativeFunc(
 		"len",
 		[]BasicType{BasicTypeInterface},
@@ -75,7 +74,7 @@ func (c *CompilerManager) AddNativeFunctionLen() {
 	)
 }
 
-func (c *CompilerManager) AddNativeFunctionAppend() {
+func (c *Compiler) AddNativeFunctionAppend() {
 	c.AddNativeFunc(
 		"append",
 		[]BasicType{BasicTypeArray, BasicTypeArray},
@@ -84,7 +83,7 @@ func (c *CompilerManager) AddNativeFunctionAppend() {
 	)
 }
 
-func (c *CompilerManager) AddNativeFunctionDelete() {
+func (c *Compiler) AddNativeFunctionDelete() {
 	c.AddNativeFunc(
 		"delete",
 		[]BasicType{BasicTypeMap, BasicTypeInterface},

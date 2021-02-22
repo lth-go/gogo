@@ -50,7 +50,7 @@ func (expr *BoolExpression) Generate(ob *OpCodeBuf) {
 		value = 1
 	}
 
-	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_1BYTE, value)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_INT_1BYTE, value)
 }
 
 func CreateBooleanExpression(pos Position, value bool) *BoolExpression {
@@ -76,7 +76,7 @@ func (expr *IntExpression) Fix() Expression {
 	expr.GetType().Fix()
 
 	if expr.Value > 65535 || expr.Value < 0 {
-		expr.Index = GetCurrentCompilerManage().AddConstantList(expr.Value)
+		expr.Index = GetCurrentCompiler().AddConstant(expr.Value)
 	}
 
 	return expr
@@ -84,11 +84,11 @@ func (expr *IntExpression) Fix() Expression {
 
 func (expr *IntExpression) Generate(ob *OpCodeBuf) {
 	if expr.Value >= 0 && expr.Value < 256 {
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_1BYTE, expr.Value)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_INT_1BYTE, expr.Value)
 	} else if expr.Value >= 0 && expr.Value < 65536 {
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, expr.Value)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, expr.Value)
 	} else {
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT, expr.Index)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_INT, expr.Index)
 	}
 }
 
@@ -115,18 +115,18 @@ func (expr *FloatExpression) Fix() Expression {
 	expr.GetType().Fix()
 
 	if expr.Value != 0.0 && expr.Value != 1.0 {
-		expr.Index = GetCurrentCompilerManage().AddConstantList(expr.Value)
+		expr.Index = GetCurrentCompiler().AddConstant(expr.Value)
 	}
 	return expr
 }
 
 func (expr *FloatExpression) Generate(ob *OpCodeBuf) {
 	if expr.Value == 0.0 {
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT_0)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT_0)
 	} else if expr.Value == 1.0 {
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT_1)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT_1)
 	} else {
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT, expr.Index)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_FLOAT, expr.Index)
 	}
 }
 
@@ -152,12 +152,12 @@ func (expr *StringExpression) Fix() Expression {
 	expr.SetType(NewType(BasicTypeString))
 	expr.GetType().Fix()
 
-	expr.Index = GetCurrentCompilerManage().AddConstantList(expr.Value)
+	expr.Index = GetCurrentCompiler().AddConstant(expr.Value)
 	return expr
 }
 
 func (expr *StringExpression) Generate(ob *OpCodeBuf) {
-	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_STRING, expr.Index)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_STRING, expr.Index)
 }
 
 func CreateStringExpression(pos Position, value string) *StringExpression {
@@ -187,7 +187,7 @@ func (expr *InterfaceExpression) Fix() Expression {
 
 func (expr *InterfaceExpression) Generate(ob *OpCodeBuf) {
 	expr.Data.Generate(ob)
-	ob.generateCode(expr.Position(), vm.OP_CODE_NEW_INTERFACE)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_NEW_INTERFACE)
 }
 
 func CreateInterfaceExpression(pos Position) *InterfaceExpression {
@@ -214,7 +214,7 @@ func (expr *NilExpression) Fix() Expression {
 }
 
 func (expr *NilExpression) Generate(ob *OpCodeBuf) {
-	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_NIL)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_NIL)
 }
 
 func CreateNilExpression(pos Position) *NilExpression {
@@ -257,12 +257,11 @@ func (expr *ArrayExpression) Fix() Expression {
 }
 
 func (expr *ArrayExpression) Generate(ob *OpCodeBuf) {
-	for _, subExpr := range expr.List {
-		subExpr.Generate(ob)
+	for i := len(expr.List) - 1; i >= 0; i-- {
+		expr.List[i].Generate(ob)
 	}
 
-	count := len(expr.List)
-	ob.generateCode(expr.Position(), vm.OP_CODE_NEW_ARRAY, count)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_NEW_ARRAY, len(expr.List))
 }
 
 func CreateArrayExpression(typ *Type, exprList []Expression) *ArrayExpression {
@@ -317,7 +316,7 @@ func (expr *MapExpression) Generate(ob *OpCodeBuf) {
 
 	size := len(expr.KeyList)
 
-	ob.generateCode(expr.Position(), vm.OP_CDOE_NEW_MAP, size)
+	ob.GenerateCode(expr.Position(), vm.OP_CDOE_NEW_MAP, size)
 }
 
 func CreateMapExpression(typ *Type, valueList []Expression) *MapExpression {
@@ -371,7 +370,7 @@ func (expr *StructExpression) Generate(ob *OpCodeBuf) {
 	}
 
 	count := len(expr.FieldList)
-	ob.generateCode(expr.Position(), vm.OP_CODE_NEW_STRUCT, count)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_NEW_STRUCT, count)
 }
 
 func CreateStructExpression(typ *Type, valueList []Expression) *StructExpression {
@@ -394,7 +393,7 @@ func CreateStructExpression(typ *Type, valueList []Expression) *StructExpression
 			panic("TODO")
 		}
 
-		fieldName := keyValueExpr.Key.(*IdentifierExpression).name
+		fieldName := keyValueExpr.Key.(*IdentifierExpression).Name
 		field, ok := fieldMap[fieldName]
 		if !ok {
 			panic("TODO")
@@ -411,65 +410,74 @@ func CreateStructExpression(typ *Type, valueList []Expression) *StructExpression
 //
 type IdentifierExpression struct {
 	ExpressionBase
-	name  string
-	inner interface{} // 变量,函数,包,自定义类型(FunctionIdentifier Declaration Package)
-	Block *Block
+	PackageName string
+	Name        string
+	Obj         interface{} // 变量,函数,包,自定义类型(FunctionIdentifier Declaration Package)
+	Block       *Block
 }
 
 type FunctionIdentifier struct {
-	functionDefinition *FunctionDefinition
-	Index              int
+	Func  *FunctionDefinition
+	Index int
 }
 
+// TODO: 变量查找顺序,先查本地变量/函数,再搜全局,再搜内置
 func (expr *IdentifierExpression) Fix() Expression {
-	// 判断是否是变量
-	declaration := expr.Block.SearchDeclaration(expr.name)
+	c := GetCurrentCompiler()
+	pkg := GetCurrentPackage()
+
+	//
+	// 判断是否是变量(本地/全局)
+	//
+	declaration := expr.Block.SearchDeclaration(expr.Name)
+	if declaration == nil {
+		declaration = c.SearchDeclaration(expr.PackageName, expr.Name)
+	}
+
 	if declaration != nil {
 		expr.SetType(declaration.Type.Copy())
-		expr.inner = declaration
+		expr.Obj = declaration
 		expr.GetType().Fix()
 		return expr
 	}
 
+	//
 	// 判断是否是函数
-	fd := GetCurrentCompilerManage().SearchFunction(GetCurrentCompiler().packageName, expr.name)
+	//
+	fd, index := c.SearchFunction(expr.PackageName, expr.Name)
 	if fd != nil {
 		expr.SetType(fd.CopyType())
-		expr.inner = &FunctionIdentifier{
-			functionDefinition: fd,
-			Index:              GetCurrentCompilerManage().AddFuncList(fd),
+		expr.Obj = &FunctionIdentifier{
+			Func:  fd,
+			Index: index,
 		}
 		expr.GetType().Fix()
 
 		return expr
 	}
 
-	for _, compiler := range GetCurrentCompilerManage().doneList {
-		if compiler.GetPackageName() == CurrentPackageName {
-			for _, imp := range compiler.importList {
-				if imp.packageName == expr.name {
-					if compiler != nil {
-						expr.SetType(NewType(BasicTypePackage))
-						expr.inner = imp.packageName
-						expr.GetType().Fix()
-						return expr
-					}
-				}
-			}
+	//
+	// 判断是否是包引用
+	//
+	for _, imp := range pkg.importList {
+		if imp.packageName == expr.Name {
+			expr.SetType(NewType(BasicTypePackage))
+			expr.Obj = imp.packageName
+			expr.GetType().Fix()
+			return expr
 		}
 	}
 
-	// 都不是,报错
-	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, expr.name)
+	compileError(expr.Position(), IDENTIFIER_NOT_FOUND_ERR, expr.Name)
+
 	return nil
 }
 
 func (expr *IdentifierExpression) Generate(ob *OpCodeBuf) {
-	switch inner := expr.inner.(type) {
-	// 函数
+	switch inner := expr.Obj.(type) {
 	case *FunctionIdentifier:
-		ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_FUNCTION, inner.Index)
-		// 变量
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_FUNCTION, inner.Index)
+
 	case *Declaration:
 		var code byte
 
@@ -478,15 +486,349 @@ func (expr *IdentifierExpression) Generate(ob *OpCodeBuf) {
 		} else {
 			code = vm.OP_CODE_PUSH_STATIC
 		}
-		ob.generateCode(expr.Position(), code, inner.Index)
+		ob.GenerateCode(expr.Position(), code, inner.Index)
 	}
 }
 
 func CreateIdentifierExpression(pos Position, name string) *IdentifierExpression {
-	expr := &IdentifierExpression{name: name}
+	expr := &IdentifierExpression{Name: name}
 	expr.SetPosition(pos)
-	expr.Block = GetCurrentCompiler().currentBlock
+
+	c := GetCurrentPackage()
+	if c != nil {
+		expr.Block = c.currentBlock
+		expr.PackageName = c.GetPackageName()
+	}
+
 	return expr
+}
+
+//
+// CallExpression 函数调用表达式
+//
+type CallExpression struct {
+	ExpressionBase
+	Func Expression   // 函数名
+	Args []Expression // 实参列表
+}
+
+func (expr *CallExpression) Fix() Expression {
+	expr.Func = expr.Func.Fix()
+
+	funcExpr, ok := expr.Func.(*IdentifierExpression)
+	if !ok {
+		panic("TODO")
+		// compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, "")
+	}
+
+	fd := funcExpr.Obj.(*FunctionIdentifier).Func
+
+	expr.Args = FixArgList(fd, expr.Args)
+
+	FixReturn(fd, expr.Type)
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func FixArgList(fd *FunctionDefinition, argumentList []Expression) []Expression {
+	parameterList := fd.Type.funcType.Params
+
+	paramLen := len(parameterList)
+
+	if paramLen > 0 {
+		lastP := parameterList[paramLen-1]
+		if lastP.Ellipsis {
+			newArgList := make([]Expression, 0)
+			for _, expr := range argumentList[:paramLen-1] {
+				newArgList = append(newArgList, expr)
+			}
+			lastArg := CreateArrayExpression(lastP.Type, argumentList[paramLen-1:])
+			newArgList = append(newArgList, lastArg)
+
+			argumentList = newArgList
+		}
+	}
+
+	argLen := len(argumentList)
+
+	if argLen != paramLen {
+		compileError(fd.GetType().Position(), ARGUMENT_COUNT_MISMATCH_ERR, paramLen, argLen)
+	}
+
+	for i := 0; i < paramLen; i++ {
+		argumentList[i] = argumentList[i].Fix()
+		if !argumentList[i].GetType().Equal(parameterList[i].Type) {
+			compileError(
+				argumentList[i].Position(),
+				ARGUMENT_COUNT_MISMATCH_ERR,
+				parameterList[i].Name,
+				parameterList[i].Type.GetBasicType(),
+				argumentList[i].GetType().GetBasicType(),
+			)
+		}
+	}
+
+	return argumentList
+}
+
+// 设置返回值类型
+func FixReturn(fd *FunctionDefinition, typ *Type) {
+	resultCount := len(fd.Type.funcType.Results)
+
+	if resultCount == 0 {
+		typ.SetBasicType(BasicTypeVoid)
+	} else if resultCount == 1 {
+		typ.SetBasicType(fd.Type.funcType.Results[0].Type.GetBasicType())
+	} else {
+		typeList := make([]*Type, resultCount)
+		for i, resultType := range fd.Type.funcType.Results {
+			typeList[i] = resultType.Type.Copy()
+		}
+		typ.SetBasicType(BasicTypeMultipleValues)
+		typ.multipleValueType = NewMultipleValueType(typeList)
+	}
+}
+
+// CallExpression
+// returns
+// args
+// return address
+// locals -- base
+func (expr *CallExpression) Generate(ob *OpCodeBuf) {
+	fd := expr.Func.(*IdentifierExpression).Obj.(*FunctionIdentifier).Func
+
+	for _, p := range fd.Type.funcType.Results {
+		GetTypeDefaultValue(p.Type, expr.Position()).Generate(ob)
+	}
+
+	for _, param := range expr.Args {
+		param.Generate(ob)
+	}
+
+	expr.Func.Generate(ob)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_INVOKE)
+}
+
+func NewFunctionCallExpression(pos Position, function Expression, argumentList []Expression) *CallExpression {
+	expr := &CallExpression{
+		Func: function,
+		Args: argumentList,
+	}
+	expr.SetType(NewType(BasicTypeVoid))
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+//
+// SelectorExpression
+//
+type SelectorExpression struct {
+	ExpressionBase
+	X     Expression // 实例
+	Sel   string     // 成员名称
+	Index int
+}
+
+func (expr *SelectorExpression) Fix() Expression {
+	var newExpr Expression
+
+	expr.X = expr.X.Fix()
+	typ := expr.X.GetType()
+
+	// TODO: IsType()
+	switch {
+	case typ.IsPackage():
+		newExpr = FixPackageSelectorExpression(expr)
+	case typ.IsStruct():
+		newExpr = FixStructSelectorExpression(expr)
+	default:
+		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
+	}
+
+	newExpr.GetType().Fix()
+
+	return newExpr
+}
+
+func (expr *SelectorExpression) Generate(ob *OpCodeBuf) {
+	expr.X.Generate(ob)
+	// TODO: 临时用下OP_CODE_PUSH_INT_2BYTE
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, expr.Index)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_PUSH_STRUCT)
+}
+
+func FixPackageSelectorExpression(expr *SelectorExpression) Expression {
+	packageName := expr.X.(*IdentifierExpression).Obj.(string)
+
+	fd, index := GetCurrentCompiler().SearchFunction(packageName, expr.Sel)
+	if fd != nil {
+		newExpr := CreateIdentifierExpression(expr.Position(), expr.Sel)
+		newExpr.Obj = &FunctionIdentifier{
+			Func:  fd,
+			Index: index,
+		}
+
+		newExpr.SetType(fd.CopyType())
+		newExpr.GetType().Fix()
+
+		return newExpr
+	}
+
+	decl := GetCurrentCompiler().SearchDeclaration(packageName, expr.Sel)
+	if decl != nil {
+		newExpr := CreateIdentifierExpression(expr.Position(), expr.Sel)
+		newExpr.SetType(decl.Type.Copy())
+		newExpr.Obj = decl
+		newExpr.GetType().Fix()
+
+		return newExpr
+	}
+
+	panic(fmt.Sprintf("package filed not found '%s'", expr.Sel))
+}
+
+func FixStructSelectorExpression(expr *SelectorExpression) Expression {
+	// innerExpr := expr.X
+	// innerExpr.GetType().Fix()
+	expr.X = expr.X.Fix()
+
+	for i, field := range expr.X.GetType().structType.Fields {
+		if field.Name == expr.Sel {
+			expr.Index = i
+			expr.SetType(field.Type.Copy())
+
+			return expr
+		}
+	}
+
+	panic("TODO")
+}
+
+func CreateSelectorExpression(expression Expression, memberName string) *SelectorExpression {
+	expr := &SelectorExpression{
+		X:   expression,
+		Sel: memberName,
+	}
+	expr.SetPosition(expression.Position())
+
+	return expr
+}
+
+//
+// IndexExpression
+//
+type IndexExpression struct {
+	ExpressionBase
+	X     Expression
+	Index Expression
+}
+
+func (expr *IndexExpression) Fix() Expression {
+
+	expr.X = expr.X.Fix()
+	expr.Index = expr.Index.Fix()
+
+	if !expr.X.GetType().IsArray() && !expr.X.GetType().IsMap() {
+		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
+	}
+
+	if expr.X.GetType().IsArray() {
+		expr.SetType(expr.X.GetType().arrayType.ElementType.Copy())
+
+		if !expr.Index.GetType().IsInt() {
+			compileError(expr.Position(), INDEX_NOT_INT_ERR)
+		}
+	} else if expr.X.GetType().IsMap() {
+		expr.SetType(expr.X.GetType().mapType.Value.Copy())
+	}
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *IndexExpression) Generate(ob *OpCodeBuf) {
+	expr.X.Generate(ob)
+	expr.Index.Generate(ob)
+
+	switch {
+	case expr.X.GetType().IsArray():
+		code := vm.OP_CODE_PUSH_ARRAY
+		ob.GenerateCode(expr.Position(), code)
+	case expr.X.GetType().IsMap():
+		code := vm.OP_CODE_PUSH_MAP
+		ob.GenerateCode(expr.Position(), code)
+	default:
+		panic("TODO")
+	}
+}
+
+func CreateIndexExpression(pos Position, array, index Expression) *IndexExpression {
+	expr := &IndexExpression{
+		X:     array,
+		Index: index,
+	}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+type KeyValueExpression struct {
+	ExpressionBase
+	Key   Expression
+	Value Expression
+}
+
+func (expr *KeyValueExpression) Fix() Expression {
+	if expr.Key != nil {
+		expr.Key = expr.Key.Fix()
+	}
+	if expr.Value != nil {
+		expr.Value = expr.Value.Fix()
+	}
+
+	expr.GetType().Fix()
+
+	return expr
+}
+
+func (expr *KeyValueExpression) Generate(ob *OpCodeBuf) {
+	if expr.Value != nil {
+		expr.Value.Generate(ob)
+	}
+
+	if expr.Key != nil {
+		expr.Key.Generate(ob)
+	}
+}
+
+func CreateKeyValueExpression(pos Position, key, value Expression) *KeyValueExpression {
+	expr := &KeyValueExpression{
+		Key:   key,
+		Value: value,
+	}
+	expr.SetPosition(pos)
+
+	return expr
+}
+
+func CreateCompositeLit(typ *Type, valueList []Expression) Expression {
+	if typ.IsArray() {
+		return CreateArrayExpression(typ, valueList)
+	}
+
+	if typ.IsMap() {
+		return CreateMapExpression(typ, valueList)
+	}
+
+	if typ.IsStruct() {
+		return CreateStructExpression(typ, valueList)
+	}
+
+	return nil
 }
 
 //
@@ -556,7 +898,7 @@ func (expr *BinaryExpression) Generate(ob *OpCodeBuf) {
 			panic("TODO")
 		}
 
-		ob.generateCode(expr.Position(), code+offset)
+		ob.GenerateCode(expr.Position(), code+offset)
 
 	case LogicalAndOperator, LogicalOrOperator:
 		var jumpCode, logicalCode byte
@@ -569,17 +911,17 @@ func (expr *BinaryExpression) Generate(ob *OpCodeBuf) {
 			logicalCode = vm.OP_CODE_LOGICAL_OR
 		}
 
-		label := ob.getLabel()
+		label := ob.GetLabel()
 
 		expr.left.Generate(ob)
-		ob.generateCode(expr.Position(), vm.OP_CODE_DUPLICATE)
-		ob.generateCode(expr.Position(), jumpCode, label)
+		ob.GenerateCode(expr.Position(), vm.OP_CODE_DUPLICATE)
+		ob.GenerateCode(expr.Position(), jumpCode, label)
 
 		expr.right.Generate(ob)
 
-		ob.generateCode(expr.Position(), logicalCode)
+		ob.GenerateCode(expr.Position(), logicalCode)
 
-		ob.setLabel(label)
+		ob.SetLabel(label)
 	}
 }
 
@@ -671,12 +1013,12 @@ func (expr *UnaryExpression) GenerateMinus(ob *OpCodeBuf) {
 	if expr.GetType().IsFloat() {
 		code = vm.OP_CODE_MINUS_FLOAT
 	}
-	ob.generateCode(expr.Position(), code)
+	ob.GenerateCode(expr.Position(), code)
 }
 
 func (expr *UnaryExpression) GenerateNot(ob *OpCodeBuf) {
 	expr.Value.Generate(ob)
-	ob.generateCode(expr.Position(), vm.OP_CODE_LOGICAL_NOT)
+	ob.GenerateCode(expr.Position(), vm.OP_CODE_LOGICAL_NOT)
 }
 
 func NewUnaryExpression(pos Position, operator UnaryOperatorKind, value Expression) *UnaryExpression {
@@ -687,290 +1029,4 @@ func NewUnaryExpression(pos Position, operator UnaryOperatorKind, value Expressi
 	expr.SetPosition(pos)
 
 	return expr
-}
-
-//
-// FunctionCallExpression 函数调用表达式
-//
-type FunctionCallExpression struct {
-	ExpressionBase
-	funcName     Expression   // 函数名
-	argumentList []Expression // 实参列表
-}
-
-func (expr *FunctionCallExpression) Fix() Expression {
-	var fd *FunctionDefinition
-	var name string
-
-	expr.funcName = expr.funcName.Fix()
-
-	switch funcNameExpr := expr.funcName.(type) {
-	case *IdentifierExpression:
-		fd = funcNameExpr.inner.(*FunctionIdentifier).functionDefinition
-		name = funcNameExpr.name
-	default:
-		compileError(expr.Position(), FUNCTION_NOT_FOUND_ERR, name)
-	}
-
-	expr.argumentList = fd.FixArgument(expr.argumentList)
-
-	// 设置返回值类型
-	resultCount := len(fd.Type.funcType.Results)
-
-	if resultCount == 0 {
-		expr.GetType().SetBasicType(BasicTypeVoid)
-	} else if resultCount == 1 {
-		expr.GetType().SetBasicType(fd.Type.funcType.Results[0].Type.GetBasicType())
-	} else {
-		typeList := make([]*Type, resultCount)
-		for i, resultType := range fd.Type.funcType.Results {
-			typeList[i] = resultType.Type.Copy()
-		}
-		expr.GetType().SetBasicType(BasicTypeMultipleValues)
-		expr.GetType().multipleValueType = NewMultipleValueType(typeList)
-	}
-
-	expr.GetType().Fix()
-
-	return expr
-}
-
-func (expr *FunctionCallExpression) Generate(ob *OpCodeBuf) {
-	generatePushArgument(expr.argumentList, ob)
-	expr.funcName.Generate(ob)
-	ob.generateCode(expr.Position(), vm.OP_CODE_INVOKE)
-}
-
-func NewFunctionCallExpression(pos Position, function Expression, argumentList []Expression) *FunctionCallExpression {
-	expr := &FunctionCallExpression{
-		funcName:     function,
-		argumentList: argumentList,
-	}
-	expr.SetType(NewType(BasicTypeVoid))
-	expr.SetPosition(pos)
-
-	return expr
-}
-
-//
-// SelectorExpression
-//
-type SelectorExpression struct {
-	ExpressionBase
-	expression Expression // 实例
-	Field      string     // 成员名称
-	Index      int
-}
-
-func (expr *SelectorExpression) Fix() Expression {
-	var newExpr Expression
-
-	expr.expression = expr.expression.Fix()
-	typ := expr.expression.GetType()
-
-	// TODO: IsType()
-	switch {
-	case typ.IsPackage():
-		newExpr = FixPackageSelectorExpression(expr, expr.Field)
-	case typ.IsStruct():
-		newExpr = FixStructSelectorExpression(expr, expr.Field)
-	default:
-		compileError(expr.Position(), MEMBER_EXPRESSION_TYPE_ERR)
-	}
-
-	newExpr.GetType().Fix()
-
-	return newExpr
-}
-
-func (expr *SelectorExpression) Generate(ob *OpCodeBuf) {
-	expr.expression.Generate(ob)
-	// TODO: 临时用下
-	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_INT_2BYTE, expr.Index)
-	ob.generateCode(expr.Position(), vm.OP_CODE_PUSH_STRUCT)
-}
-
-func FixPackageSelectorExpression(expr *SelectorExpression, field string) Expression {
-	innerExpr := expr.expression
-	innerExpr.GetType().Fix()
-
-	packageName := innerExpr.(*IdentifierExpression).inner.(string)
-
-	fd := GetCurrentCompilerManage().SearchFunction(packageName, field)
-	if fd != nil {
-		newExpr := CreateIdentifierExpression(expr.Position(), field)
-		newExpr.inner = &FunctionIdentifier{
-			functionDefinition: fd,
-			Index:              GetCurrentCompilerManage().AddFuncList(fd),
-		}
-
-		newExpr.SetType(fd.CopyType())
-		newExpr.GetType().Fix()
-
-		return newExpr
-	}
-
-	decl := GetCurrentCompilerManage().SearchDeclaration(packageName, field)
-	if decl != nil {
-		// TODO: 初始值直接给会有问题
-		newDecl := NewDeclaration(decl.Position(), decl.Type.Copy(), decl.Name, nil)
-		newDecl.PackageName = packageName
-
-		for i, declTmp := range GetCurrentCompilerManage().DeclarationList {
-			if newDecl.PackageName == declTmp.PackageName && newDecl.Name == declTmp.Name {
-				newDecl.Index = i
-				break
-			}
-		}
-
-		newExpr := CreateIdentifierExpression(expr.Position(), field)
-		newExpr.SetType(newDecl.Type.Copy())
-		newExpr.inner = newDecl
-		expr.GetType().Fix()
-
-		return newExpr
-	}
-
-	panic(fmt.Sprintf("package filed not found '%s'", field))
-}
-
-func FixStructSelectorExpression(expr *SelectorExpression, fieldName string) Expression {
-	innerExpr := expr.expression
-	innerExpr.GetType().Fix()
-
-	expr.expression = expr.expression.Fix()
-
-	for i, field := range expr.expression.GetType().structType.Fields {
-		if field.Name == fieldName {
-			expr.Index = i
-			expr.SetType(field.Type.Copy())
-			return expr
-		}
-	}
-
-	panic("TODO")
-}
-
-func CreateSelectorExpression(expression Expression, memberName string) *SelectorExpression {
-	expr := &SelectorExpression{
-		expression: expression,
-		Field:      memberName,
-	}
-	expr.SetPosition(expression.Position())
-
-	return expr
-}
-
-//
-// IndexExpression
-//
-type IndexExpression struct {
-	ExpressionBase
-	X     Expression
-	Index Expression
-}
-
-func (expr *IndexExpression) Fix() Expression {
-
-	expr.X = expr.X.Fix()
-	expr.Index = expr.Index.Fix()
-
-	if !expr.X.GetType().IsArray() && !expr.X.GetType().IsMap() {
-		compileError(expr.Position(), INDEX_LEFT_OPERAND_NOT_ARRAY_ERR)
-	}
-
-	if expr.X.GetType().IsArray() {
-		expr.SetType(expr.X.GetType().arrayType.ElementType.Copy())
-
-		if !expr.Index.GetType().IsInt() {
-			compileError(expr.Position(), INDEX_NOT_INT_ERR)
-		}
-	} else if expr.X.GetType().IsMap() {
-		expr.SetType(expr.X.GetType().mapType.Value.Copy())
-	}
-
-	expr.GetType().Fix()
-
-	return expr
-}
-
-func (expr *IndexExpression) Generate(ob *OpCodeBuf) {
-	expr.X.Generate(ob)
-	expr.Index.Generate(ob)
-
-	switch {
-	case expr.X.GetType().IsArray():
-		code := vm.OP_CODE_PUSH_ARRAY
-		ob.generateCode(expr.Position(), code)
-	case expr.X.GetType().IsMap():
-		code := vm.OP_CODE_PUSH_MAP
-		ob.generateCode(expr.Position(), code)
-	default:
-		panic("TODO")
-	}
-}
-
-func CreateIndexExpression(pos Position, array, index Expression) *IndexExpression {
-	expr := &IndexExpression{
-		X:     array,
-		Index: index,
-	}
-	expr.SetPosition(pos)
-
-	return expr
-}
-
-type KeyValueExpression struct {
-	ExpressionBase
-	Key   Expression
-	Value Expression
-}
-
-func (expr *KeyValueExpression) Fix() Expression {
-	if expr.Key != nil {
-		expr.Key = expr.Key.Fix()
-	}
-	if expr.Value != nil {
-		expr.Value = expr.Value.Fix()
-	}
-
-	expr.GetType().Fix()
-
-	return expr
-}
-
-func (expr *KeyValueExpression) Generate(ob *OpCodeBuf) {
-	if expr.Value != nil {
-		expr.Value.Generate(ob)
-	}
-
-	if expr.Key != nil {
-		expr.Key.Generate(ob)
-	}
-}
-
-func CreateKeyValueExpression(pos Position, key, value Expression) *KeyValueExpression {
-	expr := &KeyValueExpression{
-		Key:   key,
-		Value: value,
-	}
-	expr.SetPosition(pos)
-
-	return expr
-}
-
-func CreateCompositeLit(typ *Type, valueList []Expression) Expression {
-	if typ.IsArray() {
-		return CreateArrayExpression(typ, valueList)
-	}
-
-	if typ.IsMap() {
-		return CreateMapExpression(typ, valueList)
-	}
-
-	if typ.IsStruct() {
-		return CreateStructExpression(typ, valueList)
-	}
-
-	return nil
 }

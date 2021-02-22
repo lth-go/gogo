@@ -28,7 +28,6 @@ type FunctionDefinition struct {
 	Type            *Type
 	PackageName     string
 	Name            string
-	ParamList       []*Parameter
 	Block           *Block
 	DeclarationList []*Declaration
 	CodeList        []byte
@@ -41,42 +40,45 @@ func (fd *FunctionDefinition) Fix() {
 	}
 
 	// 添加形参声明
-	fd.AddParameterAsDeclaration()
-	fd.Type.Fix()
+	fd.FixParam()
+	// fd.Type.Fix()
 
 	// 修正表达式列表
-	fd.Block.Fix()
+	fd.FixBlock()
 
 	// 修正返回值
-	fd.FixReturnStatement()
+	fd.FixReturn()
 }
 
 func (fd *FunctionDefinition) GetType() *Type {
 	return fd.Type
 }
 
-// 将形参添加到函数声明列表
-func (fd *FunctionDefinition) AddParameterAsDeclaration() {
-	for _, param := range fd.ParamList {
+// 将形参添加到函数块声明列表,用于函数语句查找变量
+// 实际栈位置将修改为函数参数位置
+func (fd *FunctionDefinition) FixParam() {
+	for i, param := range fd.Type.funcType.Params {
 		decl := &Declaration{
 			Type:        param.Type,
 			PackageName: fd.PackageName,
 			Name:        param.Name,
 			Value:       nil,
-			Index:       -1,
+			Index:       i,
 			Block:       nil,
 			IsLocal:     true,
 		}
 		fd.Block.declarationList = append(fd.Block.declarationList, decl)
-
-		fd.AddDeclarationList(decl)
 	}
 }
 
-// FixReturnStatement
+func (fd *FunctionDefinition) FixBlock() {
+	fd.Block.Fix()
+}
+
+// FixReturn
 // 确保函数语句里最后一定是return语句
 // TODO: 校验参数类型
-func (fd *FunctionDefinition) FixReturnStatement() {
+func (fd *FunctionDefinition) FixReturn() {
 	isNeedAddReturn := func() bool {
 		if len(fd.Block.statementList) == 0 {
 			return true
@@ -98,52 +100,6 @@ func (fd *FunctionDefinition) FixReturnStatement() {
 		fd.Block.statementList = []Statement{}
 	}
 	fd.Block.statementList = append(fd.Block.statementList, returnStmt)
-}
-
-func (fd *FunctionDefinition) AddDeclarationList(decl *Declaration) {
-	decl.Index = len(fd.DeclarationList)
-	fd.DeclarationList = append(fd.DeclarationList, decl)
-}
-
-func (fd *FunctionDefinition) FixArgument(argumentList []Expression) []Expression {
-	parameterList := fd.ParamList
-
-	paramLen := len(parameterList)
-
-	if paramLen > 0 {
-		lastP := parameterList[paramLen-1]
-		if lastP.Ellipsis {
-			newArgList := make([]Expression, 0)
-			for _, expr := range argumentList[:paramLen-1] {
-				newArgList = append(newArgList, expr)
-			}
-			lastArg := CreateArrayExpression(lastP.Type, argumentList[paramLen-1:])
-			newArgList = append(newArgList, lastArg)
-
-			argumentList = newArgList
-		}
-	}
-
-	argLen := len(argumentList)
-
-	if argLen != paramLen {
-		compileError(fd.GetType().Position(), ARGUMENT_COUNT_MISMATCH_ERR, paramLen, argLen)
-	}
-
-	for i := 0; i < paramLen; i++ {
-		argumentList[i] = argumentList[i].Fix()
-		if !argumentList[i].GetType().Equal(parameterList[i].Type) {
-			compileError(
-				argumentList[i].Position(),
-				ARGUMENT_COUNT_MISMATCH_ERR,
-				parameterList[i].Name,
-				parameterList[i].Type.GetBasicType(),
-				argumentList[i].GetType().GetBasicType(),
-			)
-		}
-	}
-
-	return argumentList
 }
 
 func (fd *FunctionDefinition) GetPackageName() string {

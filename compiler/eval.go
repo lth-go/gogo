@@ -353,6 +353,7 @@ func CreateAssignCast(src Expression, destType *Type) Expression {
 	}
 
 	castMismatchError(src.Position(), srcTye, destType)
+
 	return nil
 }
 

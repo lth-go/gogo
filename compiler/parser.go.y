@@ -67,6 +67,7 @@ import (
     if_statement for_statement
     return_statement break_statement continue_statement
     declaration_statement assign_statement
+    var_decl
 %type <statement_list> statement_list
 %type <parameter> receiver_or_nil parameter_decl
 %type <parameter_list> parameter_list parameters
@@ -122,15 +123,18 @@ top_level_decl
         ;
 declaration
         : var_decl
+        {
+            AddDeclList($1)
+        }
         ;
 var_decl
         : VAR IDENTIFIER type_specifier
         {
-            AddDeclList(NewDeclaration($1.Position(), $3, $2.Lit, nil))
+            $$ = CreateDeclaration($1.Position(), $3, $2.Lit, nil)
         }
         | VAR IDENTIFIER type_specifier ASSIGN expression
         {
-            AddDeclList(NewDeclaration($1.Position(), $3, $2.Lit, $5))
+            $$ = CreateDeclaration($1.Position(), $3, $2.Lit, $5)
         }
         ;
 array_type
@@ -557,14 +561,7 @@ continue_statement
         }
         ;
 declaration_statement
-        : VAR IDENTIFIER type_specifier
-        {
-            $$ = NewDeclaration($1.Position(), $3, $2.Lit, nil)
-        }
-        | VAR IDENTIFIER type_specifier ASSIGN expression
-        {
-            $$ = NewDeclaration($1.Position(), $3, $2.Lit, $5)
-        }
+        : var_decl
         ;
 assign_statement
         : expression_list ASSIGN expression_list

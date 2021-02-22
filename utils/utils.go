@@ -27,8 +27,10 @@ func IntToBool(i int) bool {
 	return true
 }
 
+// Get2ByteInt
+// TODO: max is 1 << 15
 func Get2ByteInt(b []byte) int {
-	return int(binary.BigEndian.Uint16(b))
+	return int(int16(binary.BigEndian.Uint16(b)))
 }
 
 func Set2ByteInt(b []byte, value int) {

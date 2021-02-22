@@ -2,31 +2,31 @@ package compiler
 
 // StatementBlockInfo 语句块
 type StatementBlockInfo struct {
-	statement     Statement
-	continueLabel int
-	breakLabel    int
+	Statement     Statement
+	ContinueLabel int
+	BreakLabel    int
 }
 
 func NewStatementBlockInfo(statement Statement) *StatementBlockInfo {
 	return &StatementBlockInfo{
-		statement: statement,
+		Statement: statement,
 	}
 }
 
 // FunctionBlockInfo 函数块
 type FunctionBlockInfo struct {
-	function *FunctionDefinition
-	endLabel int
+	Function *FunctionDefinition
+	EndLabel int
 }
 
 //
 // Block
 //
 type Block struct {
-	parent          interface{} // 块信息，函数块，还是条件语句
-	outerBlock      *Block
-	declarationList []*Declaration
-	statementList   []Statement
+	parent          interface{}    // 块信息，函数块，还是条件语句
+	outerBlock      *Block         // 上级块
+	declarationList []*Declaration // 用于搜索作用域
+	statementList   []Statement    // 语句
 }
 
 // GetCurrentFunction
@@ -34,7 +34,7 @@ func (b *Block) GetCurrentFunction() *FunctionDefinition {
 	for block := b; block != nil; block = block.outerBlock {
 		blockInfo, ok := block.parent.(*FunctionBlockInfo)
 		if ok {
-			return blockInfo.function
+			return blockInfo.Function
 		}
 
 	}
@@ -51,8 +51,7 @@ func (b *Block) SearchDeclaration(name string) *Declaration {
 		}
 	}
 
-	// 从全局作用域查找
-	return GetCurrentCompiler().SearchDeclaration(name)
+	return nil
 }
 
 func (b *Block) Fix() {

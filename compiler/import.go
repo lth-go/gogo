@@ -9,17 +9,17 @@ const (
 	importSuffix = ".gogo"
 )
 
-type Import struct {
+type ImportDecl struct {
 	PosBase
 	packageName string
 }
 
 // 获取导入文件的相对路径
-func (i *Import) getRelativePath() string {
+func (i *ImportDecl) getRelativePath() string {
 	return i.packageName + importSuffix
 }
 
-func (i *Import) GetPath() string {
+func (i *ImportDecl) GetPath() string {
 	searchBasePath := os.Getenv("IMPORT_SEARCH_PATH")
 	if searchBasePath == "" {
 		searchBasePath = "."
@@ -36,12 +36,12 @@ func (i *Import) GetPath() string {
 	return fullPath
 }
 
-func CreateImportList(importSpec *Import) []*Import {
-	return []*Import{importSpec}
+func CreateImportDeclList(importSpec *ImportDecl) []*ImportDecl {
+	return []*ImportDecl{importSpec}
 }
 
-func CreateImport(packageName string) *Import {
-	return &Import{
+func CreateImportDecl(packageName string) *ImportDecl {
+	return &ImportDecl{
 		packageName: packageName,
 	}
 }

@@ -21,8 +21,8 @@ import (
 
     type_specifier       *Type
 
-    import_spec          *Import
-    import_spec_list     []*Import
+    import_decl          *ImportDecl
+    import_decl_list     []*ImportDecl
 
     function_decl        *FunctionDefinition
 
@@ -48,8 +48,8 @@ import (
     INTERFACE
     ELLIPSIS
 
-%type <import_spec> import_decl
-%type <import_spec_list> import_decl_list
+%type <import_decl> import_decl
+%type <import_decl_list> import_decl_list
 
 %type <expression> expression expression_or_nil
     logical_and_expression logical_or_expression
@@ -94,13 +94,13 @@ import_decl_list_or_nil
         :
         | import_decl_list
         {
-            SetImportList($1)
+            SetImportDeclList($1)
         }
         ;
 import_decl_list
         : import_decl
         {
-            $$ = CreateImportList($1)
+            $$ = CreateImportDeclList($1)
         }
         | import_decl_list import_decl
         {
@@ -110,7 +110,7 @@ import_decl_list
 import_decl
         : IMPORT STRING SEMICOLON
         {
-            $$ = CreateImport($2.Lit)
+            $$ = CreateImportDecl($2.Lit)
         }
         ;
 top_level_decl_list

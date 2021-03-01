@@ -459,7 +459,7 @@ func (expr *IdentifierExpression) Fix() Expression {
 	//
 	// 判断是否是包引用
 	//
-	for _, imp := range pkg.importList {
+	for _, imp := range pkg.importDeclList {
 		if imp.packageName == expr.Name {
 			expr.SetType(NewType(BasicTypePackage))
 			expr.Obj = imp.packageName

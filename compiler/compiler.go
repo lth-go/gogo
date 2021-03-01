@@ -117,7 +117,7 @@ func (cm *Compiler) Parse(path string) {
 	// 生成语法树
 	c.Parse()
 
-	for _, imp := range c.importList {
+	for _, imp := range c.importDeclList {
 		if IsCompiling(imp.packageName) {
 			panic("TODO")
 		}

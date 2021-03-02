@@ -17,7 +17,6 @@ import (
     parameter_list       []*Parameter
 
     block                *Block
-    else_if              []*ElseIf
 
     type_specifier       *Type
 
@@ -74,7 +73,6 @@ import (
     result_or_nil result
     type_list_or_nil type_list
 %type <block> block block_or_nil
-%type <else_if> else_if
 %type <type_specifier> type_specifier literal_type array_type func_type signature map_type interface_type struct_type
 %type <field_decl_list> field_decl_list_or_nil field_decl_list
 %type <field_decl> field_decl
@@ -498,29 +496,15 @@ simple_statement
 if_statement
         : IF expression block
         {
-            $$ = NewIfStatement($1.Position(), $2, $3, make([]*ElseIf, 0), nil)
+            $$ = NewIfStatement($1.Position(), $2, $3, nil)
         }
         | IF expression block ELSE block
         {
-            $$ = NewIfStatement($1.Position(), $2, $3, make([]*ElseIf, 0), $5)
+            $$ = NewIfStatement($1.Position(), $2, $3, NewBlockStatement($5.statementList))
         }
-        | IF expression block else_if
+        | IF expression block ELSE if_statement
         {
-            $$ = NewIfStatement($1.Position(), $2, $3, $4, nil)
-        }
-        | IF expression block else_if ELSE block
-        {
-            $$ = NewIfStatement($1.Position(), $2, $3, $4, $6)
-        }
-        ;
-else_if
-        : ELSE IF expression block
-        {
-            $$ = []*ElseIf{NewElseIf($3, $4)}
-        }
-        | else_if ELSE IF expression block
-        {
-            $$ = append($1, NewElseIf($4, $5))
+            $$ = NewIfStatement($1.Position(), $2, $3, $5)
         }
         ;
 for_statement

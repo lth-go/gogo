@@ -55,7 +55,13 @@ func (b *Block) SearchDeclaration(name string) *Declaration {
 }
 
 func (b *Block) Fix() {
-	for _, statement := range b.statementList {
-		statement.Fix()
+	for _, stmt := range b.statementList {
+		stmt.Fix()
+	}
+}
+
+func (b *Block) Generate(ob *OpCodeBuf) {
+	for _, stmt := range b.statementList {
+		stmt.Generate(ob)
 	}
 }

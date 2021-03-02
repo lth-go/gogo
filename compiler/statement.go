@@ -46,49 +46,66 @@ func NewExpressionStatement(pos Position, expr Expression) *ExpressionStatement 
 }
 
 //
+// BlockStatement
+//
+type BlockStatement struct {
+	StatementBase
+	List []Statement
+}
+
+func (stmt *BlockStatement) Fix() {
+	for _, subStmt := range stmt.List {
+		subStmt.Fix()
+	}
+}
+
+func (stmt *BlockStatement) Generate(ob *OpCodeBuf) {
+	for _, subStmt := range stmt.List {
+		subStmt.Generate(ob)
+	}
+}
+
+func NewBlockStatement(stmtList []Statement) *BlockStatement {
+	return &BlockStatement{
+		List: stmtList,
+	}
+}
+
+//
 // IfStatement if表达式
 //
 type IfStatement struct {
 	StatementBase
-	Condition  Expression
-	ThenBlock  *Block
-	ElseIfList []*ElseIf
-	ElseBlock  *Block
+	Cond Expression
+	Body *Block
+	Else Statement
 }
 
 func (stmt *IfStatement) Fix() {
-	stmt.Condition = stmt.Condition.Fix()
+	stmt.Cond = stmt.Cond.Fix()
 
-	if !stmt.Condition.GetType().IsBool() {
-		compileError(stmt.Condition.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
+	if !stmt.Cond.GetType().IsBool() {
+		compileError(stmt.Cond.Position(), IF_CONDITION_NOT_BOOLEAN_ERR)
 	}
 
-	if stmt.ThenBlock != nil {
-		stmt.ThenBlock.Fix()
+	if stmt.Body != nil {
+		stmt.Body.Fix()
 	}
 
-	for _, elseIf := range stmt.ElseIfList {
-		elseIf.Condition = elseIf.Condition.Fix()
-
-		if elseIf.Block != nil {
-			elseIf.Block.Fix()
-		}
-	}
-
-	if stmt.ElseBlock != nil {
-		stmt.ElseBlock.Fix()
+	if stmt.Else != nil {
+		stmt.Else.Fix()
 	}
 }
 
 func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
-	stmt.Condition.Generate(ob)
+	stmt.Cond.Generate(ob)
 
 	// 获取false跳转地址
 	ifFalseLabel := ob.GetLabel()
 	ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
 
-	if stmt.ThenBlock != nil {
-		generateStatementList(stmt.ThenBlock.statementList, ob)
+	if stmt.Body != nil {
+		stmt.Body.Generate(ob)
 	}
 
 	// 获取结束跳转地址
@@ -100,24 +117,8 @@ func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 	// 设置false跳转地址,如果false,直接执行这里
 	ob.SetLabel(ifFalseLabel)
 
-	for _, elif := range stmt.ElseIfList {
-		elif.Condition.Generate(ob)
-
-		// 获取false跳转地址
-		ifFalseLabel = ob.GetLabel()
-		ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, ifFalseLabel)
-
-		generateStatementList(elif.Block.statementList, ob)
-
-		// 直接跳到最后
-		ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP, endLabel)
-
-		// 设置false跳转地址,如果false,直接执行这里
-		ob.SetLabel(ifFalseLabel)
-	}
-
-	if stmt.ElseBlock != nil {
-		generateStatementList(stmt.ElseBlock.statementList, ob)
+	if stmt.Else != nil {
+		stmt.Else.Generate(ob)
 	}
 
 	// 设置结束地址
@@ -127,32 +128,18 @@ func (stmt *IfStatement) Generate(ob *OpCodeBuf) {
 func NewIfStatement(
 	pos Position,
 	condition Expression,
-	thenBlock *Block,
-	elifList []*ElseIf,
-	elseBlock *Block,
+	body *Block,
+	elseStmt Statement,
 ) *IfStatement {
 	stmt := &IfStatement{
-		Condition:  condition,
-		ThenBlock:  thenBlock,
-		ElseIfList: elifList,
-		ElseBlock:  elseBlock,
+		Cond: condition,
+		Body: body,
+		Else: elseStmt,
 	}
 
 	stmt.SetPosition(pos)
 
 	return stmt
-}
-
-type ElseIf struct {
-	Condition Expression
-	Block     *Block
-}
-
-func NewElseIf(condition Expression, block *Block) *ElseIf {
-	return &ElseIf{
-		Condition: condition,
-		Block:     block,
-	}
 }
 
 //
@@ -163,7 +150,7 @@ type ForStatement struct {
 	Init      Statement
 	Condition Expression
 	Post      Statement
-	Block     *Block
+	Body      *Block
 }
 
 func (stmt *ForStatement) Fix() {
@@ -183,8 +170,8 @@ func (stmt *ForStatement) Fix() {
 		stmt.Post.Fix()
 	}
 
-	if stmt.Block != nil {
-		stmt.Block.Fix()
+	if stmt.Body != nil {
+		stmt.Body.Fix()
 	}
 }
 
@@ -210,13 +197,13 @@ func (stmt *ForStatement) Generate(ob *OpCodeBuf) {
 		ob.GenerateCode(stmt.Position(), vm.OP_CODE_JUMP_IF_FALSE, label)
 	}
 
-	if stmt.Block != nil {
-		parent := stmt.Block.parent.(*StatementBlockInfo)
+	if stmt.Body != nil {
+		parent := stmt.Body.parent.(*StatementBlockInfo)
 		// 获取break,continue地址
 		parent.BreakLabel = label
 		parent.ContinueLabel = label
 
-		generateStatementList(stmt.Block.statementList, ob)
+		stmt.Body.Generate(ob)
 	}
 
 	// 如果有continue,直接跳过block,从这里执行, label = parent.continueLabel
@@ -238,7 +225,7 @@ func NewForStatement(pos Position, init Statement, condition Expression, post St
 		Init:      init,
 		Condition: condition,
 		Post:      post,
-		Block:     block,
+		Body:      block,
 	}
 
 	stmt.SetPosition(pos)
@@ -388,7 +375,7 @@ func (stmt *Declaration) Fix() {
 	//
 	block := stmt.Block
 	block.declarationList = append(block.declarationList, stmt)
-	
+
 	// 向父函数添加
 	fd := block.GetCurrentFunction()
 	stmt.Index = len(fd.DeclarationList)
@@ -552,12 +539,6 @@ func NewAssignStatement(pos Position, left []Expression, right []Expression) *As
 	stmt.SetPosition(pos)
 
 	return stmt
-}
-
-func generateStatementList(statementList []Statement, ob *OpCodeBuf) {
-	for _, stmt := range statementList {
-		stmt.Generate(ob)
-	}
 }
 
 func generatePopToLvalue(expr Expression, ob *OpCodeBuf) {

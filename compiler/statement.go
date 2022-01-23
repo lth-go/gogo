@@ -388,7 +388,7 @@ func (stmt *Declaration) Fix() {
 	//
 	block := stmt.Block
 	block.declarationList = append(block.declarationList, stmt)
-	
+
 	// 向父函数添加
 	fd := block.GetCurrentFunction()
 	stmt.Index = len(fd.DeclarationList)

@@ -8,4 +8,4 @@ test :
 
 .PHONY: build
 build :
-	go build -o gogo main.go
+	go build -o ./bin/gogo main.go

@@ -12,6 +12,7 @@ func main() {
 	if len(os.Args) != 2 {
 		log.Fatalf("参数错误\n")
 	}
+
 	filename := os.Args[1]
 
 	_, err := os.Stat(filename)

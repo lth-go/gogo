@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 )
 
@@ -35,4 +36,10 @@ func Get2ByteInt(b []byte) int {
 
 func Set2ByteInt(b []byte, value int) {
 	binary.BigEndian.PutUint16(b, uint16(value))
+}
+
+func JsonBytes(v interface{}) []byte {
+	buf, _ := json.Marshal(v)
+
+	return buf
 }

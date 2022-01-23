@@ -228,7 +228,7 @@ func (vm *VirtualMachine) execute(caller *GoGoFunction, codeList []byte) {
 			vm.stack.stackPointer--
 			pc++
 		case OP_CODE_EQ_STRING:
-			stack.SetIntPlus(-2, utils.BoolToInt(!(stack.GetStringPlus(-2) == stack.GetStringPlus(-1))))
+			stack.SetIntPlus(-2, utils.BoolToInt(stack.GetStringPlus(-2) != stack.GetStringPlus(-1)))
 			vm.stack.stackPointer--
 			pc++
 		case OP_CODE_EQ_OBJECT:

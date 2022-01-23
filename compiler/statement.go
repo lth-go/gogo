@@ -368,6 +368,25 @@ func NewContinueStatement(pos Position) *ContinueStatement {
 	return stmt
 }
 
+type TypeDefDecl struct {
+	StatementBase
+	PackageName string
+	Name        string
+	Value       *Type
+	Index       int
+}
+
+func NewTypeDefDecl(pos Position, typ *Type, name string) *TypeDefDecl {
+	decl := &TypeDefDecl{
+		Name:  name,
+		Value: typ,
+	}
+
+	decl.SetPosition(pos)
+
+	return decl
+}
+
 //
 // Declaration 声明语句
 //

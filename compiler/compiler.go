@@ -10,6 +10,7 @@ type Compiler struct {
 	doneList  []*Package
 
 	FuncList        []*FunctionDefinition // 函数列表
+	TypeDefList     []*TypeDefDecl        // 类型声明列表
 	DeclarationList []*Declaration        // 声明列表
 	ConstantList    []interface{}         // 常量定义
 
@@ -133,12 +134,18 @@ func (cm *Compiler) Parse(path string) {
 	cm.PopCurrentCompiler()
 }
 
-func (c *Compiler) Compile() {
+func (c *Compiler) Fix() {
 	// 添加原生函数声明
 	c.AddNativeFunctionList()
 
 	for i := len(c.doneList) - 1; i >= 0; i-- {
 		pkg := c.doneList[i]
+
+		// 添加类型声明
+		c.TypeDefList = append(c.TypeDefList, pkg.typeDefList...)
+		for index, decl := range c.TypeDefList {
+			decl.Index = index
+		}
 
 		// 添加并修正全局声明
 		c.DeclarationList = append(c.DeclarationList, pkg.declarationList...)
@@ -162,7 +169,9 @@ func (c *Compiler) Compile() {
 
 		f.Fix()
 	}
+}
 
+func (c *Compiler) Compile() {
 	//
 	// 函数生成字节码,并修正字节码
 	//
@@ -252,6 +261,8 @@ func (c *Compiler) CompileFile(path string) {
 	}
 
 	c.Parse(path)
+
+	c.Fix()
 
 	c.Compile()
 }

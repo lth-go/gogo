@@ -15,6 +15,11 @@ var globalStruct struct {
     A: 100,
 };
 
+type globalTypeA int;
+type globalTypeS struct {
+    A int;
+};
+
 //
 // Check lexical analyzer
 //

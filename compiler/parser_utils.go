@@ -21,6 +21,12 @@ func CreateFunctionDefine(pos Position, receiver *Parameter, identifier string, 
 	c.funcList = append(c.funcList, fd)
 }
 
+func CreateTypeDef(pos Position, typ *Type, name string) *TypeDefDecl {
+	decl := NewTypeDefDecl(pos, typ, name)
+
+	return decl
+}
+
 func CreateDeclaration(pos Position, typ *Type, name string, value Expression) *Declaration {
 	decl := NewDeclaration(pos, typ, name, value)
 
@@ -30,6 +36,14 @@ func CreateDeclaration(pos Position, typ *Type, name string, value Expression) *
 	}
 
 	return decl
+}
+
+func AddTypeList(decl *TypeDefDecl) {
+	c := GetCurrentPackage()
+
+	decl.PackageName = c.GetPackageName()
+
+	c.typeDefList = append(c.typeDefList, decl)
 }
 
 func AddDeclList(stmt Statement) {

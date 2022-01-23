@@ -11,6 +11,7 @@ type Package struct {
 	importList      []*Import             // 依赖的包
 	funcList        []*FunctionDefinition // 函数列表
 	declarationList []*Declaration        // 声明列表
+	typeDefList     []*TypeDefDecl        // 类型声明列表
 	currentBlock    *Block                // 当前块
 }
 
@@ -35,6 +36,7 @@ func NewPackage(path string) *Package {
 		importList:      []*Import{},
 		funcList:        []*FunctionDefinition{},
 		declarationList: []*Declaration{},
+		typeDefList:     []*TypeDefDecl{},
 	}
 
 	return c

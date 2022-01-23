@@ -29,6 +29,8 @@ import (
     field_decl_list      []*StructField
     field_decl           *StructField
 
+    type_def             *TypeDefDecl
+
     tok                  Token
 }
 
@@ -68,6 +70,7 @@ import (
     return_statement break_statement continue_statement
     declaration_statement assign_statement
     var_decl
+%type <type_def> type_decl
 %type <statement_list> statement_list
 %type <parameter> receiver_or_nil parameter_decl
 %type <parameter_list> parameter_list parameters
@@ -122,9 +125,19 @@ top_level_decl
         | function_decl
         ;
 declaration
-        : var_decl
+        : type_decl
+        {
+            AddTypeList($1)
+        }
+        | var_decl
         {
             AddDeclList($1)
+        }
+        ;
+type_decl
+        : TYPE IDENTIFIER type_specifier
+        {
+            $$ = CreateTypeDef($1.Position(), $3, $2.Lit)
         }
         ;
 var_decl
